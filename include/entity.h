@@ -6,6 +6,8 @@
 #include "gfc_shape.h"
 #include "gf2d_sprite.h"
 
+#define MAX_ENTITY 500
+
 typedef enum EntityType_S{
     PLAYER,
     ENEMY,

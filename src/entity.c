@@ -27,8 +27,6 @@ void entity_system_init(Uint32 maxEnts) {
         return;
     }
     ent_manager.entityMax = maxEnts; // at this point, big ass entity list is made
-
-    atexit(entity_system_close);
 }
 
 void entity_system_close() {
@@ -52,7 +50,6 @@ void entity_draw(Entity* self) {
         self->sprite,
         self->position,
         &self->scale,
-        NULL,
         NULL,
         NULL,
         NULL,

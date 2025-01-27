@@ -3,6 +3,8 @@
 
 #include "gf2d_graphics.h"
 #include "gf2d_sprite.h"
+#include "entity.h"
+#include "world.h"
 
 int main(int argc, char * argv[])
 {
@@ -35,6 +37,10 @@ int main(int argc, char * argv[])
     sprite = gf2d_sprite_load_image("images/backgrounds/bg_flat.png");
     mouse = gf2d_sprite_load_all("images/pointer.png",32,32,16,0);
     slog("press [escape] to quit");
+
+    entity_system_init(MAX_ENTITY);
+    world_init();
+
     /*main game loop*/
     while(!done)
     {
@@ -42,6 +48,7 @@ int main(int argc, char * argv[])
         keys = SDL_GetKeyboardState(NULL); // get the keyboard state for this frame
         /*update things here*/
         SDL_GetMouseState(&mx,&my);
+        //slog("mouse: (%i, %i)", mx, my);
         mf+=0.1;
         if (mf >= 16.0)mf = 0;
         
@@ -50,6 +57,8 @@ int main(int argc, char * argv[])
             //backgrounds drawn first
             gf2d_sprite_draw_image(sprite,gfc_vector2d(0,0));
             
+            world_update();
+
             //UI elements last
             gf2d_sprite_draw(
                 mouse,
@@ -61,8 +70,8 @@ int main(int argc, char * argv[])
                 &mouseGFC_Color,
                 (int)mf);
 
-        gf2d_graphics_next_frame();// render current draw frame and skip to the next frame
-        
+        gf2d_graphics_next_frame();// render current draw frame and skip to the next frame       
+
         if (keys[SDL_SCANCODE_ESCAPE])done = 1; // exit condition
         //slog("Rendering at %f FPS",gf2d_graphics_get_frames_per_second());
     }
