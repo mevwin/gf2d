@@ -6,6 +6,9 @@
 typedef struct WorldManager_S {
 	Entity*			player;
 	GFC_List*		enemy_list;
+
+	// GameState
+
 	// insert UI data
 	// insert level data
 }WorldManager;
@@ -15,7 +18,7 @@ static WorldManager world_manager = { 0 };
 void world_close();
 
 void world_init() {
-	world_manager.player = player_spawn(gfc_vector2d(400, 30));
+	world_manager.player = player_spawn(gfc_vector2d(400, 450));
 
 	atexit(world_close);
 }

@@ -3,6 +3,7 @@
 
 #include "gf2d_graphics.h"
 #include "gf2d_sprite.h"
+#include "gfc_input.h"
 #include "entity.h"
 #include "world.h"
 
@@ -19,6 +20,7 @@ int main(int argc, char * argv[])
     GFC_Color mouseGFC_Color = gfc_color8(255,100,255,200);
     
     /*program initializtion*/
+    gfc_input_init("config/input.cfg");
     init_logger("gf2d.log",0);
     slog("---==== BEGIN ====---");
     gf2d_graphics_initialize(
@@ -44,6 +46,7 @@ int main(int argc, char * argv[])
     /*main game loop*/
     while(!done)
     {
+        gfc_input_update();
         SDL_PumpEvents();   // update SDL's internal event structures
         keys = SDL_GetKeyboardState(NULL); // get the keyboard state for this frame
         /*update things here*/
