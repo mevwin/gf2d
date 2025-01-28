@@ -2,6 +2,8 @@
 #include "gfc_matrix.h"
 #include "entity.h"
 
+// cite this page for later
+
 typedef struct EntityManager_S {
 	Entity*		entityList;
 	Uint32		entityMax;

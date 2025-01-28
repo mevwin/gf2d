@@ -12,8 +12,8 @@ typedef struct PlayerData_S{
 	float			currHealth;
 	float			maxHealth;
 
-	//TODO: insert resource bar here
-	
+	// TODO: insert resource bar here
+	// maybe add no_move toggle
 }PlayerData;
 
 Entity* player_spawn(GFC_Vector2D position);

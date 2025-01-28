@@ -33,6 +33,7 @@ typedef struct Entity_S{
     void*           data;                       // entity data
 
     GFC_Shape       hurtbox;
+    GFC_Shape       bounds;
 }Entity;
 
 /**
