@@ -1,8 +1,9 @@
 #include <SDL.h>
 #include "simple_logger.h"
 #include "gf2d_draw.h"
-#include "world.h"
 #include "gfc_input.h"
+#include "world.h"
+#include "level.h"
 #include "player.h"
 
 void player_move(Entity* self);
@@ -79,12 +80,6 @@ void player_move(Entity* self) {
 
 	p_data = self->data;
 
-	if (!within_bounds(self)) {
-
-
-		return;
-	}
-
 	/* BASE MOVEMENT*/
 	if (gfc_input_command_released("moveleft") || gfc_input_command_released("moveright")) {
 		if (self->velocity.x > 0)
@@ -131,15 +126,14 @@ void player_move(Entity* self) {
 		// go up
 		self->velocity.y = self->max_velocity.y;
 		p_data->jump_flag = 1;
-		slog("start");
 	}
 
 	if (p_data->jump_flag) {
 		self->position.y -= self->velocity.y;
-		slog("jumping");
 
 		self->velocity.y -= GRAVITY;
-		if (self->velocity.y == (-self->max_velocity.y)) {
+		if (ground_collision(self)) {
+			self->position.y = 349.0f;
 			self->velocity.y = 0;
 			p_data->jump_flag = 0;
 		}

@@ -127,17 +127,4 @@ void update_hurtbox(Entity* self) {
                                  self->sprite->frame_w,
                                  self->sprite->frame_h
         );
-
-        /*
-        self->position.x - (self->model->bounds.w / 4.0),
-        self->position.y - (self->model->bounds.h / 4.0),
-        self->position.z - (self->model->bounds.d / 4.0),
-        self->model->bounds.w / 2.0,
-        self->model->bounds.h / 2.0,
-        self->model->bounds.d / 2.0);
-        */
-}
-
-Uint8 within_bounds(Entity* self) {
-
 }
