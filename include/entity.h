@@ -24,6 +24,7 @@ typedef struct Entity_S{
 
     GFC_Vector2D    rotation;       // how to rotate it
     GFC_Vector2D    scale;          // stretching
+    GFC_Vector2D    dir;
     Sprite*         sprite;         // graphics
     Uint32          frame;
 

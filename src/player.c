@@ -30,13 +30,12 @@ Entity* player_spawn(GFC_Vector2D position) {
 	player->think = player_think;
 	player->update = player_update;
 	player->scale = gfc_vector2d(1, 1);
+	player->dir = gfc_vector2d(0, 0);
 	player->free = player_free;
 	player->bounds.s.r = gfc_rect(0, 0, 1200, 700);
 
 	player->data = player_data_init(player);
 	p_data = player->data;
-
-
 
 	return player;
 }
@@ -69,6 +68,15 @@ void player_update(Entity* self) {
 
 	p_data = self->data;
 	
+	switch (p_data->moveType) {
+		case LEFT:
+			self->dir.x = 1;
+			break;
+		case RIGHT:
+			self->dir.x = 0;
+			break;
+	}
+
 	update_hurtbox(self);
 	gf2d_draw_rect(self->hurtbox.s.r, GFC_COLOR_RED);
 }
@@ -93,7 +101,7 @@ void player_move(Entity* self) {
 
 		self->position.x -= self->velocity.x;
 
-		if (self->velocity.x <= self->max_velocity.x)
+		if (self->velocity.x <= self->max_velocity.x && !p_data->jump_flag)
 			self->velocity.x += self->accel.x;
 	}
 	if (gfc_input_command_down("moveright") && !gfc_input_command_pressed("moveleft")) {
@@ -102,22 +110,30 @@ void player_move(Entity* self) {
 
 		self->position.x += self->velocity.x;
 
-		if (self->velocity.x <= self->max_velocity.x)
+		if (self->velocity.x <= self->max_velocity.x && !p_data->jump_flag)
 			self->velocity.x += self->accel.x;
 	}
 
 	// sliding effect
 	if (p_data->state == SLOWDOWN) {
-		if (p_data->moveType == RIGHT)
-			self->position.x += self->velocity.x / 5.0f;
-		else if (p_data->moveType == LEFT)
-			self->position.x -= self->velocity.x / 5.0f;
+		if (p_data->jump_flag){
+			if (p_data->moveType == RIGHT)
+				self->position.x += self->velocity.x;
+			else if (p_data->moveType == LEFT)
+				self->position.x -= self->velocity.x;
+		}
+		else {
+			if (p_data->moveType == RIGHT)
+				self->position.x += self->velocity.x;
+			else if (p_data->moveType == LEFT)
+				self->position.x -= self->velocity.x;
 
-		self->velocity.x -= 0.25f;
-		if (self->velocity.x < 0) {
-			self->velocity.x = 0;
-			p_data->moveType = NONE;
-			p_data->state = IDLE;
+			self->velocity.x -= 0.17f;
+			if (self->velocity.x < 0) {
+				self->velocity.x = 0;
+				p_data->moveType = NONE;
+				p_data->state = IDLE;
+			}
 		}
 	}
 
@@ -129,14 +145,16 @@ void player_move(Entity* self) {
 	}
 
 	if (p_data->jump_flag) {
-		self->position.y -= self->velocity.y;
-
-		self->velocity.y -= GRAVITY;
 		if (ground_collision(self)) {
 			self->position.y = 349.0f;
 			self->velocity.y = 0;
 			p_data->jump_flag = 0;
 		}
+
+		self->position.y -= self->velocity.y;
+
+		self->velocity.y -= GRAVITY;
+
 
 	}
 }

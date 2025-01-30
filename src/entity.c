@@ -44,8 +44,6 @@ void entity_system_close() {
 }
 
 void entity_draw(Entity* self) {
-    GFC_Matrix3 matrix; // not constructors in C
-
     if (self->draw) self->draw(self);
 
     gf2d_sprite_draw(
@@ -54,7 +52,7 @@ void entity_draw(Entity* self) {
         &self->scale,
         NULL,
         NULL,
-        NULL,
+        &self->dir,
         NULL, 
         0
     );

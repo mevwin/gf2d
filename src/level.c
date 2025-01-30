@@ -57,8 +57,8 @@ Uint8 ground_collision(void* ent) {
 
 	self = (Entity*) ent;
 
-	p1 = gfc_vector2d(0, level_manager.curr_level->ground.y + 10.0f);
-	p2 = gfc_vector2d(1200, level_manager.curr_level->ground.y + 10.0f);
+	p1 = gfc_vector2d(0, level_manager.curr_level->ground.y + 1.0f);
+	p2 = gfc_vector2d(1200, level_manager.curr_level->ground.y + 1.0f);
 
 	edge = gfc_edge_from_vectors(p1, p2);
 
