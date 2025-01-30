@@ -5,7 +5,8 @@
 
 typedef enum PlayerState_E{
 	IDLE,
-	MOVING
+	MOVING,
+	SLOWDOWN
 }PlayerState;
 
 typedef enum PlayerMove_E {
@@ -22,12 +23,11 @@ typedef struct PlayerData_S{
 	PlayerState		state;
 	PlayerMove		moveType;
 
-	GFC_Vector2D	velocity;
-	GFC_Vector2D	max_velocity;
-	GFC_Vector2D	accel;
-
 	float			currHealth;
 	float			maxHealth;
+
+	// movement flags
+	Uint8			jump_flag;
 
 	// TODO: insert resource bar here
 	// maybe add no_move toggle

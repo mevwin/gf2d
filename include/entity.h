@@ -1,8 +1,6 @@
 #ifndef __ENTITY_H__
 #define __ENTITY_H__
 
-#include "gfc_text.h"
-#include "gfc_vector.h"
 #include "gfc_shape.h"
 #include "gf2d_sprite.h"
 
@@ -20,9 +18,14 @@ typedef struct Entity_S{
     Uint8           _inuse;         // flag for memory management
     GFC_TextLine    name;           // name of entity
     GFC_Vector2D    position;       // where it is in space
+    GFC_Vector2D	velocity;
+    GFC_Vector2D	max_velocity;
+    GFC_Vector2D	accel;
+
     GFC_Vector2D    rotation;       // how to rotate it
     GFC_Vector2D    scale;          // stretching
     Sprite*         sprite;         // graphics
+    Uint32          frame;
 
     //behavior
     void (*think)   (struct Entity_S *self);    // called every frame for the entity to decide things
@@ -75,5 +78,7 @@ Entity *entity_new();
 void entity_free(Entity* self);
 
 void update_hurtbox(Entity* self);
+
+Uint8 within_bounds(Entity* self);
 
 #endif
