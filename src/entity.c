@@ -101,7 +101,20 @@ void entity_update_all() {
     }
 }
 
-Entity* entity_new(Entity* self) {
+void entity_apply_grav(Entity* self) {
+    if (!self) return;
+    if (self->grav && self->grav_flag) self->grav(self);
+}
+
+void entity_apply_grav_all() {
+    int i;
+    for (i = 0; i < ent_manager.entityMax; i++) {
+        if (!ent_manager.entityList[i]._inuse || !ent_manager.entityList[i].grav_flag) continue;
+        entity_apply_grav(&ent_manager.entityList[i]);
+    }
+}
+
+Entity* entity_new() {
     int i;
     for (i = 0; i < ent_manager.entityMax; i++)
     {

@@ -23,15 +23,19 @@ Entity* player_spawn(GFC_Vector2D position) {
 	gfc_vector2d_copy(player->position, position);
 	player->velocity = gfc_vector2d(0, 0);
 	player->max_velocity = gfc_vector2d(9.0f, 17.0f);
-
 	player->accel = gfc_vector2d(0.08f, 0.2f);
 
 	player->sprite = gf2d_sprite_load_image("images/test.png");
+	
 	player->think = player_think;
 	player->update = player_update;
+	player->grav = player_gravity;
+	player->grav_flag = 1;
+
 	player->scale = gfc_vector2d(1, 1);
 	player->dir = gfc_vector2d(0, 0);
 	player->free = player_free;
+
 	update_hurtbox(player);
 	update_boundbox(player);
 	//player->bounds.s.r = gfc_rect(0, 0, 1200, 700);
@@ -73,8 +77,6 @@ void player_update(Entity* self) {
 	p_data = self->data;
 	if (!p_data) return;
 
-	bottom = get_bottom_edge(self->boundbox.s.r);
-
 	switch (p_data->moveType) {
 		case LEFT:
 			self->dir.x = 1;
@@ -86,17 +88,18 @@ void player_update(Entity* self) {
 
 	update_hurtbox(self);
 	update_boundbox(self);
-
-	player_gravity(self);
+	bottom = get_bottom_edge(self->boundbox.s.r);
 
 	/*DEBUG: center checking*/
-	//gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
+	gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
 
+	/*
 	gf2d_draw_line(
 		gfc_vector2d(bottom.x1, bottom.y1),
 		gfc_vector2d(bottom.x2, bottom.y2),
 		GFC_COLOR_RED
 	);
+	*/
 
 	gf2d_draw_line(
 		gfc_vector2d(0, self->position.y),
@@ -205,13 +208,16 @@ void player_gravity(Entity* self) {
 		if (p_data->jump_flag)
 			p_data->jump_flag = 0;
 
-		self->position.y = ground_level- self->sprite->frame_w / 2.0f + 1.0f;
+		self->position.y = ground_level - self->sprite->frame_w / 2.0f;
 	}
 	else { // falling
-		//slog("%f : %f", bottom.y1, ground_level);
-
-		self->position.y -= self->velocity.y;
-		self->velocity.y -= GRAVITY;
+		//slog("%f, %f", bottom.y1 - self->velocity.y, ground_level);
+		if (bottom.y1 - self->velocity.y >= ground_level) // check to make sure not to clip through ground
+			self->position.y = ground_level - self->boundbox.s.r.h / 2.0f;
+		else {
+			self->position.y -= self->velocity.y;
+			self->velocity.y -= GRAVITY;
+		}
 
 		if (ground_collision(self) && p_data->jump_flag)
 			p_data->jump_flag = 0;

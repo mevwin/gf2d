@@ -27,13 +27,15 @@ typedef struct Entity_S{
     GFC_Vector2D    dir;
     Sprite*         sprite;         // graphics
     Uint32          frame;
+    Uint8           grav_flag;
 
     //behavior
     void (*think)   (struct Entity_S *self);    // called every frame for the entity to decide things
     void (*update)  (struct Entity_S *self);    // called every frame for the entity to update its state
 
     void (*free)    (struct Entity_S *self);    // called when the entity is cleaned up
-    void (*draw)    (struct Entity_S* self);    // for custom draw calls
+    void (*draw)    (struct Entity_S *self);    // for custom draw calls
+    void (*grav)    (struct Entity_S *self);
     void*           data;                       // entity data
 
     GFC_Shape       hurtbox;                    // for entity interaction
@@ -65,6 +67,8 @@ void entity_think_all();
  * @brief let all active entities update
  */
 void entity_update_all();
+
+void entity_apply_grav_all();
 
 /**
  * @brief allocated a blank entity for use

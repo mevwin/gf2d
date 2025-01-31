@@ -38,6 +38,7 @@ void world_close() {
 void world_update() {
 	level_update();
 
+	entity_apply_grav_all();
 	entity_think_all();
 	entity_update_all();
 	entity_draw_all();
