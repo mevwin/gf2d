@@ -88,9 +88,8 @@ void player_move(Entity* self) {
 
 	p_data = self->data;
 
-	/* BASE MOVEMENT*/
-	if (gfc_input_command_released("moveleft") || gfc_input_command_released("moveright")) {
-		if (self->velocity.x > 0)
+	/* BASE MOVEMENT */
+	if ((gfc_input_command_released("moveleft") || gfc_input_command_released("moveright")) && self->velocity.x > 0) {
 			p_data->state = SLOWDOWN;
 	}
 
@@ -137,23 +136,24 @@ void player_move(Entity* self) {
 		}
 	}
 
-	/* JUMP*/
+	/* JUMP */
 	if (keys[SDL_SCANCODE_SPACE] && !p_data->jump_flag) {
 		// go up
 		self->velocity.y = self->max_velocity.y;
 		p_data->jump_flag = 1;
 	}
 
+	//
 	if (p_data->jump_flag) {
 		if (ground_collision(self)) {
 			self->position.y = 349.0f;
 			self->velocity.y = 0;
 			p_data->jump_flag = 0;
 		}
-
-		self->position.y -= self->velocity.y;
-
-		self->velocity.y -= GRAVITY;
+		else {
+			self->position.y -= self->velocity.y;
+			self->velocity.y -= GRAVITY;
+		}
 
 
 	}
