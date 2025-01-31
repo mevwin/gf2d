@@ -79,6 +79,18 @@ void player_update(Entity* self) {
 
 	update_hurtbox(self);
 	gf2d_draw_rect(self->hurtbox.s.r, GFC_COLOR_RED);
+
+	/*DEBUG: center checking*/
+	gf2d_draw_line(
+		gfc_vector2d(0, self->position.y),
+		gfc_vector2d(1200, self->position.y),
+		GFC_COLOR_BLUE
+	);
+	gf2d_draw_line(
+		gfc_vector2d(self->position.x, 0),
+		gfc_vector2d(self->position.x, 720),
+		GFC_COLOR_BLUE
+	);
 }
 
 void player_move(Entity* self) {

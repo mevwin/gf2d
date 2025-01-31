@@ -18,7 +18,12 @@ static WorldManager world_manager = { 0 };
 void world_close();
 
 void world_init() {
-	world_manager.player = player_spawn(gfc_vector2d(400, 349));
+	Level* level;
+
+	level_manager_init();
+
+	level = get_curr_level();
+	world_manager.player = player_spawn(level->player_spawn);
 
 
 

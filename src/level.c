@@ -35,8 +35,9 @@ Level* level_load(Uint8 index) {
 
 	level = gfc_allocate_array(sizeof(Level), 1);
 
-	level->room_num = 0;
+	//level->room_num = 0;
 	level->ground = gfc_rect(0, 600, 1200, 120);
+	level->player_spawn = gfc_vector2d(600, 200);
 
 	return level;
 }
@@ -48,6 +49,10 @@ void level_update() {
 
 void level_close(Level* level) {
 
+}
+
+Level* get_curr_level() {
+	return level_manager.curr_level;
 }
 
 Uint8 ground_collision(void* ent) {

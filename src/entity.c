@@ -44,11 +44,20 @@ void entity_system_close() {
 }
 
 void entity_draw(Entity* self) {
+    GFC_Vector2D offset, position;
+
     if (self->draw) self->draw(self);
 
+    offset = gfc_vector2d(self->sprite->frame_w, self->sprite->frame_h);
+    offset.x /= 2.0f;
+    offset.y /= 2.0f;
+
+    gfc_vector2d_sub(position, self->position, offset);
+
+    // TODO: change sprite offset
     gf2d_sprite_draw(
         self->sprite,
-        self->position,
+        position,
         &self->scale,
         NULL,
         NULL,
@@ -120,8 +129,15 @@ void entity_free(Entity* self) {
 }
 
 void update_hurtbox(Entity* self) {
-    self->hurtbox.s.r = gfc_rect(self->position.x, 
-                                 self->position.y,
+    GFC_Vector2D offset, position;
+
+    offset = gfc_vector2d(self->sprite->frame_w, self->sprite->frame_h);
+    offset.x /= 2.0f;
+    offset.y /= 2.0f;
+
+    gfc_vector2d_sub(position, self->position, offset);
+    self->hurtbox.s.r = gfc_rect(position.x, 
+                                 position.y,
                                  self->sprite->frame_w,
                                  self->sprite->frame_h
         );

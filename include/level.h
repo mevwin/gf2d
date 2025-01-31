@@ -8,17 +8,27 @@ typedef enum LevelType_E {
 }LevelType;
 
 typedef struct Level_S {
-	LevelType		level_type;
+	//LevelType		level_type;
+
+	// level contents
+	//GFC_List*		enemy_list;
+
+	// idk yet
+	//GFC_List*		rooms;
+	//Uint8			room_num;
+
+	// positioning
 	GFC_Rect		ground;
-	GFC_List*		enemy_list;
-	GFC_List*		rooms;
-	Uint8			room_num;
+	GFC_Vector2D	player_spawn;
+	//GFC_List*		enemy_spawns;
+	//GFC_List*		item_spawns;
 }Level;
 
 void level_manager_init();
 Level* level_load(Uint8 index);
 void level_update();
 void level_close(Level* level);
+Level* get_curr_level();
 Uint8 ground_collision(void* ent);
 
 #endif 

@@ -43,7 +43,6 @@ int main(int argc, char * argv[])
 
     entity_system_init(MAX_ENTITY);
     world_init();
-    level_manager_init();
 
     /*main game loop*/
     while(!done)
