@@ -29,6 +29,7 @@ Level* level_load(Uint8 index);
 void level_update();
 void level_close(Level* level);
 Level* get_curr_level();
+float get_ground_level();
 Uint8 ground_collision(void* ent);
 
 #endif 

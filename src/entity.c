@@ -142,3 +142,19 @@ void update_hurtbox(Entity* self) {
                                  self->sprite->frame_h
         );
 }
+
+void update_boundbox(Entity* self) {
+    // TODO: change later
+    gfc_rect_copy(self->boundbox.s.r, self->hurtbox.s.r);   
+}
+
+GFC_Edge2D get_bottom_edge(GFC_Rect box) {
+    GFC_Edge2D edge;
+
+    edge = gfc_edge_from_vectors(
+        gfc_vector2d(box.x, box.y + box.h),
+        gfc_vector2d(box.x + box.w, box.y + box.h) 
+    );
+
+    return edge;
+}

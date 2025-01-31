@@ -9,6 +9,7 @@
 void player_move(Entity* self);
 void player_free(Entity* self);
 PlayerData* player_data_init(Entity* self);
+void player_gravity(Entity* self);
 
 Entity* player_spawn(GFC_Vector2D position) {
 	Entity* player;
@@ -22,7 +23,6 @@ Entity* player_spawn(GFC_Vector2D position) {
 	gfc_vector2d_copy(player->position, position);
 	player->velocity = gfc_vector2d(0, 0);
 	player->max_velocity = gfc_vector2d(9.0f, 17.0f);
-	player->velocity.y = player->max_velocity.y;
 
 	player->accel = gfc_vector2d(0.08f, 0.2f);
 
@@ -32,7 +32,10 @@ Entity* player_spawn(GFC_Vector2D position) {
 	player->scale = gfc_vector2d(1, 1);
 	player->dir = gfc_vector2d(0, 0);
 	player->free = player_free;
-	player->bounds.s.r = gfc_rect(0, 0, 1200, 700);
+	update_hurtbox(player);
+	update_boundbox(player);
+	//player->bounds.s.r = gfc_rect(0, 0, 1200, 700);
+
 
 	player->data = player_data_init(player);
 	p_data = player->data;
@@ -65,9 +68,13 @@ void player_think(Entity* self) {
 
 void player_update(Entity* self) {
 	PlayerData* p_data;
+	GFC_Edge2D bottom;
 
 	p_data = self->data;
-	
+	if (!p_data) return;
+
+	bottom = get_bottom_edge(self->boundbox.s.r);
+
 	switch (p_data->moveType) {
 		case LEFT:
 			self->dir.x = 1;
@@ -78,9 +85,19 @@ void player_update(Entity* self) {
 	}
 
 	update_hurtbox(self);
-	gf2d_draw_rect(self->hurtbox.s.r, GFC_COLOR_RED);
+	update_boundbox(self);
+
+	player_gravity(self);
 
 	/*DEBUG: center checking*/
+	//gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
+
+	gf2d_draw_line(
+		gfc_vector2d(bottom.x1, bottom.y1),
+		gfc_vector2d(bottom.x2, bottom.y2),
+		GFC_COLOR_RED
+	);
+
 	gf2d_draw_line(
 		gfc_vector2d(0, self->position.y),
 		gfc_vector2d(1200, self->position.y),
@@ -99,6 +116,7 @@ void player_move(Entity* self) {
 	keys = SDL_GetKeyboardState(NULL);
 
 	p_data = self->data;
+	if (!p_data) return;
 
 	/* BASE MOVEMENT */
 	if ((gfc_input_command_released("moveleft") || gfc_input_command_released("moveright")) && self->velocity.x > 0) {
@@ -151,11 +169,12 @@ void player_move(Entity* self) {
 	/* JUMP */
 	if (keys[SDL_SCANCODE_SPACE] && !p_data->jump_flag) {
 		// go up
+		//slog("jump");
 		self->velocity.y = self->max_velocity.y;
 		p_data->jump_flag = 1;
 	}
 
-	//
+	/*
 	if (p_data->jump_flag) {
 		if (ground_collision(self)) {
 			self->position.y = 349.0f;
@@ -166,9 +185,38 @@ void player_move(Entity* self) {
 			self->position.y -= self->velocity.y;
 			self->velocity.y -= GRAVITY;
 		}
-
-
 	}
+	*/
+}
+
+void player_gravity(Entity* self) {
+	PlayerData* p_data;
+	GFC_Edge2D bottom;
+	float ground_level;
+
+	p_data = self->data;
+	if (!p_data) return;
+
+	ground_level = get_ground_level();
+	bottom = get_bottom_edge(self->boundbox.s.r);
+
+	if (ground_collision(self) && !p_data->jump_flag) { // grounded
+		self->velocity.y = 0;
+		if (p_data->jump_flag)
+			p_data->jump_flag = 0;
+
+		self->position.y = ground_level- self->sprite->frame_w / 2.0f + 1.0f;
+	}
+	else { // falling
+		//slog("%f : %f", bottom.y1, ground_level);
+
+		self->position.y -= self->velocity.y;
+		self->velocity.y -= GRAVITY;
+
+		if (ground_collision(self) && p_data->jump_flag)
+			p_data->jump_flag = 0;
+	}
+		
 }
 
 void player_free(Entity* self) {

@@ -36,8 +36,8 @@ typedef struct Entity_S{
     void (*draw)    (struct Entity_S* self);    // for custom draw calls
     void*           data;                       // entity data
 
-    GFC_Shape       hurtbox;
-    GFC_Shape       bounds;
+    GFC_Shape       hurtbox;                    // for entity interaction
+    GFC_Shape       boundbox;                     // for collision detection
 }Entity;
 
 /**
@@ -80,6 +80,8 @@ void entity_free(Entity* self);
 
 void update_hurtbox(Entity* self);
 
-Uint8 within_bounds(Entity* self);
+void update_boundbox(Entity* self);
+
+GFC_Edge2D get_bottom_edge(GFC_Rect box);
 
 #endif

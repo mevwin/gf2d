@@ -55,24 +55,25 @@ Level* get_curr_level() {
 	return level_manager.curr_level;
 }
 
+float get_ground_level() {
+	return level_manager.curr_level->ground.y;
+}
+
 Uint8 ground_collision(void* ent) {
 	Entity* self;
-	GFC_Edge2D edge;
+	GFC_Edge2D edge, bottom;
 	GFC_Vector2D p1, p2;
 
 	self = (Entity*) ent;
+	if (!self) {
+		slog("no entity");
+		return 0;
+	}
 
 	p1 = gfc_vector2d(0, level_manager.curr_level->ground.y + 1.0f);
 	p2 = gfc_vector2d(1200, level_manager.curr_level->ground.y + 1.0f);
 
 	edge = gfc_edge_from_vectors(p1, p2);
 
-	if (gfc_edge_rect_intersection(
-			edge,
-			self->hurtbox.s.r))
-	{
-		return 1;
-	}
-	else
-		return 0;
+	return gfc_edge_intersect(get_bottom_edge(self->boundbox.s.r), edge);
 }
