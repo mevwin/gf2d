@@ -6,7 +6,8 @@
 typedef enum PlayerState_E{
 	IDLE,
 	MOVING,
-	SLOWDOWN
+	SLOWDOWN,
+	DODGE
 }PlayerState;
 
 typedef enum PlayerMove_E {
@@ -27,7 +28,10 @@ typedef struct PlayerData_S{
 
 	// movement flags
 	Uint8			jump_flag;
+	Uint8			djump_flag;
 	Uint8			turnaround;
+	int				dodge_charges;
+	int				max_dodge_charges;
 
 	// TODO: insert resource bar here
 	// maybe add no_move toggle

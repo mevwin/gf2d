@@ -76,11 +76,11 @@ Uint8 ground_collision(void* ent) {
 	p2 = gfc_vector2d(1200, level_manager.curr_level->ground.y - 1.0f);
 
 	edge = gfc_edge_from_vectors(p1, p2);
-
+	
 	if (roundf(bottom.y1) >= edge.y1) {
 		return 1;
 	}
 	else return 0;
 
-	//return gfc_edge_intersect(get_bottom_edge(self->boundbox.s.r), edge);
+	//return gfc_edge_intersect(bottom, edge);
 }
