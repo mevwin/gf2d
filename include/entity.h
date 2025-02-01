@@ -21,13 +21,13 @@ typedef struct Entity_S{
     GFC_Vector2D	velocity;
     GFC_Vector2D	max_velocity;
     GFC_Vector2D	accel;
+    Uint8           grav_flag;      // apply gravity to entity?
 
     GFC_Vector2D    rotation;       // how to rotate it
     GFC_Vector2D    scale;          // stretching
-    GFC_Vector2D    dir;
+    GFC_Vector2D    dir;            // the direction the entity is facing at
     Sprite*         sprite;         // graphics
     Uint32          frame;
-    Uint8           grav_flag;
 
     //behavior
     void (*think)   (struct Entity_S *self);    // called every frame for the entity to decide things
@@ -35,11 +35,11 @@ typedef struct Entity_S{
 
     void (*free)    (struct Entity_S *self);    // called when the entity is cleaned up
     void (*draw)    (struct Entity_S *self);    // for custom draw calls
-    void (*grav)    (struct Entity_S *self);
+    void (*grav)    (struct Entity_S *self);    // for custom gravity
     void*           data;                       // entity data
 
     GFC_Shape       hurtbox;                    // for entity interaction
-    GFC_Shape       boundbox;                     // for collision detection
+    GFC_Shape       boundbox;                   // for collision detection
 }Entity;
 
 /**
@@ -68,6 +68,9 @@ void entity_think_all();
  */
 void entity_update_all();
 
+/**
+ * @brief apply gravity to all entities
+ */
 void entity_apply_grav_all();
 
 /**

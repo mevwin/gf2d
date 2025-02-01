@@ -17,7 +17,6 @@ typedef enum PlayerMove_E {
 	NONE
 }PlayerMove;
 
-
 typedef struct PlayerData_S{
 	GFC_Vector2D	spawn_pos;
 	PlayerState		state;
@@ -28,6 +27,7 @@ typedef struct PlayerData_S{
 
 	// movement flags
 	Uint8			jump_flag;
+	Uint8			turnaround;
 
 	// TODO: insert resource bar here
 	// maybe add no_move toggle
