@@ -56,8 +56,11 @@ PlayerData* player_data_init(Entity* self) {
 	gfc_vector2d_copy(p_data->spawn_pos, self->position);
 	p_data->state = IDLE;
 	p_data->moveType = NONE;
+	p_data->jump_count = 0;
+	p_data->max_jumps = 2;
 	p_data->dodge_charges = 2;
 	p_data->max_dodge_charges = 2;
+	p_data->dodge_vel = gfc_vector2d(14.0f, 18.0f);
 
 	return p_data;
 }
@@ -186,33 +189,35 @@ void player_move(Entity* self) {
 		else if (gfc_input_command_pressed("moveleft") || self->dir.x == 1)
 			p_data->moveType = LEFT;
 		
+
+
+
 		p_data->state = DODGE;
+
+		self->velocity.x = p_data->dodge_vel.x;
 		if (!ground_collision(self)) {
 			p_data->dodge_charges--;
-			self->velocity.x = 12.0f;
+			self->velocity.x = p_data->dodge_vel.y;
 		}
-		else
-			self->velocity.x = 13.0f;
-
 		self->velocity.y = 0;
-
 	}
 
 	/* JUMP */
 	/*NOTE: positive vertical movement is negative*/
-	if (gfc_input_command_pressed("jump") && (!p_data->jump_flag || !p_data->djump_flag)) {
+	if (gfc_input_command_pressed("jump") && p_data->jump_count < p_data->max_jumps) {
 		
 		// go up
 		self->velocity.y = self->max_velocity.y;
-		if (!p_data->jump_flag)
-			p_data->jump_flag = 1;
-		else 
-			p_data->djump_flag = 1;
+		p_data->jump_count++;
 	}
 
-	// big-ass state check
-	if (p_data->state == MOVING) // regular movement
+	// big-ass state check to actually apply the movement
+	if (p_data->state == MOVING) { // regular movement
+		if (self->velocity.x > self->max_velocity.x)
+			self->velocity.x -= 0.1f;
+
 		self->position.x += p_data->moveType == RIGHT ? self->velocity.x : -self->velocity.x;
+	}
 	else if (p_data->state == SLOWDOWN) { 
 		// sliding effect
 		self->position.x += p_data->moveType == RIGHT ?
@@ -220,10 +225,7 @@ void player_move(Entity* self) {
 
 		// if on ground, apply friction
 		if (ground_collision(self) && self->velocity.x > 0) {
-			if (p_data->turnaround)
-				self->velocity.x -= 0.5f;
-			else
-				self->velocity.x -= 0.17f;
+			self->velocity.x -= p_data->turnaround ? 0.5f : 0.17f;
 
 			if (self->velocity.x < 0) {
 				self->velocity.x = 0;
@@ -244,13 +246,15 @@ void player_move(Entity* self) {
 		self->position.x += p_data->moveType == RIGHT ?
 							self->velocity.x : -self->velocity.x;
 
-		self->velocity.x -= 0.2f;
-		if (self->velocity.x < 4.0f) {
-			self->velocity.x = 4.0f;
+		self->velocity.x -= 0.4f;
+		if (p_data->jump_count > 1 && !ground_collision(self))
+			p_data->state = MOVING;
+		else if (!p_data->jump_count && ground_collision(self))
+			p_data->state = SLOWDOWN;
+		else if (self->velocity.x < 6.0f) {
+			self->velocity.x = 6.0f;
 			p_data->state = SLOWDOWN;
 		}
-		else if (self->velocity.x > 4.0f && self->velocity.x < 8.0f && p_data->jump_flag)
-			p_data->state = MOVING;
 	}
 }
 
@@ -266,7 +270,7 @@ void player_gravity(Entity* self) {
 	ground_level = get_ground_level();
 	bottom = get_bottom_edge(self->boundbox.s.r);
 
-	if (ground_collision(self) && !p_data->jump_flag) { // grounded
+	if (ground_collision(self) && !p_data->jump_count) { // grounded
 		self->velocity.y = 0;
 
 		if (self->velocity.x == 0)
@@ -279,9 +283,8 @@ void player_gravity(Entity* self) {
 		if (bottom.y1 - self->velocity.y >= ground_level) { // touch ground
 			// check to make sure not to clip through ground
 			self->position.y = ground_level - self->boundbox.s.r.h / 2.0f;
-			p_data->jump_flag = 0;
-			p_data->djump_flag = 0;
 			p_data->dodge_charges = p_data->max_dodge_charges;
+			p_data->jump_count = 0;
 		}
 		else {
 			self->position.y -= self->velocity.y;

@@ -27,11 +27,13 @@ typedef struct PlayerData_S{
 	float			maxHealth;
 
 	// movement flags
-	Uint8			jump_flag;
-	Uint8			djump_flag;
+	Uint8			jump_count;
+	Uint8			max_jumps;
 	Uint8			turnaround;
 	int				dodge_charges;
 	int				max_dodge_charges;
+	GFC_Vector2D	dodge_vel;		// x = grounded, y = aerial
+
 
 	// TODO: insert resource bar here
 	// maybe add no_move toggle
