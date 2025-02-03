@@ -11,8 +11,9 @@ void player_free(Entity* self);
 PlayerData* player_data_init(Entity* self);
 void player_gravity(Entity* self);
 
+static Entity* player;
+
 Entity* player_spawn(GFC_Vector2D position) {
-	Entity* player;
 	PlayerData* p_data;
 
 	player = entity_new();
@@ -302,4 +303,8 @@ void player_free(Entity* self) {
 
 	gf2d_sprite_delete(self->sprite);
 	free(p_data);
+}
+
+GFC_Vector2D* get_player_pos() {
+	return &player->position;
 }

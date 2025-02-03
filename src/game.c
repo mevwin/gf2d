@@ -55,7 +55,7 @@ int main(int argc, char * argv[])
         //slog("mouse: (%i, %i)", mx, my);
         mf+=0.1;
         if (mf >= 16.0)mf = 0;
-        
+
         gf2d_graphics_clear_screen();// clears drawing buffers
         // all drawing should happen betweem clear_screen and next_frame
             //backgrounds drawn first
