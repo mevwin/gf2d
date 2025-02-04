@@ -10,6 +10,7 @@ typedef enum WorldState_E {
 
 void world_init();
 void world_update();
-
+void world_done_change();
+Uint8 world_done_check();
 
 #endif

@@ -89,6 +89,4 @@ void update_hurtbox(Entity* self);
 
 void update_boundbox(Entity* self);
 
-GFC_Edge2D get_bottom_edge(GFC_Rect box);
-
 #endif

@@ -43,6 +43,7 @@ int main(int argc, char * argv[])
 
     entity_system_init(MAX_ENTITY);
     world_init();
+    done = world_done_check();
 
     /*main game loop*/
     while(!done)
@@ -76,6 +77,7 @@ int main(int argc, char * argv[])
 
         gf2d_graphics_next_frame();// render current draw frame and skip to the next frame       
 
+        done = world_done_check();
         if (keys[SDL_SCANCODE_ESCAPE])done = 1; // exit condition
         //slog("Rendering at %f FPS",gf2d_graphics_get_frames_per_second());
     }

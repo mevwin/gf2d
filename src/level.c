@@ -22,6 +22,12 @@ void level_manager_init() {
 
 	// load first level
 	level_manager.curr_level = level_load(0);
+	if (!level_manager.curr_level) {
+		slog("failed to initialiaze first level");
+		world_done_change();
+		level_manager_close();
+		return;
+	}
 
 	atexit(level_manager_close);
 }
@@ -59,6 +65,10 @@ Level* level_load(Uint8 index) {
 	Ground* ground1, *ground2;
 
 	level = gfc_allocate_array(sizeof(Level), 1);
+	if (!level) {
+		slog("failed to initialize level");
+		return NULL;
+	}
 
 	level->ground_list = gfc_list_new();
 	
@@ -76,6 +86,11 @@ Level* level_load(Uint8 index) {
 }
 
 void level_close(Level* level) {
+	if (!level) {
+		slog("no level to close");
+		return;
+	}
+
 	gfc_list_foreach(level->ground_list, free);
 	gfc_list_clear(level->ground_list);
 	gfc_list_delete(level->ground_list);
@@ -115,7 +130,7 @@ void level_find_nearest_ground() {
 		
 		if (player_pos->x >= ground->region.x && player_pos->x < ground->region.y) {
 			level_manager.curr_level->curr_ground = ground;
-			slog("%d", i);
+			return;
 		}
 	}
 }
@@ -131,7 +146,7 @@ Uint8 ground_collision(void* ent) {
 		return 0;
 	}
 
-	bottom = get_bottom_edge(self->boundbox.s.r); // player's bottom edge
+	bottom = get_edge_from_rect(self->boundbox.s.r, 0); // player's bottom edge
 	level_find_nearest_ground();
 
 	p1 = gfc_vector2d(0, level_manager.curr_level->curr_ground->dimensions.y - 1.0f);
@@ -145,4 +160,67 @@ Uint8 ground_collision(void* ent) {
 	else return 0;
 
 	//return gfc_edge_intersect(bottom, edge);
+}
+
+Uint8 wall_collision(void* ent) {
+	Entity* self;
+	GFC_Edge2D g_side, p_side;
+	Ground* ground;
+	int i;
+
+	self = (Entity*)ent;
+	if (!self) {
+		slog("no entity");
+		return 0;
+	}
+
+
+	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
+		ground = (Ground*) gfc_list_nth(level_manager.curr_level->ground_list, i);
+		
+		// check left side first
+		g_side = get_edge_from_rect(ground->dimensions, 3);
+		p_side = get_edge_from_rect(self->boundbox.s.r, 2);
+		if ()
+
+	}
+}
+
+GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side) {
+	GFC_Edge2D edge;
+
+	switch (side) {
+		case 3: // left
+			edge = gfc_edge_from_vectors(
+				gfc_vector2d(box.x, box.y),
+				gfc_vector2d(box.x, box.y + box.h)
+			);
+
+			break;
+
+		case 2: // right
+			edge = gfc_edge_from_vectors(
+				gfc_vector2d(box.x + box.w, box.y),
+				gfc_vector2d(box.x + box.w, box.y)
+			);
+
+			break;
+
+		case 1: // top
+			edge = gfc_edge_from_vectors(
+				gfc_vector2d(box.x, box.y),
+				gfc_vector2d(box.x + box.w, box.y)
+			);
+
+			break;
+
+		default: // bottom
+			edge = gfc_edge_from_vectors(
+				gfc_vector2d(box.x, box.y + box.h),
+				gfc_vector2d(box.x + box.w, box.y + box.h)
+			);
+	}
+
+
+	return edge;
 }

@@ -14,10 +14,11 @@ void player_gravity(Entity* self);
 static Entity* player;
 
 Entity* player_spawn(GFC_Vector2D position) {
-	PlayerData* p_data;
-
 	player = entity_new();
-	if (!player) return NULL;
+	if (!player) {
+		slog("failed to initialize player entity");
+		return NULL;
+	}
 
 	gfc_line_cpy(player->name, "Player");	// change later
 
@@ -27,7 +28,8 @@ Entity* player_spawn(GFC_Vector2D position) {
 	player->accel = gfc_vector2d(0.1f, 0.2f);
 
 	player->sprite = gf2d_sprite_load_image("sprites/test.png");
-	
+	player->frame = 0;
+
 	player->think = player_think;
 	player->update = player_update;
 	player->grav = player_gravity;
@@ -43,7 +45,10 @@ Entity* player_spawn(GFC_Vector2D position) {
 
 
 	player->data = player_data_init(player);
-	p_data = player->data;
+	if (!player->data) {
+		slog("failed to initialize player data");
+		return NULL;
+	}
 
 	return player;
 }
@@ -189,9 +194,6 @@ void player_move(Entity* self) {
 			p_data->moveType = RIGHT;
 		else if (gfc_input_command_pressed("moveleft") || self->dir.x == 1)
 			p_data->moveType = LEFT;
-		
-
-
 
 		p_data->state = DODGE;
 
@@ -217,7 +219,8 @@ void player_move(Entity* self) {
 		if (self->velocity.x > self->max_velocity.x)
 			self->velocity.x -= 0.1f;
 
-		self->position.x += p_data->moveType == RIGHT ? self->velocity.x : -self->velocity.x;
+		self->position.x += p_data->moveType == RIGHT ? 
+							self->velocity.x : -self->velocity.x;
 	}
 	else if (p_data->state == SLOWDOWN) { 
 		// sliding effect
@@ -269,7 +272,7 @@ void player_gravity(Entity* self) {
 	if (p_data->state == DODGE) return;
 
 	ground_level = get_ground_level();
-	bottom = get_bottom_edge(self->boundbox.s.r);
+	bottom = get_edge_from_rect(self->boundbox.s.r, 0);
 
 	if (ground_collision(self) && !p_data->jump_count) { // grounded
 		self->velocity.y = 0;
