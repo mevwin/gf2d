@@ -101,6 +101,9 @@ void player_update(Entity* self) {
 			break;
 	}
 
+	if (wall_collision(self)) {
+		slog("true");
+	}
 	/*DEBUG: center checking*/
 	gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
 
@@ -111,7 +114,7 @@ void player_update(Entity* self) {
 		GFC_COLOR_RED
 	);*/
 	
-
+	/*
 	gf2d_draw_line(
 		gfc_vector2d(0, self->position.y),
 		gfc_vector2d(1200, self->position.y),
@@ -122,6 +125,7 @@ void player_update(Entity* self) {
 		gfc_vector2d(self->position.x, 720),
 		GFC_COLOR_BLUE
 	);
+	*/
 }
 
 void player_move(Entity* self) {
