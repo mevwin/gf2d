@@ -16,6 +16,7 @@ typedef enum EntityType_S{
 
 typedef struct Entity_S{
     Uint8           _inuse;         // flag for memory management
+    EntityType      type;
     GFC_TextLine    name;           // name of entity
     GFC_Vector2D    position;       // where it is in space
     GFC_Vector2D	velocity;
@@ -40,6 +41,7 @@ typedef struct Entity_S{
 
     GFC_Shape       hurtbox;                    // for entity interaction
     GFC_Shape       boundbox;                   // for collision detection
+    GFC_Vector2D    collis_repo;
 }Entity;
 
 /**

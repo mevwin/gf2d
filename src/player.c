@@ -20,6 +20,7 @@ Entity* player_spawn(GFC_Vector2D position) {
 		return NULL;
 	}
 
+	player->type = PLAYER;
 	gfc_line_cpy(player->name, "Player");	// change later
 
 	gfc_vector2d_copy(player->position, position);
@@ -101,9 +102,6 @@ void player_update(Entity* self) {
 			break;
 	}
 
-	if (wall_collision(self)) {
-		slog("true");
-	}
 	/*DEBUG: center checking*/
 	gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
 
@@ -148,7 +146,7 @@ void player_move(Entity* self) {
 
 	/* BASE MOVEMENT */
 	// to help maintain momentum in the air
-	if (!gfc_input_command_pressed("moveright") && !gfc_input_command_pressed("moveleft") 
+	if (!gfc_input_command_pressed("moveright") && !gfc_input_command_pressed("moveleft")
 		&& self->velocity.x > 0 && !ground_collision(self) && p_data->state != DODGE)
 		p_data->state = MOVING;
 
@@ -212,57 +210,65 @@ void player_move(Entity* self) {
 	/* JUMP */
 	/*NOTE: positive vertical movement is negative*/
 	if (gfc_input_command_pressed("jump") && p_data->jump_count < p_data->max_jumps) {
-		
+
 		// go up
 		self->velocity.y = self->max_velocity.y;
 		p_data->jump_count++;
 	}
 
 	// big-ass state check to actually apply the movement
-	if (p_data->state == MOVING) { // regular movement
-		if (self->velocity.x > self->max_velocity.x)
-			self->velocity.x -= 0.1f;
+	if (!wall_collision(self)) {
+		if (p_data->state == MOVING) { // regular movement
+			if (self->velocity.x > self->max_velocity.x)
+				self->velocity.x -= 0.1f;
 
-		self->position.x += p_data->moveType == RIGHT ? 
-							self->velocity.x : -self->velocity.x;
-	}
-	else if (p_data->state == SLOWDOWN) { 
-		// sliding effect
-		self->position.x += p_data->moveType == RIGHT ?
-							self->velocity.x : -self->velocity.x;
+			self->position.x += p_data->moveType == RIGHT ?
+				self->velocity.x : -self->velocity.x;
+		}
+		else if (p_data->state == SLOWDOWN) {
+			// sliding effect
+			self->position.x += p_data->moveType == RIGHT ?
+				self->velocity.x : -self->velocity.x;
 
-		// if on ground, apply friction
-		if (ground_collision(self) && self->velocity.x > 0) {
-			self->velocity.x -= p_data->turnaround ? 0.5f : 0.17f;
+			// if on ground, apply friction
+			if (ground_collision(self) && self->velocity.x > 0) {
+				self->velocity.x -= p_data->turnaround ? 0.5f : 0.17f;
 
-			if (self->velocity.x < 0) {
-				self->velocity.x = 0;
-				p_data->moveType = NONE;
-				p_data->state = IDLE;
+				if (self->velocity.x < 0) {
+					self->velocity.x = 0;
+					p_data->moveType = NONE;
+					p_data->state = IDLE;
+				}
+			}
+			else { // if in air and turning around, slow down
+				self->velocity.x -= 0.7f;
+				if (self->velocity.x < 0) {
+					p_data->moveType = p_data->moveType != RIGHT ? RIGHT : LEFT;
+					p_data->turnaround = 1;
+					self->velocity.x = 0;
+				}
 			}
 		}
-		else{ // if in air and turning around, slow down
-			self->velocity.x -= 0.7f;
-			if (self->velocity.x < 0) {
-				p_data->moveType = p_data->moveType != RIGHT ? RIGHT : LEFT;
-				p_data->turnaround = 1;
-				self->velocity.x = 0;
+		else if (p_data->state == DODGE) {
+			self->position.x += p_data->moveType == RIGHT ?
+				self->velocity.x : -self->velocity.x;
+
+			self->velocity.x -= 0.4f;
+			if (p_data->jump_count > 1 && !ground_collision(self))
+				p_data->state = MOVING;
+			else if (!p_data->jump_count && ground_collision(self))
+				p_data->state = SLOWDOWN;
+			else if (self->velocity.x < 6.0f) {
+				self->velocity.x = 6.0f;
+				p_data->state = SLOWDOWN;
 			}
 		}
 	}
-	else if (p_data->state == DODGE) {
-		self->position.x += p_data->moveType == RIGHT ?
-							self->velocity.x : -self->velocity.x;
-
-		self->velocity.x -= 0.4f;
-		if (p_data->jump_count > 1 && !ground_collision(self))
-			p_data->state = MOVING;
-		else if (!p_data->jump_count && ground_collision(self))
-			p_data->state = SLOWDOWN;
-		else if (self->velocity.x < 6.0f) {
-			self->velocity.x = 6.0f;
-			p_data->state = SLOWDOWN;
-		}
+	else {
+		gfc_vector2d_copy(self->position, self->collis_repo);
+		self->velocity.x = 0;
+		p_data->state = IDLE;
+		p_data->moveType = NONE;
 	}
 }
 
