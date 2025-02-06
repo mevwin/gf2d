@@ -111,6 +111,8 @@ void player_update(Entity* self) {
 			break;
 	}
 
+	wall_collision(self);
+
 	/*DEBUG: center checking*/
 	gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
 

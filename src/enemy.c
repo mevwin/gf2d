@@ -46,8 +46,8 @@ void enemy_spawn(EnemyType type, GFC_Vector2D position) {
 }
 
 void enemy_think(Entity* self) {
-	if (self->velocity.y == 0)
-		self->velocity.y = 9.0f;
+	//if (self->velocity.y == 0)
+		//self->velocity.y = 9.0f;
 
 }
 
