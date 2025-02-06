@@ -44,7 +44,7 @@ typedef struct Level_S {
 	//Uint8			room_num;
 
 	// positioning
-	Ground*			curr_ground;
+	//Ground*			curr_ground;
 	GFC_Vector2D	player_spawn;
 	GFC_List*		ground_list;
 	//GFC_List*		platform_list;
@@ -56,10 +56,10 @@ typedef struct Level_S {
 
 void level_manager_init();
 Level* level_load(Uint8 index);
+
 void level_update();
 void level_close(Level* level);
 Level* get_curr_level();
-float get_ground_level();
 Uint8 ground_collision(void* ent);
 Uint8 wall_collision(Uint8 type, GFC_Edge2D wall, GFC_Edge2D p_side);
 

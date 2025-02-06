@@ -4,6 +4,7 @@
 #include "simple_logger.h"
 #include "world.h"
 #include "player.h"
+#include "enemy.h"
 
 typedef struct LevelManager_S {
 	Level*			curr_level;
@@ -16,8 +17,8 @@ static LevelManager level_manager = { 0 };
 
 void level_manager_close();
 Ground* create_ground(GFC_Rect dimen, GFC_Color color, Uint8 walls);
-void level_find_nearest_ground();
-GFC_Edge2D level_find_nearest_wall(Entity* ent);
+GFC_Rect level_find_nearest_ground(GFC_Vector2D pos);
+//GFC_Edge2D level_find_nearest_wall(Entity* ent);
 
 void level_manager_init() {
 	level_manager.level_list = gfc_list_new();
@@ -86,9 +87,11 @@ Level* level_load(Uint8 index) {
 	ground2 = create_ground(gfc_rect(0, 400, 400, 320), GFC_COLOR_YELLOW, 1);
 	gfc_list_append(level->ground_list, ground2);
 
-	level->curr_ground = gfc_list_nth(level->ground_list, 0);
+	//level->curr_ground = gfc_list_nth(level->ground_list, 0);
 
 	level->player_spawn = gfc_vector2d(600, 200);
+
+	enemy_spawn(BRUISER, gfc_vector2d(300, 200));
 
 	return level;
 }
@@ -122,31 +125,23 @@ Level* get_curr_level() {
 	return level_manager.curr_level;
 }
 
-float get_ground_level() {
-	return level_manager.curr_level->curr_ground->dimensions.y - 1.0f;
-}
-
-void level_find_nearest_ground() {
+GFC_Rect level_find_nearest_ground(GFC_Vector2D pos) {
 	Ground* ground;
-	GFC_Vector2D* player_pos;
 	int i;
-
-	player_pos = get_player_pos();
 
 	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
 		ground = (Ground*) gfc_list_nth(level_manager.curr_level->ground_list, i);
 		
-		if (player_pos->x >= ground->region.x && player_pos->x < ground->region.y) {
-			level_manager.curr_level->curr_ground = ground;
-			return;
-		}
+		if (pos.x >= ground->region.x && pos.x < ground->region.y)
+			return ground->dimensions;
 	}
+	return gfc_rect(-20.0f, 1000.0f, 1800.0f, 200.0f);
 }
 
 Uint8 ground_collision(void* ent) {
 	Entity* self;
 	GFC_Edge2D edge, bottom;
-	GFC_Vector2D p1, p2;
+	GFC_Rect ground;
 
 	self = (Entity*) ent;
 	if (!self) {
@@ -155,11 +150,15 @@ Uint8 ground_collision(void* ent) {
 	}
 
 	bottom = get_edge_from_rect(self->boundbox.s.r, 0); // player's bottom edge
-	level_find_nearest_ground();
+	ground = level_find_nearest_ground(self->position);
 
-	edge = get_edge_from_rect(level_manager.curr_level->curr_ground->dimensions, 1);
+	edge = get_edge_from_rect(ground, 1);
 
-	if (roundf(bottom.y1) >= edge.y1 - 1.0f) {
+	if (roundf(bottom.y1) == edge.y1) { //touching ground
+		return 2;
+	}
+	else if (bottom.y1 - self->velocity.y > edge.y1 - 1.0f) { // about to touch ground
+		self->position.y = edge.y1 - self->boundbox.s.r.h / 2.0f; // check to make sure not to clip through ground
 		return 1;
 	}
 	else return 0;

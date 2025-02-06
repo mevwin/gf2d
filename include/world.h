@@ -3,6 +3,8 @@
 
 #define GRAVITY 0.3f
 
+#include "gfc_types.h"
+
 typedef enum WorldState_E {
 	INGAME,
 	MENU
@@ -12,5 +14,6 @@ void world_init();
 void world_update();
 void world_done_change();
 Uint8 world_done_check();
+void world_append_enemy(void* enemy);
 
 #endif

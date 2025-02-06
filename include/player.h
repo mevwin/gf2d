@@ -40,9 +40,6 @@ typedef struct PlayerData_S{
 }PlayerData;
 
 Entity* player_spawn(GFC_Vector2D position);
-void player_state_change(PlayerState new);
-void player_think(Entity* self);
-void player_update(Entity* self);
 GFC_Vector2D* get_player_pos();
 
 #endif

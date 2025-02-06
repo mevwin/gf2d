@@ -6,6 +6,7 @@
 
 typedef struct WorldManager_S {
 	Entity*			player;
+	GFC_List*		enemy_list;
 	Uint8			_done;
 	// GameState
 
@@ -30,11 +31,11 @@ void world_init() {
 
 	world_manager._done = 0;
 
+	world_manager.enemy_list = gfc_list_new();
 	level_manager_init();
 	level = get_curr_level();
 	world_manager.player = player_spawn(level->player_spawn);
 	if (!world_manager.player) {
-		slog("failed to initialize player");
 		world_manager._done = 1;
 		return;
 	}
@@ -45,6 +46,10 @@ void world_init() {
 void world_close() {
 	entity_system_close();
 
+	gfc_list_clear(world_manager.enemy_list);
+	gfc_list_delete(world_manager.enemy_list);
+
+	memset(&world_manager, 0, sizeof(WorldManager));
 }
 
 void world_update() {
@@ -54,4 +59,16 @@ void world_update() {
 	entity_think_all();
 	entity_update_all();
 	entity_draw_all();
+}
+
+void world_append_enemy(void* enemy) {
+	Entity* enem;
+
+	enem = (Entity*)enemy;
+	if (!enem) {
+		slog("no enemy given");
+		return;
+	}
+
+	gfc_list_append(world_manager.enemy_list, enem);
 }
