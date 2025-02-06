@@ -167,6 +167,12 @@ Uint8 ground_collision(void* ent) {
 	//return gfc_edge_intersect(bottom, edge);
 }
 
+Uint8 wall_collision(Uint8 type, GFC_Edge2D wall, GFC_Edge2D p_side) {
+
+
+}
+
+/*
 GFC_Edge2D level_find_nearest_wall(Entity* ent) {
 	Ground* ground;
 	GFC_Vector2D wall_point, p_point;
@@ -260,6 +266,7 @@ Uint8 wall_collision(void* ent) {
 		}
 	}
 }
+*/
 
 GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side) {
 	GFC_Edge2D edge;

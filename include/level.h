@@ -61,7 +61,7 @@ void level_close(Level* level);
 Level* get_curr_level();
 float get_ground_level();
 Uint8 ground_collision(void* ent);
-Uint8 wall_collision(void* ent);
+Uint8 wall_collision(Uint8 type, GFC_Edge2D wall, GFC_Edge2D p_side);
 
 /**
 * @param side: 3 = left, 2 = right, 1 = top, 0 = bottom 
