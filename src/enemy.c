@@ -61,13 +61,9 @@ void enemy_gravity(Entity* self) {
 	bottom = get_edge_from_rect(self->boundbox.s.r, 0);
 
 	if (ground_collision(self) == 2 && self->velocity.y == 0) { // grounded
-
+		//  uhhhh....
 	}
-	else if (ground_collision(self) == 1) { // landing\
-				// check to make sure not to clip through ground
-		//slog("landing");
-		//p_data->dodge_charges = p_data->max_dodge_charges;
-		//p_data->jump_count = 0;
+	else if (ground_collision(self) == 1) { // landing
 		self->velocity.y = 0;
 	}
 	else {

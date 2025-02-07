@@ -153,6 +153,7 @@ GFC_Rect level_find_nearest_ground(Entity* ent) {
 
 Uint8 ground_collision(void* ent) {
 	Entity* self;
+	PlayerData* p_data;
 	GFC_Edge2D edge, bottom;
 	GFC_Rect ground;
 
@@ -172,9 +173,16 @@ Uint8 ground_collision(void* ent) {
 		self->position.y = edge.y1 - self->boundbox.s.r.h / 2.0f; // check to make sure not to clip through ground
 		return 1;
 	}
-	else return 0;
+	else {
+		p_data = self->data;
+		if (!p_data) return 0;
+		
+		// increment jump counter by 1 to avoid the MultiVersus DJ
+		if (!p_data->jump_count)
+			p_data->jump_count++;
 
-	//return gfc_edge_intersect(bottom, edge);
+		return 0;
+	}
 }
 
 Uint8 wall_collision(void* ent, Uint8 wall_type) {
@@ -192,7 +200,7 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 
 	wall = level_find_nearest_wall(self, wall_type);
 	if (!wall){
-		slog("no wall found");
+		//slog("no wall found");
 		return 0;
 	}
 
@@ -202,21 +210,19 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 	offset = 1.0f;
 
 	if (roundf(p_side.x1) == wall->dimensions.x1) { // touching wall
-		slog("hugging wall");
+		//slog("hugging wall");
 		return 2;
 	}
 	else if (wall_type && p_side.x1 - self->velocity.x < wall->dimensions.x1 + offset) { //right side
-		//self->position.x = wall->dimensions.x1 + self->boundbox.s.r.h / 2.0f;
-		slog("about to touch right wall");
+		//slog("about to touch right wall");
 		return 1;
 	}
 	else if (!wall_type && p_side.x1 + self->velocity.x > wall->dimensions.x1 - offset) {// left side
-		//self->position.x = wall->dimensions.x1 - self->boundbox.s.r.h / 2.0f;
-		slog("about to touch left wall");
+		//slog("about to touch left wall");
 		return 1;
 	}
 	else {
-		slog("not touching wall");
+		//slog("not touching wall");
 		return 0;
 	}
 }
@@ -225,7 +231,7 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
 	Ground* ground;
 	Wall* wall;
-	GFC_Vector2D wall_point, p_point, p1, p2;
+	GFC_Vector2D wall_point, p_point; //, p1, p2;
 	GFC_Edge2D p_side, p_bottom;
 	GFC_Color color;
 	int i;
@@ -248,9 +254,9 @@ Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
 
 		wall = wall_type ? ground->wall_right : ground->wall_left;
 
-		p1 = gfc_vector2d(wall->dimensions.x1, 0);
-		p2 = gfc_vector2d(wall->dimensions.x2, 1200);
-		gf2d_draw_line(p1, p2, GFC_COLOR_GREEN);
+		//p1 = gfc_vector2d(wall->dimensions.x1, 0);
+		//p2 = gfc_vector2d(wall->dimensions.x2, 1200);
+		//gf2d_draw_line(p1, p2, GFC_COLOR_GREEN);
 
 		if (p_bottom.y1 > wall->dimensions.y1) { // && p_top.y1 <= wall->dimensions.y2
 			wall_point = gfc_vector2d(wall->dimensions.x1, ent->position.y);
@@ -267,56 +273,9 @@ Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
 		}
 	}
 
-	//("false");
+
 	return NULL; // if no wall is found
 }
-
-/*
-Uint8 wall_collision(void* ent) {
-	Entity* self;
-	GFC_Edge2D nearest, e_side;
-	Uint8 wall_type;
-	int i;
-	float offset;
-
-	self = (Entity*)ent;
-	if (!self) {
-		slog("no entity");
-		return 0;
-	}
-
-	nearest = level_find_nearest_wall(self);
-	if (nearest.x1 == -1) { // no wall found
-		return 0;
-	}
-	else { // wall found, see if player is hitting it
-		offset = 3.0f;
-		
-		wall_type = level_manager.w_collision ? 3 : 2;
-		e_side = get_edge_from_rect(self->boundbox.s.r, wall_type);
-
-		if (self->velocity.x > 0)
-			e_side.x1 += wall_type == 3 ? self->velocity.x : -self->velocity.x;
-		
-		//slog("wall %f : player %f", nearest.x1, e_side.x1);
-
-		if (wall_type == 2 && roundf(e_side.x1) >= nearest.x1 - offset) {
-			self->collis_repo = gfc_vector2d(self->position.x - offset, self->position.y);
-			slog("left wall collision");
-			return 1;
-		}
-		else if (wall_type == 3 && roundf(e_side.x1) <= nearest.x1 + offset) {
-			self->collis_repo = gfc_vector2d(self->position.x + offset, self->position.y);
-			slog("right wall collision");
-			return 1;
-		}
-		else {
-			//slog("wall found but no collision");
-			return 0;
-		}
-	}
-}
-*/
 
 GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side) {
 	GFC_Edge2D edge;
