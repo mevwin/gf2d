@@ -111,8 +111,6 @@ void player_update(Entity* self) {
 			break;
 	}
 
-	wall_collision(self);
-
 	/*DEBUG: center checking*/
 	gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
 
@@ -139,6 +137,7 @@ void player_update(Entity* self) {
 
 void player_move(Entity* self) {
 	PlayerData* p_data;
+	Uint8 i;
 
 	p_data = self->data;
 	if (!p_data) return;
@@ -158,7 +157,7 @@ void player_move(Entity* self) {
 	/* BASE MOVEMENT */
 	// to help maintain momentum in the air
 	if (!gfc_input_command_pressed("moveright") && !gfc_input_command_pressed("moveleft")
-		&& self->velocity.x > 0 && ground_collision(self) == 0 && p_data->state != DODGE)
+		&& self->velocity.x > 0 && !ground_collision(self) && p_data->state != DODGE)
 		p_data->state = MOVING;
 
 	if ((gfc_input_command_released("moveleft") || gfc_input_command_released("moveright"))
@@ -178,10 +177,12 @@ void player_move(Entity* self) {
 		else
 			p_data->moveType = LEFT;
 
-		if (self->velocity.x <= self->max_velocity.x) // ground
-			self->velocity.x += self->accel.x;
-		else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
-			self->velocity.x += self->accel.y;
+		if (!wall_collision(self, 1)) {
+			if (self->velocity.x <= self->max_velocity.x) // ground
+				self->velocity.x += self->accel.x;
+			else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
+				self->velocity.x += self->accel.y;
+		}
 	}
 	else if ((gfc_input_command_down("moveright") || gfc_input_command_pressed("moveright"))
 		&& !gfc_input_command_pressed("moveleft") && p_data->state != DODGE) {
@@ -195,10 +196,12 @@ void player_move(Entity* self) {
 		else
 			p_data->moveType = RIGHT;
 
-		if (self->velocity.x <= self->max_velocity.x) // ground
-			self->velocity.x += self->accel.x;
-		else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
-			self->velocity.x += self->accel.y;
+		if (!wall_collision(self, 0)) {
+			if (self->velocity.x <= self->max_velocity.x) // ground
+				self->velocity.x += self->accel.x;
+			else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
+				self->velocity.x += self->accel.y;
+		}
 	}
 
 	/* DODGE */
@@ -210,10 +213,12 @@ void player_move(Entity* self) {
 
 		p_data->state = DODGE;
 
-		self->velocity.x = p_data->dodge_vel.x;
-		if (!ground_collision(self)) {
-			p_data->dodge_charges--;
-			self->velocity.x = p_data->dodge_vel.y;
+		if (!wall_collision(self, self->dir.x)) {
+			self->velocity.x = p_data->dodge_vel.x;
+			if (!ground_collision(self)) {
+				p_data->dodge_charges--;
+				self->velocity.x = p_data->dodge_vel.y;
+			}
 		}
 		self->velocity.y = 0;
 	}

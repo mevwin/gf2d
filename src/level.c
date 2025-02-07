@@ -169,7 +169,7 @@ Uint8 ground_collision(void* ent) {
 	//return gfc_edge_intersect(bottom, edge);
 }
 
-Uint8 wall_collision(void* ent) {
+Uint8 wall_collision(void* ent, Uint8 wall_type) {
 	Entity* self;
 	Wall* wall;
 	GFC_Edge2D p_side;
@@ -188,19 +188,24 @@ Uint8 wall_collision(void* ent) {
 		return;
 	}
 
-	side_type = wall->type ? 3 : 2;  // right
+	side_type = wall_type ? 3 : 2;  // right
 	p_side = get_edge_from_rect(self->boundbox.s.r, side_type);
-	p_side.x1 += wall->type ? -self->velocity.x : self->velocity.x;
-	offset = wall->type ? 1.0f : -1.0f;
+	offset = 2.0f;
 
 	if (roundf(p_side.x1) == wall->dimensions.x1) { // touching wall
 		slog("hugging wall");
 		return 2;
 	}
-	else if (p_side.x1 > wall->dimensions.x1 + offset) {
-		self->position.x = wall->dimensions.x1; 
-		self->position.x += wall->type ? self->boundbox.s.r.h / 2.0f : -self->boundbox.s.r.h / 2.0f;
-		slog("about to touch wall");
+	else if (wall_type && p_side.x1 - self->velocity.x < wall->dimensions.x1 + offset) { //right side
+		//self->position.x = wall->dimensions.x1 + self->boundbox.s.r.h / 2.0f;
+		self->velocity.x = 0;
+		slog("about to touch right wall");
+		return 1;
+	}
+	else if (!wall_type && p_side.x1 + self->velocity.x > wall->dimensions.x1 - offset) {// left side
+		//self->position.x = wall->dimensions.x1 - self->boundbox.s.r.h / 2.0f;
+		self->velocity.x = 0;
+		slog("about to touch left wall");
 		return 1;
 	}
 	else return 0;

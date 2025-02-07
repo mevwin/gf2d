@@ -61,7 +61,7 @@ void level_update();
 void level_close(Level* level);
 Level* get_curr_level();
 Uint8 ground_collision(void* ent);
-Uint8 wall_collision(void* ent);
+Uint8 wall_collision(void* ent, Uint8 wall_type); // left = 0, right = 1
 
 /**
 * @param side: 3 = left, 2 = right, 1 = top, 0 = bottom 
