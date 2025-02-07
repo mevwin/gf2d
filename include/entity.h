@@ -42,7 +42,6 @@ typedef struct Entity_S{
 
     GFC_Shape       hurtbox;                    // for entity interaction
     GFC_Shape       boundbox;                   // for collision detection
-    GFC_Vector2D    collis_repo;
 }Entity;
 
 /**

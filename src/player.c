@@ -74,7 +74,7 @@ PlayerData* player_data_init(Entity* self) {
 	p_data->jump_count = 0;
 	p_data->dodge_charges = 2;
 	p_data->max_dodge_charges = 2;
-	p_data->dodge_vel = gfc_vector2d(11.0f, 14.0f);
+	p_data->dodge_vel = gfc_vector2d(12.0f, 16.0f);
 
 	return p_data;
 }
@@ -252,7 +252,7 @@ void player_move(Entity* self) {
 
 		// if on ground, apply friction
 		if (ground_collision(self) == 2 && self->velocity.x > 0) {
-			self->velocity.x -= p_data->turnaround ? 0.45f : 0.17f;
+			self->velocity.x -= p_data->turnaround ? 0.5f : 0.17f;
 
 			if (self->velocity.x < 0) {
 				self->velocity.x = 0;

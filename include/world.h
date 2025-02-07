@@ -2,12 +2,14 @@
 #define __WORLD_H__
 
 #include "gfc_types.h"
+#include "gfc_config.h"
 #define GRAVITY 0.3f
 #define RES gfc_rect(0,0,1200, 700)
 
 typedef enum WorldState_E {
 	INGAME,
-	MENU
+	MAIN_MENU,
+	GAME_PAUSED
 }WorldState;
 
 void world_init();

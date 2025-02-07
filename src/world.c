@@ -1,6 +1,5 @@
 #include "simple_logger.h"
 #include "gf2d_draw.h"
-#include "gfc_list.h"
 #include "player.h"
 #include "world.h"
 #include "level.h"
@@ -13,6 +12,7 @@ typedef struct WorldManager_S {
 
 	// insert UI data
 	// insert level data
+	GFC_List*		def_strings;
 }WorldManager;
 
 static WorldManager world_manager = { 0 };
@@ -29,10 +29,17 @@ Uint8 world_done_check() {
 
 void world_init() {
 	Level* level;
+	SJson* def_strings, *string_list;
 
 	world_manager._done = 0;
 
+	// init list;
 	world_manager.enemy_list = gfc_list_new();
+	world_manager.def_strings = gfc_list_new();
+	def_strings = sj_load("config/def_strings.cfg");
+	string_list = sj_object_get_value(def_strings, "list");
+
+
 	level_manager_init();
 	level = get_curr_level();
 	world_manager.player = player_spawn(level->player_spawn);
@@ -41,11 +48,15 @@ void world_init() {
 		return;
 	}
 
+	sj_free(def_strings);
 	atexit(world_close);
 }
 
 void world_close() {
 	entity_system_close();
+
+	gfc_list_clear(world_manager.def_strings);
+	gfc_list_delete(world_manager.def_strings);
 
 	gfc_list_clear(world_manager.enemy_list);
 	gfc_list_delete(world_manager.enemy_list);

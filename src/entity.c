@@ -1,4 +1,5 @@
 #include "simple_logger.h"
+#include "gf2d_draw.h"
 #include "gfc_matrix.h"
 #include "world.h"
 #include "level.h"
@@ -122,43 +123,37 @@ void entity_apply_grav_all() {
 
 Uint8 entity_keep_in_bounds(Entity* self, Uint8 edge_type) {
     GFC_Edge2D screen_edge, e_edge;
+    //GFC_Vector2D p1, p2;
     float offset;
 
     if (!self) return;
     if (self->bounds) self->bounds(self);
-    else { // if no unique bounds function, at least restrict entity to viewspace
-        // left checks
-        offset = 1.0f;
+    // if no unique bounds function, at least restrict entity to viewspace
+    offset = 1.0f;
 
-        screen_edge = get_edge_from_rect(RES, edge_type + 2);
-        e_edge = get_edge_from_rect(self->boundbox.s.r, edge_type + 2);
-        if (edge_type == 2)
-            e_edge.x1 += self->velocity.x;
-        else
-            e_edge.x1 -= self->velocity.x;
-
-        //e_edge.x1 += edge_type == 2 ? self->velocity.x : -self->velocity.x;
+    screen_edge = get_edge_from_rect(RES, edge_type + 2);
+    e_edge = get_edge_from_rect(self->boundbox.s.r, edge_type + 2);
+    e_edge.x1 += !edge_type ? self->velocity.x : -self->velocity.x;
         
-        slog("p: %f, s: %f", e_edge.x1, screen_edge.x1);
+    //slog("p: %f, s: %f", e_edge.x1, screen_edge.x1);
 
-        if ((edge_type && e_edge.x1 <= screen_edge.x1 + offset)||
-            (!edge_type && e_edge.x1 >= screen_edge.x1 - offset))
-            return 1;
-        else 
-            return 0;
+    if ((edge_type && e_edge.x1 <= screen_edge.x1 + offset)||
+        (!edge_type && e_edge.x1 >= screen_edge.x1 - offset))
+        return 1;
+    else 
+        return 0;
 
-        /*
-        screen_edge = get_edge_from_rect(RES, 1);
-        e_edge = get_edge_from_rect(self->boundbox.s.r, 1);
-        if (e_edge.y1 - self->velocity.y <= screen_edge.y1 + offset)
-            return 0;
+    /*
+    screen_edge = get_edge_from_rect(RES, 1);
+    e_edge = get_edge_from_rect(self->boundbox.s.r, 1);
+    if (e_edge.y1 - self->velocity.y <= screen_edge.y1 + offset)
+        return 0;
 
-        screen_edge = get_edge_from_rect(RES, 0);
-        e_edge = get_edge_from_rect(self->boundbox.s.r, 0);
-        if (e_edge.y1 + self->velocity.y >= screen_edge.y1 - offset)
-            return 0;
-        */
-    }
+    screen_edge = get_edge_from_rect(RES, 0);
+    e_edge = get_edge_from_rect(self->boundbox.s.r, 0);
+    if (e_edge.y1 + self->velocity.y >= screen_edge.y1 - offset)
+        return 0;
+    */
 }
 
 Entity* entity_new() {
