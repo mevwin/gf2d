@@ -1,8 +1,7 @@
-#include "entity.h"
-#include "gf2d_draw.h"
-#include "level.h"
 #include "simple_logger.h"
+#include "gf2d_draw.h"
 #include "world.h"
+#include "level.h"
 #include "player.h"
 #include "enemy.h"
 
@@ -209,15 +208,12 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 	p_top = get_edge_from_rect(self->boundbox.s.r, 0);
 	offset = 1.0f;
 
-	if (roundf(p_side.x1) == wall->dimensions.x1) { // touching wall
+	//if (roundf(p_side.x1) == wall->dimensions.x1) { // touching wall
 		//slog("hugging wall");
-		return 2;
-	}
-	else if (wall_type && p_side.x1 - self->velocity.x < wall->dimensions.x1 + offset) { //right side
-		//slog("about to touch right wall");
-		return 1;
-	}
-	else if (!wall_type && p_side.x1 + self->velocity.x > wall->dimensions.x1 - offset) {// left side
+		//return 2;
+	//}
+	if ((wall_type && p_side.x1 - self->velocity.x <= wall->dimensions.x1 + offset) || // right side
+		(!wall_type && p_side.x1 + self->velocity.x >= wall->dimensions.x1 - offset)) {// left side
 		//slog("about to touch left wall");
 		return 1;
 	}
@@ -267,9 +263,8 @@ Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
 			color = wall_type ? GFC_COLOR_BLUE : GFC_COLOR_RED;
 
 			//gf2d_draw_line(wall_point, p_point, color);
-			if (gfc_vector2d_distance_between_less_than(wall_point, p_point, offset)) {
+			if (gfc_vector2d_distance_between_less_than(wall_point, p_point, offset))
 				return wall;
-			}
 		}
 	}
 

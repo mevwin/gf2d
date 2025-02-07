@@ -45,8 +45,6 @@ Entity* player_spawn(GFC_Vector2D position) {
 
 	update_hurtbox(player);
 	update_boundbox(player);
-	//player->bounds.s.r = gfc_rect(0, 0, 1200, 700);
-
 
 	player->data = player_data_init(player);
 	if (!player->data) {
@@ -76,7 +74,7 @@ PlayerData* player_data_init(Entity* self) {
 	p_data->jump_count = 0;
 	p_data->dodge_charges = 2;
 	p_data->max_dodge_charges = 2;
-	p_data->dodge_vel = gfc_vector2d(14.0f, 18.0f);
+	p_data->dodge_vel = gfc_vector2d(11.0f, 14.0f);
 
 	return p_data;
 }
@@ -139,7 +137,7 @@ void player_update(Entity* self) {
 
 void player_move(Entity* self) {
 	PlayerData* p_data;
-	Uint8 i;
+	Uint8 i, j;
 
 	p_data = self->data;
 	if (!p_data) return;
@@ -229,9 +227,9 @@ void player_move(Entity* self) {
 
 
 	// big-ass state check to actually apply the movement
-	i = self->dir.x == 0 ? 0 : 1;
+	i = self->dir.x == 0 ? 0 : 1;	// 0 == left wall, 1 == right wall
 	if (p_data->state == MOVING) { // regular movement
-		if (wall_collision(self, i)) {
+		if (wall_collision(self, i) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;
 			return;
 		}
@@ -243,7 +241,7 @@ void player_move(Entity* self) {
 							self->velocity.x : -self->velocity.x;
 	}
 	else if (p_data->state == SLOWDOWN) {
-		if (wall_collision(self, i)) {
+		if (wall_collision(self, i) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;
 			return;
 		}
@@ -272,7 +270,7 @@ void player_move(Entity* self) {
 		}
 	}
 	else if (p_data->state == DODGE) {
-		if (wall_collision(self, i)) {
+		if (entity_keep_in_bounds(self, i) || wall_collision(self, i)) {
 			self->velocity.x = 0;
 			return;
 		}
@@ -280,8 +278,10 @@ void player_move(Entity* self) {
 		self->position.x += p_data->moveType == RIGHT ?
 							self->velocity.x : -self->velocity.x;
 
-		self->velocity.x -= 0.4f;
-		if (p_data->jump_count > 1 && !ground_collision(self))
+		self->velocity.x -= 0.5f;
+
+		// dodge jump momentum carrying
+		if (!ground_collision(self) && p_data->jump_count > 1)
 			p_data->state = MOVING;
 		else if (!p_data->jump_count && ground_collision(self) == 2)
 			p_data->state = SLOWDOWN;
@@ -290,7 +290,6 @@ void player_move(Entity* self) {
 			p_data->state = SLOWDOWN;
 		}
 	}
-
 }
 
 void player_gravity(Entity* self) {

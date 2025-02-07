@@ -26,10 +26,10 @@ int main(int argc, char * argv[])
     slog("---==== BEGIN ====---");
     gf2d_graphics_initialize(
         "gf2d",
-        1200,
-        720,
-        1200,
-        720,
+        RES.w,
+        RES.h,
+        RES.w,
+        RES.h,
         gfc_vector4d(0,0,0,255),
         0);
     gf2d_graphics_set_frame_delay(16);

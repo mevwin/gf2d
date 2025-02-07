@@ -1,4 +1,5 @@
 #include "simple_logger.h"
+#include "gf2d_draw.h"
 #include "gfc_list.h"
 #include "player.h"
 #include "world.h"
@@ -59,6 +60,7 @@ void world_update() {
 	entity_think_all();
 	entity_update_all();
 	entity_draw_all();
+	//gf2d_draw_rect(RES, GFC_COLOR_RED);
 }
 
 void world_append_enemy(void* enemy) {

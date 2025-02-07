@@ -1,9 +1,9 @@
 #ifndef __WORLD_H__
 #define __WORLD_H__
 
-#define GRAVITY 0.3f
-
 #include "gfc_types.h"
+#define GRAVITY 0.3f
+#define RES gfc_rect(0,0,1200, 700)
 
 typedef enum WorldState_E {
 	INGAME,
