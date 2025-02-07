@@ -18,10 +18,8 @@ typedef struct Ground_S {
 	GFC_Vector2D	region;
 	GFC_Color		color;
 	Uint8			wall_flag; //has active walls
-	union {
-		Wall*		left;
-		Wall*		right;
-	}walls;
+	Wall*			wall_left;
+	Wall*			wall_right;
 	//Sprite*			sprite;
 }Ground;
 

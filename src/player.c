@@ -111,6 +111,8 @@ void player_update(Entity* self) {
 			break;
 	}
 
+	//slog("%i", wall_collision(self, 1));
+
 	/*DEBUG: center checking*/
 	gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
 
@@ -177,12 +179,10 @@ void player_move(Entity* self) {
 		else
 			p_data->moveType = LEFT;
 
-		if (!wall_collision(self, 1)) {
-			if (self->velocity.x <= self->max_velocity.x) // ground
-				self->velocity.x += self->accel.x;
-			else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
-				self->velocity.x += self->accel.y;
-		}
+		if (self->velocity.x <= self->max_velocity.x) // ground
+			self->velocity.x += self->accel.x;
+		else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
+			self->velocity.x += self->accel.y;
 	}
 	else if ((gfc_input_command_down("moveright") || gfc_input_command_pressed("moveright"))
 		&& !gfc_input_command_pressed("moveleft") && p_data->state != DODGE) {
@@ -196,12 +196,10 @@ void player_move(Entity* self) {
 		else
 			p_data->moveType = RIGHT;
 
-		if (!wall_collision(self, 0)) {
-			if (self->velocity.x <= self->max_velocity.x) // ground
-				self->velocity.x += self->accel.x;
-			else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
-				self->velocity.x += self->accel.y;
-		}
+		if (self->velocity.x <= self->max_velocity.x) // ground
+			self->velocity.x += self->accel.x;
+		else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
+			self->velocity.x += self->accel.y;
 	}
 
 	/* DODGE */
@@ -213,12 +211,10 @@ void player_move(Entity* self) {
 
 		p_data->state = DODGE;
 
-		if (!wall_collision(self, self->dir.x)) {
-			self->velocity.x = p_data->dodge_vel.x;
-			if (!ground_collision(self)) {
-				p_data->dodge_charges--;
-				self->velocity.x = p_data->dodge_vel.y;
-			}
+		self->velocity.x = p_data->dodge_vel.x;
+		if (!ground_collision(self)) {
+			p_data->dodge_charges--;
+			self->velocity.x = p_data->dodge_vel.y;
 		}
 		self->velocity.y = 0;
 	}
@@ -226,31 +222,39 @@ void player_move(Entity* self) {
 	/* JUMP */
 	/*NOTE: positive vertical movement is negative*/
 	if (gfc_input_command_pressed("jump") && p_data->jump_count < p_data->max_jumps) {
-
 		// go up
 		self->velocity.y = self->max_velocity.y;
-		//self->position.y += self->velocity.y;
-
 		p_data->jump_count++;
-		slog("jumping");
 	}
 
+
 	// big-ass state check to actually apply the movement
+	i = self->dir.x == 0 ? 0 : 1;
 	if (p_data->state == MOVING) { // regular movement
+		if (wall_collision(self, i)) {
+			self->velocity.x = 0;
+			return;
+		}
+
 		if (self->velocity.x > self->max_velocity.x)
 			self->velocity.x -= 0.1f;
 
 		self->position.x += p_data->moveType == RIGHT ?
-			self->velocity.x : -self->velocity.x;
+							self->velocity.x : -self->velocity.x;
 	}
 	else if (p_data->state == SLOWDOWN) {
+		if (wall_collision(self, i)) {
+			self->velocity.x = 0;
+			return;
+		}
+
 		// sliding effect
 		self->position.x += p_data->moveType == RIGHT ?
-			self->velocity.x : -self->velocity.x;
+							self->velocity.x : -self->velocity.x;
 
 		// if on ground, apply friction
 		if (ground_collision(self) == 2 && self->velocity.x > 0) {
-			self->velocity.x -= p_data->turnaround ? 0.5f : 0.17f;
+			self->velocity.x -= p_data->turnaround ? 0.45f : 0.17f;
 
 			if (self->velocity.x < 0) {
 				self->velocity.x = 0;
@@ -268,8 +272,13 @@ void player_move(Entity* self) {
 		}
 	}
 	else if (p_data->state == DODGE) {
+		if (wall_collision(self, i)) {
+			self->velocity.x = 0;
+			return;
+		}
+
 		self->position.x += p_data->moveType == RIGHT ?
-			self->velocity.x : -self->velocity.x;
+							self->velocity.x : -self->velocity.x;
 
 		self->velocity.x -= 0.4f;
 		if (p_data->jump_count > 1 && !ground_collision(self))
