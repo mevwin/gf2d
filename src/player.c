@@ -223,7 +223,7 @@ void player_move(Entity* self) {
 	}
 
 	/* JUMP */
-	/*NOTE: positive vertical movement is negative*/
+	// NOTE: positive vertical movement is negativ
 	if (gfc_input_command_pressed("jump") && p_data->jump_count < p_data->max_jumps) {
 		// go up
 		self->velocity.y = self->max_velocity.y;
@@ -300,6 +300,7 @@ void player_move(Entity* self) {
 void player_gravity(Entity* self) {
 	PlayerData* p_data;
 	GFC_Edge2D bottom;
+	Uint8 i;
 
 	p_data = self->data;
 	if (!p_data) return;
@@ -307,19 +308,20 @@ void player_gravity(Entity* self) {
 
 	bottom = get_edge_from_rect(self->boundbox.s.r, 0);
 
-	if (ground_collision(self) == 2 && !p_data->jump_count) { // grounded
+	i = ground_collision(self);
+	if (i == 2 && !p_data->jump_count) { // grounded
 		if (self->velocity.x == 0)
 			p_data->turnaround = 0;
 
 		if (self->velocity.x > 0)
 			p_data->state = SLOWDOWN;
 	}
-	else if (ground_collision(self) == 1) { // landing
+	else if (i == 1) { // landing
 		p_data->dodge_charges = p_data->max_dodge_charges;
 		p_data->jump_count = 0;
 		self->velocity.y = 0;
 	}
-	else {
+	else { // falling
 		self->position.y -= self->velocity.y;
 		self->velocity.y -= GRAVITY;
 	}

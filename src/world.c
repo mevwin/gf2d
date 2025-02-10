@@ -47,7 +47,7 @@ void world_init() {
 		);
 	}
 
-	level_manager_init();
+	level_manager_init(gfc_list_nth(world_manager.def_strings, 1));
 	level = get_curr_level();
 
 	// load player

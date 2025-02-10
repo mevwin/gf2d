@@ -7,10 +7,12 @@
 
 typedef struct LevelManager_S {
 	Level*			curr_level;
-	GFC_List*		level_list;
+	GFC_List*		level_list; // a list of filepaths for levels
 	Uint8			level_num;
 	Uint8			w_collision;  // 0 for left, 1 for right
 }LevelManager;
+
+//NOTE: ONLY ONE LEVEL LOADED AT A TIME
 
 static LevelManager level_manager = { 0 };
 
@@ -19,27 +21,43 @@ Ground* create_ground(GFC_Rect dimen, GFC_Color color, Uint8 walls);
 GFC_Rect level_find_nearest_ground(Entity* ent);
 Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type);
 
-void level_manager_init() {
+void level_manager_init(const char* filename){	
+	SJson* level_def, *level_list;
+	int i;
+	
+	// load level list
 	level_manager.level_list = gfc_list_new();
+	level_def = sj_load(filename);
+	level_list = sj_object_get_value(level_def, "list");
+
+	for (i = 0; i < level_list->v.array->count; i++) {
+		gfc_list_append(
+			level_manager.level_list,
+			sj_object_get_string(sj_array_get_nth(level_list, i), "path")
+			);
+	}
+	level_manager.level_num = 0;
 
 	// load first level
-	level_manager.curr_level = level_load(0);
+	level_manager.curr_level = level_load(level_manager.level_num);
 	if (!level_manager.curr_level) {
 		slog("failed to initialiaze first level");
 		world_done_change();
 		return;
 	}
 
+	sj_free(level_def);
+
 	atexit(level_manager_close);
 }
 
 void level_manager_close() {
-	Level* level;
 	int i;
 
+	level_close(level_manager.curr_level);
+
 	for (i = 0; i < level_manager.level_list->count; i++) {
-		level = (Level*) gfc_list_nth(level_manager.level_list, i);
-		level_close(level);
+		//free(gfc_list_nth(level_manager.level_list, i));
 	}
 	gfc_list_clear(level_manager.level_list);
 	gfc_list_delete(level_manager.level_list);
@@ -73,28 +91,51 @@ Ground* create_ground(GFC_Rect dimen, GFC_Color color, Uint8 walls) {
 
 Level* level_load(Uint8 index) {
 	Level* level;
-	Ground* ground1, *ground2;
+	Ground* ground;
+	GFC_Rect dimen;
+	GFC_Vector4D rec_buf;
+	SJson *level_obj, *level_data, *ground_list, *ground_data;
+	Uint8 buf;
+	int i;
 
 	level = gfc_allocate_array(sizeof(Level), 1);
 	if (!level) {
 		slog("failed to initialize level");
 		return NULL;
 	}
+	level_obj = sj_load(gfc_list_nth(level_manager.level_list, index));
+	level_data = sj_object_get_value(level_obj, "level");
+	if (!level_data) {
+		slog("level not found");
+		world_done_change();
+		return;
+	}
 
 	level->ground_list = gfc_list_new();
-	
-	ground1 = create_ground(gfc_rect(0, 600, 1200, 120), GFC_COLOR_BLACK, 0);
-	gfc_list_append(level->ground_list, ground1);
 
-	ground2 = create_ground(gfc_rect(200, 400, 500, 320), GFC_COLOR_YELLOW, 1);
-	gfc_list_append(level->ground_list, ground2);
+	// player spawn
+	sj_object_get_vector2d(level_data, "player_spawn", &level->player_spawn);
 
-	//level->curr_ground = gfc_list_nth(level->ground_list, 0);
-
-	level->player_spawn = gfc_vector2d(600, 200);
-
+	// ground list
+	ground_list = sj_object_get_value(level_data, "ground_list");
+	for (i = 0; i < ground_list->v.array->count; i++) {
+		ground_data = sj_array_get_nth(ground_list, i);
+		
+		sj_object_get_vector4d(ground_data, "dimensions", &rec_buf);
+		dimen = gfc_rect_from_vector4(rec_buf);
+		
+		sj_object_get_uint8(ground_data, "walls", &buf);
+		
+		ground = create_ground(dimen, sj_object_get_color(ground_data, "color"), buf);
+		if (!ground) {
+			slog("ground failed to be created");
+			continue;
+		}
+		gfc_list_append(level->ground_list, ground);
+	}
 	enemy_spawn(BRUISER, gfc_vector2d(300, 200));
 
+	sj_free(level_data);
 	return level;
 }
 
@@ -143,7 +184,7 @@ GFC_Rect level_find_nearest_ground(Entity* ent) {
 		g_level = get_edge_from_rect(ground->dimensions, 1);
 
 		if (right.x1 >= ground->region.x && left.x1 <= ground->region.y 
-			&& g_level.y1 - left.y2 <= 2.0f)
+			&& g_level.y1 - (left.y2 - ent->velocity.y) <= 7.0f)
 			return ground->dimensions;
 	}
 	return gfc_rect(-20.0f, 1000.0f, 1800.0f, 200.0f);
@@ -161,23 +202,33 @@ Uint8 ground_collision(void* ent) {
 		return 0;
 	}
 
-	bottom = get_edge_from_rect(self->boundbox.s.r, 0); // player's bottom edge
 	ground = level_find_nearest_ground(self);
 	edge = get_edge_from_rect(ground, 1);
 
+
+	bottom = get_edge_from_rect(self->boundbox.s.r, 0); // player's bottom edge
+	bottom.y1 += -self->velocity.y;
+
 	if (roundf(bottom.y1) == edge.y1) //touching ground
 		return 2;
-	else if (bottom.y1 - self->velocity.y > edge.y1 - 1.0f) { // about to touch ground
+	else if (bottom.y1 >= edge.y1 - 1.0f) { // about to touch ground
 		self->position.y = edge.y1 - self->boundbox.s.r.h / 2.0f; // check to make sure not to clip through ground
 		return 1;
 	}
-	else {
-		p_data = self->data;
-		if (!p_data) return 0;
-		
-		// increment jump counter by 1 to avoid the MultiVersus DJ
-		if (!p_data->jump_count)
-			p_data->jump_count++;
+	else { // falling
+		if (self->type == PLAYER) {
+			p_data = self->data;
+			if (!p_data) return 0;
+
+			// increment jump counter by 1 to avoid the MultiVersus DJ
+			if (!p_data->jump_count)
+				p_data->jump_count++;
+
+			//slog("player: %f, ground: %f", bottom.y1, edge.y1);
+		}
+		else if (self->type == ENEMY) {
+			// TODO
+		}
 
 		return 0;
 	}
