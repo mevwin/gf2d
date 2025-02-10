@@ -222,17 +222,28 @@ void player_move(Entity* self) {
 		self->velocity.y = 0;
 	}
 
+	i = self->dir.x == 0 ? 0 : 1;
+
 	/* JUMP */
 	// NOTE: positive vertical movement is negativ
-	if (gfc_input_command_pressed("jump") && p_data->jump_count < p_data->max_jumps) {
-		// go up
-		self->velocity.y = self->max_velocity.y;
-		p_data->jump_count++;
+	if (gfc_input_command_pressed("jump")) {
+		if (p_data->jump_count < p_data->max_jumps) {
+			// go up
+			self->velocity.y = self->max_velocity.y;
+			p_data->jump_count++;
+		}
+		//else if (wall_collision(self, i) && !p_data->wall_jump && p_data->jump_count > 0) {
+			// TODO: fix later
+			// p_data->wall_jump = 1;
+			//self->velocity.y = self->max_velocity.y / 2.0f;
+			//self->velocity.x += self->max_velocity.x / 2.0f;
+			//gfc_vector2d_normalize(&self->velocity);
+			//slog("wall jump");
+		//}
 	}
-
-
+	
 	// big-ass state check to actually apply the movement
-	i = self->dir.x == 0 ? 0 : 1;	// 0 == left wall, 1 == right wall
+		// 0 == left wall, 1 == right wall
 	if (p_data->state == MOVING) { // regular movement
 		if (wall_collision(self, i) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;
@@ -320,6 +331,7 @@ void player_gravity(Entity* self) {
 		p_data->dodge_charges = p_data->max_dodge_charges;
 		p_data->jump_count = 0;
 		self->velocity.y = 0;
+		p_data->wall_jump = 0;
 	}
 	else { // falling
 		self->position.y -= self->velocity.y;

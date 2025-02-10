@@ -154,12 +154,23 @@ void level_close(Level* level) {
 
 void level_update() {
 	int i;
+	float offset;
 	Ground* ground;
+
+	offset = 1.0f;
 
 	// draw ground
 	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
 		ground = (Ground*)gfc_list_nth(level_manager.curr_level->ground_list, i);
 		gf2d_draw_rect_filled(ground->dimensions, ground->color);
+		
+		/* Testing moving collision
+		ground->dimensions.x += offset;
+		gfc_vector2d_add(ground->region, ground->region, gfc_vector2d(offset, offset));
+		if(ground->dimensions.x + ground->dimensions.w + offset >= ground->region.y || 
+			ground->dimensions.x + offset <= ground->region.x)
+			offset = -offset;
+		*/
 	}
 	//gf2d_draw_rect_filled(level_manager.curr_level->ground, GFC_COLOR_BLACK);
 }

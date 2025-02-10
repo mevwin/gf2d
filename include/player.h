@@ -30,6 +30,7 @@ typedef struct PlayerData_S{
 	Uint8			jump_count;
 	Uint8			max_jumps;
 	Uint8			turnaround;
+	Uint8			wall_jump;
 	int				dodge_charges;
 	int				max_dodge_charges;
 	GFC_Vector2D	dodge_vel;		// x = grounded, y = aerial
