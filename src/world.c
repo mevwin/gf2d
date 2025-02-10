@@ -29,21 +29,39 @@ Uint8 world_done_check() {
 
 void world_init() {
 	Level* level;
-	SJson* def_strings, *string_list;
+	SJson* def_strings, *string_list, *data;
+	int i;
 
 	world_manager._done = 0;
 
-	// init list;
+	// init lists
 	world_manager.enemy_list = gfc_list_new();
+
 	world_manager.def_strings = gfc_list_new();
 	def_strings = sj_load("config/def_strings.cfg");
 	string_list = sj_object_get_value(def_strings, "list");
-
+	for (i = 0; i < string_list->v.array->count; i++) {
+		gfc_list_append(
+			world_manager.def_strings,
+			sj_object_get_string(sj_array_get_nth(string_list, i), "path")
+		);
+	}
 
 	level_manager_init();
 	level = get_curr_level();
-	world_manager.player = player_spawn(level->player_spawn);
+
+	// load player
+	data = sj_load(gfc_list_nth(world_manager.def_strings, 0));
+	if (!data){
+		slog("def file not found");
+		world_manager._done = 1;
+		return;
+	}
+
+	world_manager.player = player_spawn(level->player_spawn, data);
+	sj_free(data);
 	if (!world_manager.player) {
+		sj_free(def_strings);
 		world_manager._done = 1;
 		return;
 	}

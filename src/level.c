@@ -27,7 +27,6 @@ void level_manager_init() {
 	if (!level_manager.curr_level) {
 		slog("failed to initialiaze first level");
 		world_done_change();
-		level_manager_close();
 		return;
 	}
 

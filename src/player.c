@@ -1,5 +1,6 @@
 #include <SDL.h>
 #include "simple_logger.h"
+#include "gfc_config.h"
 #include "gf2d_draw.h"
 #include "gfc_input.h"
 #include "world.h"
@@ -12,11 +13,13 @@ void player_gravity(Entity* self);
 void player_free(Entity* self);
 
 void player_move(Entity* self);
-PlayerData* player_data_init(Entity* self);
+PlayerData* player_data_init(Entity* self, SJson* data);
 
 static Entity* player;
 
-Entity* player_spawn(GFC_Vector2D position) {
+Entity* player_spawn(GFC_Vector2D position, SJson* data) {
+	SJson* curr_entry;
+
 	player = entity_new();
 	if (!player) {
 		slog("failed to initialize player entity");
@@ -26,12 +29,13 @@ Entity* player_spawn(GFC_Vector2D position) {
 	player->type = PLAYER;
 	gfc_line_cpy(player->name, "Player");	// change later
 
+	curr_entry = sj_object_get_value(data, "entity_data");
+
 	gfc_vector2d_copy(player->position, position);
 	player->velocity = gfc_vector2d(0, 0);
-	player->max_velocity = gfc_vector2d(6.0f, 11.0f);
-	player->accel = gfc_vector2d(0.1f, 0.2f);
-
-	player->sprite = gf2d_sprite_load_image("sprites/test.png");
+	sj_object_get_vector2d(curr_entry, "max_velocity", &player->max_velocity);
+	sj_object_get_vector2d(curr_entry, "accel", &player->accel);
+	player->sprite = gf2d_sprite_load_image(sj_object_get_string(curr_entry, "sprite"));
 	player->frame = 0;
 
 	player->think = player_think;
@@ -46,7 +50,7 @@ Entity* player_spawn(GFC_Vector2D position) {
 	update_hurtbox(player);
 	update_boundbox(player);
 
-	player->data = player_data_init(player);
+	player->data = player_data_init(player, sj_object_get_value(data, "player_data"));
 	if (!player->data) {
 		slog("failed to initialize player data");
 		return NULL;
@@ -61,7 +65,7 @@ void player_free(Entity* self) {
 	if (self->data) free(self->data);
 }
 
-PlayerData* player_data_init(Entity* self) {
+PlayerData* player_data_init(Entity* self, SJson* data) {
 	PlayerData* p_data;
 
 	p_data = gfc_allocate_array(sizeof(PlayerData), 1);
@@ -70,11 +74,12 @@ PlayerData* player_data_init(Entity* self) {
 	gfc_vector2d_copy(p_data->spawn_pos, self->position);
 	p_data->state = IDLE;
 	p_data->moveType = NONE;
-	p_data->max_jumps = 2;
 	p_data->jump_count = 0;
-	p_data->dodge_charges = 2;
-	p_data->max_dodge_charges = 2;
-	p_data->dodge_vel = gfc_vector2d(12.0f, 16.0f);
+
+	sj_object_get_uint8(data, "max_jumps", &p_data->max_jumps);
+	sj_object_get_int(data, "max_dodge_charges", &p_data->max_dodge_charges);
+	p_data->dodge_charges = p_data->max_dodge_charges;
+	sj_object_get_vector2d(data, "dodge_vel", &p_data->dodge_vel);
 
 	return p_data;
 }

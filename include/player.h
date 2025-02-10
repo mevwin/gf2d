@@ -39,7 +39,7 @@ typedef struct PlayerData_S{
 	// maybe add no_move toggle
 }PlayerData;
 
-Entity* player_spawn(GFC_Vector2D position);
+Entity* player_spawn(GFC_Vector2D position, SJson* data);
 GFC_Vector2D* get_player_pos();
 
 #endif
