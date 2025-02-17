@@ -17,7 +17,8 @@ typedef struct LevelManager_S {
 static LevelManager level_manager = { 0 };
 
 void level_manager_close();
-Ground* create_ground(GFC_Rect dimen, GFC_Color color, Uint8 walls);
+Ground* create_ground(GFC_Rect dimen, GFC_Color color);
+Wall* create_wall(GFC_Edge2D dimen, Uint8 type);
 GFC_Rect level_find_nearest_ground(Entity* ent);
 Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type);
 
@@ -64,34 +65,10 @@ void level_manager_close() {
 	memset(&level_manager, 0, sizeof(LevelManager));
 }
 
-Ground* create_ground(GFC_Rect dimen, GFC_Color color, Uint8 walls) {
-	Ground* ground;
-
-	ground = gfc_allocate_array(sizeof(Ground), 1);
-	if (!ground)
-		return NULL;
-
-	ground->dimensions = dimen;
-	ground->region = gfc_vector2d(ground->dimensions.x,
-								  ground->dimensions.x + ground->dimensions.w);
-	ground->color = color;
-
-	if (walls) { // initialize wall data
-		ground->wall_flag = 1;
-		ground->wall_left = gfc_allocate_array(sizeof(Wall), 1);
-		ground->wall_left->dimensions = get_edge_from_rect(ground->dimensions, 3);
-		ground->wall_left->type = 0;
-
-		ground->wall_right = gfc_allocate_array(sizeof(Wall), 1);
-		ground->wall_right->dimensions = get_edge_from_rect(ground->dimensions, 2);
-		ground->wall_right->type = 1;
-	}
-	return ground;
-}
-
 Level* level_load(Uint8 index) {
 	Level* level;
 	Ground* ground;
+	Wall* wall;
 	GFC_Rect dimen;
 	GFC_Vector4D rec_buf;
 	SJson *level_obj, *level_data, *ground_list, *ground_data;
@@ -112,6 +89,7 @@ Level* level_load(Uint8 index) {
 	}
 
 	level->ground_list = gfc_list_new();
+	level->wall_list = gfc_list_new();
 
 	// player spawn
 	sj_object_get_vector2d(level_data, "player_spawn", &level->player_spawn);
@@ -126,17 +104,61 @@ Level* level_load(Uint8 index) {
 		
 		sj_object_get_uint8(ground_data, "walls", &buf);
 		
-		ground = create_ground(dimen, sj_object_get_color(ground_data, "color"), buf);
+		ground = create_ground(dimen, sj_object_get_color(ground_data, "color"));
 		if (!ground) {
 			slog("ground failed to be created");
 			continue;
 		}
 		gfc_list_append(level->ground_list, ground);
+
+		// initalize walls if toggled
+		if (buf) {
+			// create left wall
+			wall = create_wall(get_edge_from_rect(ground->dimensions, 3), 0);
+			gfc_list_append(level->wall_list, wall);
+
+			wall = create_wall(get_edge_from_rect(ground->dimensions, 2), 1);
+			gfc_list_append(level->wall_list, wall);
+		}
 	}
+	// create level bounds
+	//gfc_list_append();
+
+	// enemy spawns
 	enemy_spawn(BRUISER, gfc_vector2d(300, 200));
 
 	sj_free(level_data);
 	return level;
+}
+
+Ground* create_ground(GFC_Rect dimen, GFC_Color color) {
+	Ground* ground;
+
+	ground = gfc_allocate_array(sizeof(Ground), 1);
+	if (!ground)
+		return NULL;
+
+	ground->dimensions = dimen;
+	ground->region = gfc_vector2d(ground->dimensions.x,
+								  ground->dimensions.x + ground->dimensions.w);
+	ground->color = color;
+
+	return ground;
+}
+
+Wall* create_wall(GFC_Edge2D dimen, Uint8 type) {
+	Wall* wall;
+
+	wall = gfc_allocate_array(sizeof(Wall), 1);
+	if (!wall) {
+		slog("failed to allocate memory for wall");
+		return NULL;
+	}
+
+	wall->dimensions = dimen;
+	wall->type = type;
+
+	return wall;
 }
 
 void level_close(Level* level) {
@@ -149,15 +171,19 @@ void level_close(Level* level) {
 	gfc_list_clear(level->ground_list);
 	gfc_list_delete(level->ground_list);
 
+	gfc_list_foreach(level->wall_list, free);
+	gfc_list_clear(level->wall_list);
+	gfc_list_delete(level->wall_list);
+
 	free(level);
 }
 
 void level_update() {
 	int i;
-	float offset;
+	//float offset;
 	Ground* ground;
 
-	offset = 1.0f;
+	//offset = 1.0f;
 
 	// draw ground
 	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
@@ -286,7 +312,6 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 
 
 Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
-	Ground* ground;
 	Wall* wall;
 	GFC_Vector2D wall_point, p_point; //, p1, p2;
 	GFC_Edge2D p_side, p_bottom;
@@ -294,22 +319,20 @@ Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
 	int i;
 	float offset;
 
-	offset = 30.0f;
+	offset = 20.0f;
 
 	if (!ent) {
 		slog("no entity given");
 		return;
 	}
 	
-	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
-		ground = (Ground*) gfc_list_nth(level_manager.curr_level->ground_list, i);
+	for (i = 0; i < level_manager.curr_level->wall_list->count; i++) {
+		wall = (Ground*) gfc_list_nth(level_manager.curr_level->wall_list, i);
 
-		if (!ground->wall_flag) continue; 
+		if (!wall) continue; 
 		
 		p_bottom = get_edge_from_rect(ent->boundbox.s.r, 0);
 		//p_top = get_edge_from_rect(ent->boundbox.s.r, 1);
-
-		wall = wall_type ? ground->wall_right : ground->wall_left;
 
 		//p1 = gfc_vector2d(wall->dimensions.x1, 0);
 		//p2 = gfc_vector2d(wall->dimensions.x2, 1200);
