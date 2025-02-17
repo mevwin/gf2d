@@ -171,7 +171,7 @@ void player_move(Entity* self) {
 
 	// input checks
 	if ((gfc_input_command_down("moveleft") || gfc_input_command_pressed("moveleft"))
-		&& !gfc_input_command_pressed("moveright") && p_data->state != DODGE) {
+		&& !gfc_input_command_pressed("moveright") && p_data->state != DODGE && !p_data->wall_jump) {
 		p_data->state = MOVING;
 
 		if (p_data->moveType == RIGHT && self->velocity.x > 0) {
@@ -188,7 +188,7 @@ void player_move(Entity* self) {
 			self->velocity.x += self->accel.y;
 	}
 	else if ((gfc_input_command_down("moveright") || gfc_input_command_pressed("moveright"))
-		&& !gfc_input_command_pressed("moveleft") && p_data->state != DODGE) {
+		&& !gfc_input_command_pressed("moveleft") && p_data->state != DODGE && !p_data->wall_jump) {
 		p_data->state = MOVING;
 
 		if (p_data->moveType == LEFT && self->velocity.x > 0) {
@@ -227,25 +227,30 @@ void player_move(Entity* self) {
 	/* JUMP */
 	// NOTE: positive vertical movement is negativ
 	if (gfc_input_command_pressed("jump")) {
-		if (p_data->jump_count < p_data->max_jumps) {
+		if (!wall_collision(self, i) && p_data->jump_count < p_data->max_jumps) {
 			// go up
 			self->velocity.y = self->max_velocity.y;
+			if (p_data->jump_count)
+				slog("dj");
+
 			p_data->jump_count++;
+
 		}
-		//else if (wall_collision(self, i) && !p_data->wall_jump && p_data->jump_count > 0) {
+		else if (wall_collision(self, i) && !p_data->wall_jump && p_data->jump_count > 0) {
 			// TODO: fix later
-			// p_data->wall_jump = 1;
-			//self->velocity.y = self->max_velocity.y / 2.0f;
-			//self->velocity.x += self->max_velocity.x / 2.0f;
-			//gfc_vector2d_normalize(&self->velocity);
-			//slog("wall jump");
-		//}
+			p_data->wall_jump = 1;
+			self->velocity.y = self->max_velocity.y;
+			self->velocity.x = self->max_velocity.x;
+			//self->position.x += i ? self->max_velocity.x : -self->max_velocity.x;
+			p_data->moveType = i ? RIGHT : LEFT; // if wall jumping from right, go left (and vice versa)
+			slog("wall jump");
+		}
 	}
 	
 	// big-ass state check to actually apply the movement
 		// 0 == left wall, 1 == right wall
 	if (p_data->state == MOVING) { // regular movement
-		if (wall_collision(self, i) || entity_keep_in_bounds(self, i)) {
+		if ((wall_collision(self, i) && !p_data->wall_jump) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;
 			return;
 		}
@@ -336,6 +341,9 @@ void player_gravity(Entity* self) {
 	else { // falling
 		self->position.y -= self->velocity.y;
 		self->velocity.y -= GRAVITY;
+
+		if (self->velocity.y <= 7.0f)
+			p_data->wall_jump = 0;
 	}
 }
 

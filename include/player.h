@@ -7,7 +7,8 @@ typedef enum PlayerState_E{
 	IDLE,
 	MOVING,
 	SLOWDOWN,
-	DODGE
+	DODGE,
+	WALLJUMP
 }PlayerState;
 
 typedef enum PlayerMove_E {

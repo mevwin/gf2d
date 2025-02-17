@@ -293,7 +293,7 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 	side_type = wall_type ? 3 : 2; 
 	p_side = get_edge_from_rect(self->boundbox.s.r, side_type);
 	p_top = get_edge_from_rect(self->boundbox.s.r, 0);
-	offset = 1.0f;
+	offset = 2.0f;
 
 	//if (roundf(p_side.x1) == wall->dimensions.x1) { // touching wall
 		//slog("hugging wall");
