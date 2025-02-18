@@ -18,8 +18,7 @@ typedef struct Ground_S {
 	GFC_Vector2D	region;
 	GFC_Color		color;
 	Uint8			wall_flag; //has active walls
-	Wall*			wall_left;
-	Wall*			wall_right;
+	Uint8			ceil_flag;
 	//Sprite*			sprite;
 }Ground;
 
@@ -61,6 +60,7 @@ void level_close(Level* level);
 Level* get_curr_level();
 Uint8 ground_collision(void* ent);
 Uint8 wall_collision(void* ent, Uint8 wall_type); // left = 0, right = 1
+Uint8 ceiling_collision(void* ent);
 
 /**
 * @param side: 3 = left, 2 = right, 1 = top, 0 = bottom 

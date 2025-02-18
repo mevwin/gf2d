@@ -115,6 +115,9 @@ void player_update(Entity* self) {
 			break;
 	}
 
+	if (self->position.y > RES.y + RES.h)
+		gfc_vector2d_copy(self->position, p_data->spawn_pos);
+
 	//slog("%i", wall_collision(self, 1));
 
 	/*DEBUG: center checking*/
@@ -214,6 +217,7 @@ void player_move(Entity* self) {
 			p_data->moveTypeX = LEFT;
 
 		p_data->state = DODGE;
+		p_data->moveTypeY = NONE_Y;
 
 		self->velocity.x = p_data->dodge_vel.x;
 		if (!ground_collision(self)) {
@@ -231,8 +235,8 @@ void player_move(Entity* self) {
 	if (gfc_input_command_pressed("jump")) {
 		if (!wall_collision(self, i) && p_data->jump_count < p_data->max_jumps) {
 			self->velocity.y = self->max_velocity.y;
-			if (p_data->jump_count)
-				slog("dj");
+			//if (p_data->jump_count)
+				//slog("dj");
 
 			p_data->jump_count++;
 			p_data->moveTypeY = RISING;
@@ -245,14 +249,14 @@ void player_move(Entity* self) {
 			//self->position.x += i ? self->max_velocity.x : -self->max_velocity.x;
 			p_data->moveTypeX = i ? RIGHT : LEFT; // if wall jumping from right, go left (and vice versa)
 			p_data->moveTypeY = RISING;
-			slog("wall jump");
+			//slog("wall jump");
 		}
 	}
 
 	if (p_data->moveTypeY == FALLING && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown"))) {
 		// remember at this point, velocity.y is negative
 		p_data->moveTypeY = FASTFALLING;
-		slog("fast falling");
+		//slog("fast falling");
 	}
 	
 	// big-ass state check to actually apply the movement
@@ -323,7 +327,7 @@ void player_move(Entity* self) {
 void player_gravity(Entity* self) {
 	PlayerData* p_data;
 	GFC_Edge2D bottom;
-	Uint8 i;
+	Uint8 i, j;
 	float buf;
 
 	p_data = self->data;
@@ -333,6 +337,7 @@ void player_gravity(Entity* self) {
 	bottom = get_edge_from_rect(self->boundbox.s.r, 0);
 
 	i = ground_collision(self);
+	j = ceiling_collision(self);
 	if (i == 2 && !p_data->jump_count) { // grounded
 		if (self->velocity.x == 0)
 			p_data->turnaround = 0;
@@ -353,6 +358,9 @@ void player_gravity(Entity* self) {
 			buf = GRAVITY;
 
 		self->position.y -= self->velocity.y;
+		if (ceiling_collision(self))
+			slog("true");
+
 		self->velocity.y -= buf;
 
 		if (self->velocity.y <= 0.0f && self->velocity.y > -2.0f)

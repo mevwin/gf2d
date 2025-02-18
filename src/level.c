@@ -20,6 +20,7 @@ void level_manager_close();
 Ground* create_ground(GFC_Rect dimen, GFC_Color color);
 Wall* create_wall(GFC_Edge2D dimen, Uint8 type);
 GFC_Rect level_find_nearest_ground(Entity* ent);
+GFC_Rect level_find_nearest_ceiling(Entity* ent);
 Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type);
 
 void level_manager_init(const char* filename){	
@@ -72,7 +73,7 @@ Level* level_load(Uint8 index) {
 	GFC_Rect dimen;
 	GFC_Vector4D rec_buf;
 	SJson *level_obj, *level_data, *ground_list, *ground_data;
-	Uint8 buf;
+	Uint8 load_walls, load_ceil;
 	int i;
 
 	level = gfc_allocate_array(sizeof(Level), 1);
@@ -85,7 +86,7 @@ Level* level_load(Uint8 index) {
 	if (!level_data) {
 		slog("level not found");
 		world_done_change();
-		return;
+		return NULL;
 	}
 
 	level->ground_list = gfc_list_new();
@@ -102,7 +103,8 @@ Level* level_load(Uint8 index) {
 		sj_object_get_vector4d(ground_data, "dimensions", &rec_buf);
 		dimen = gfc_rect_from_vector4(rec_buf);
 		
-		sj_object_get_uint8(ground_data, "walls", &buf);
+		sj_object_get_uint8(ground_data, "walls", &load_walls);
+		sj_object_get_uint8(ground_data, "ceiling", &load_ceil);
 		
 		ground = create_ground(dimen, sj_object_get_color(ground_data, "color"));
 		if (!ground) {
@@ -112,7 +114,7 @@ Level* level_load(Uint8 index) {
 		gfc_list_append(level->ground_list, ground);
 
 		// initalize walls if toggled
-		if (buf) {
+		if (load_walls) {
 			// create left wall
 			wall = create_wall(get_edge_from_rect(ground->dimensions, 3), 0);
 			gfc_list_append(level->wall_list, wall);
@@ -120,12 +122,17 @@ Level* level_load(Uint8 index) {
 			wall = create_wall(get_edge_from_rect(ground->dimensions, 2), 1);
 			gfc_list_append(level->wall_list, wall);
 		}
+
+		if (load_ceil) {
+			ground->ceil_flag = 1;
+			slog("true");
+		}
 	}
 	// create level bounds
 	//gfc_list_append();
 
 	// enemy spawns
-	enemy_spawn(BRUISER, gfc_vector2d(300, 200));
+	//enemy_spawn(BRUISER, gfc_vector2d(300, 200));
 
 	sj_free(level_data);
 	return level;
@@ -220,9 +227,13 @@ GFC_Rect level_find_nearest_ground(Entity* ent) {
 
 		g_level = get_edge_from_rect(ground->dimensions, 1);
 
-		if (right.x1 >= ground->region.x && left.x1 <= ground->region.y 
-			&& g_level.y1 - (left.y2 - ent->velocity.y) <= 7.0f)
+		if (right.x1 >= ground->region.x && left.x1 < ground->region.y
+			&& g_level.y1 - (left.y2 - ent->velocity.y) <= 7.0f 
+			&& g_level.y1 - left.y2 > -3.0f
+			) {
+			// slog("%f", g_level.y1 - (left.y2 - ent->velocity.y));
 			return ground->dimensions;
+		}
 	}
 	return gfc_rect(-20.0f, 1000.0f, 1800.0f, 200.0f);
 }
@@ -240,8 +251,10 @@ Uint8 ground_collision(void* ent) {
 	}
 
 	ground = level_find_nearest_ground(self);
+	if (ground.x == -20.f)
+		return 0;
+	
 	edge = get_edge_from_rect(ground, 1);
-
 
 	bottom = get_edge_from_rect(self->boundbox.s.r, 0); // player's bottom edge
 	bottom.y1 += -self->velocity.y;
@@ -269,6 +282,122 @@ Uint8 ground_collision(void* ent) {
 
 		return 0;
 	}
+}
+
+GFC_Rect level_find_nearest_ceiling(Entity* ent) {
+	Ground* ground;
+	GFC_Edge2D left, right, g_level;
+	int i;
+
+	left = get_edge_from_rect(ent->boundbox.s.r, 3);
+	right = get_edge_from_rect(ent->boundbox.s.r, 2);
+
+	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
+		ground = (Ground*)gfc_list_nth(level_manager.curr_level->ground_list, i);
+
+		if (!ground || !ground->ceil_flag) continue;
+
+		g_level = get_edge_from_rect(ground->dimensions, 1);
+
+		if (right.x1 >= ground->region.x && left.x1 < ground->region.y
+			&& left.y1 + ent->velocity.y - g_level.y1 <= 7.0f
+			//&& g_level.y1 - left.y2 > -3.0f
+			) {
+			// slog("%f", g_level.y1 - (left.y2 - ent->velocity.y));
+			return ground->dimensions;
+		}
+	}
+	return gfc_rect(-20.0f, 1000.0f, 1800.0f, 200.0f);
+}
+
+Uint8 ceiling_collision(void* ent) {
+	Entity* self;
+	PlayerData* p_data;
+	GFC_Edge2D edge, ceil;
+	GFC_Rect ground;
+
+	self = (Entity*)ent;
+	if (!self) {
+		slog("no entity");
+		return 0;
+	}
+
+	ground = level_find_nearest_ceiling(self);
+	if (ground.x == -20.f)
+		return 0;
+
+	ceil = get_edge_from_rect(ground, 0);
+
+	edge = get_edge_from_rect(self->boundbox.s.r, 1); // player's top edge
+	edge.y1 += self->velocity.y;
+
+	if (roundf(ceil.y1) == edge.y1) //touching ground
+		return 2;
+	else if (edge.y1 <= ceil.y1 + 1.0f) { // about to touch ground
+		self->position.y = ceil.y1 + self->boundbox.s.r.h / 2.0f; // check to make sure not to clip through ground
+		return 1;
+	}
+	else { // falling
+		if (self->type == PLAYER) {
+			self->velocity.y = 0;
+
+			p_data = self->data;
+			if (!p_data) return 0;
+
+			p_data->moveTypeY = FALLING;
+		}
+		else if (self->type == ENEMY) {
+			// TODO
+		}
+
+		return 0;
+	}
+}
+
+Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
+	Wall* wall;
+	GFC_Vector2D wall_point, p_point; //, p1, p2;
+	GFC_Edge2D p_side, p_bottom, p_top;
+	GFC_Color color;
+	int i;
+	float offset;
+
+	offset = 20.0f;
+
+	if (!ent) {
+		slog("no entity given");
+		return;
+	}
+
+	for (i = 0; i < level_manager.curr_level->wall_list->count; i++) {
+		wall = (Wall*)gfc_list_nth(level_manager.curr_level->wall_list, i);
+
+		if (!wall) continue;
+
+		p_bottom = get_edge_from_rect(ent->boundbox.s.r, 0);
+		p_top = get_edge_from_rect(ent->boundbox.s.r, 1);
+
+		//p1 = gfc_vector2d(wall->dimensions.x1, 0);
+		//p2 = gfc_vector2d(wall->dimensions.x2, 1200);
+		//gf2d_draw_line(p1, p2, GFC_COLOR_GREEN);
+
+		if (p_bottom.y1 > wall->dimensions.y1 && p_bottom.y1 < wall->dimensions.y2 &&
+			p_top.y1 < wall->dimensions.y2
+			) {
+			wall_point = gfc_vector2d(wall->dimensions.x1, ent->position.y);
+			p_side = get_edge_from_rect(ent->boundbox.s.r, wall_type + 2);
+			p_point = gfc_vector2d(p_side.x1, ent->position.y);
+			p_point.x += wall_type ? ent->velocity.x : -ent->velocity.x;
+
+			//color = wall_type ? GFC_COLOR_BLUE : GFC_COLOR_RED;
+			//gf2d_draw_line(wall_point, p_point, color);
+
+			if (gfc_vector2d_distance_between_less_than(wall_point, p_point, offset))
+				return wall;
+		}
+	}
+
+	return NULL; // if no wall is found
 }
 
 Uint8 wall_collision(void* ent, Uint8 wall_type) {
@@ -308,52 +437,6 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 		//slog("not touching wall");
 		return 0;
 	}
-}
-
-
-Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
-	Wall* wall;
-	GFC_Vector2D wall_point, p_point; //, p1, p2;
-	GFC_Edge2D p_side, p_bottom;
-	GFC_Color color;
-	int i;
-	float offset;
-
-	offset = 20.0f;
-
-	if (!ent) {
-		slog("no entity given");
-		return;
-	}
-	
-	for (i = 0; i < level_manager.curr_level->wall_list->count; i++) {
-		wall = (Ground*) gfc_list_nth(level_manager.curr_level->wall_list, i);
-
-		if (!wall) continue; 
-		
-		p_bottom = get_edge_from_rect(ent->boundbox.s.r, 0);
-		//p_top = get_edge_from_rect(ent->boundbox.s.r, 1);
-
-		//p1 = gfc_vector2d(wall->dimensions.x1, 0);
-		//p2 = gfc_vector2d(wall->dimensions.x2, 1200);
-		//gf2d_draw_line(p1, p2, GFC_COLOR_GREEN);
-
-		if (p_bottom.y1 > wall->dimensions.y1) { // && p_top.y1 <= wall->dimensions.y2
-			wall_point = gfc_vector2d(wall->dimensions.x1, ent->position.y);
-			p_side = get_edge_from_rect(ent->boundbox.s.r, wall_type+2);
-			p_point = gfc_vector2d(p_side.x1, ent->position.y);
-			p_point.x += wall_type ? ent->velocity.x : -ent->velocity.x;
-
-			color = wall_type ? GFC_COLOR_BLUE : GFC_COLOR_RED;
-
-			//gf2d_draw_line(wall_point, p_point, color);
-			if (gfc_vector2d_distance_between_less_than(wall_point, p_point, offset))
-				return wall;
-		}
-	}
-
-
-	return NULL; // if no wall is found
 }
 
 GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side) {

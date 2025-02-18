@@ -7,15 +7,27 @@
         "ground_list":
         [
             {
-                "dimensions": [0, 600, 1200, 120],
+                "dimensions": [0, 600, 400, 120],
                 "color": [0, 0, 0, 255],
-                "walls": 0
+                "walls": 1,
+                "celing": 0
             },
             {
-                "dimensions": [150, 300, 500, 420],
+                "dimensions": [800, 600, 400, 120],
                 "color": [255, 255, 0, 255],
-                "walls": 1
+                "walls": 1,
+                "celing": 0
+            },
+            {
+                "dimensions": [500, 300, 200, 100],
+                "color": [0, 255, 0, 255],
+                "walls": 1,
+                "celing": 1
             }
+        ],
+        "platform_list":
+        [
+
         ]
     },
     "enemy_spawns":
