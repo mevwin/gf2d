@@ -7,22 +7,27 @@ typedef enum PlayerState_E{
 	IDLE,
 	MOVING,
 	SLOWDOWN,
-	DODGE,
-	WALLJUMP
+	DODGE
 }PlayerState;
 
-typedef enum PlayerMove_E {
+typedef enum PlayerMoveX_E {
 	LEFT,
 	RIGHT,
-	UP,
-	DOWN,
-	NONE
-}PlayerMove;
+	NONE_X
+}PlayerMoveX;
+
+typedef enum PlayerMoveY_E {
+	RISING,
+	FALLING,
+	FASTFALLING,
+	NONE_Y
+}PlayerMoveY;
 
 typedef struct PlayerData_S{
 	GFC_Vector2D	spawn_pos;
 	PlayerState		state;
-	PlayerMove		moveType;
+	PlayerMoveX		moveTypeX;
+	PlayerMoveX		moveTypeY;
 
 	float			currHealth;
 	float			maxHealth;
@@ -30,8 +35,9 @@ typedef struct PlayerData_S{
 	// movement flags
 	Uint8			jump_count;
 	Uint8			max_jumps;
-	Uint8			turnaround;
 	Uint8			wall_jump;
+
+	Uint8			turnaround;
 	int				dodge_charges;
 	int				max_dodge_charges;
 	GFC_Vector2D	dodge_vel;		// x = grounded, y = aerial

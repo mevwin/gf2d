@@ -73,7 +73,8 @@ PlayerData* player_data_init(Entity* self, SJson* data) {
 
 	gfc_vector2d_copy(p_data->spawn_pos, self->position);
 	p_data->state = IDLE;
-	p_data->moveType = NONE;
+	p_data->moveTypeX = NONE_X;
+	p_data->moveTypeY = NONE_Y;
 	p_data->jump_count = 0;
 
 	sj_object_get_uint8(data, "max_jumps", &p_data->max_jumps);
@@ -105,7 +106,7 @@ void player_update(Entity* self) {
 	//ground_level = get_ground_level();
 	//bottom = get_bottom_edge(self->boundbox.s.r);
 
-	switch (p_data->moveType) {
+	switch (p_data->moveTypeX) {
 		case LEFT:
 			self->dir.x = 1;
 			break;
@@ -159,7 +160,7 @@ void player_move(Entity* self) {
 	}
 	*/
 
-	/* BASE MOVEMENT */
+	/* BASE HORIZONTAL MOVEMENT */
 	// to help maintain momentum in the air
 	if (!gfc_input_command_pressed("moveright") && !gfc_input_command_pressed("moveleft")
 		&& self->velocity.x > 0 && !ground_collision(self) && p_data->state != DODGE)
@@ -174,43 +175,43 @@ void player_move(Entity* self) {
 		&& !gfc_input_command_pressed("moveright") && p_data->state != DODGE && !p_data->wall_jump) {
 		p_data->state = MOVING;
 
-		if (p_data->moveType == RIGHT && self->velocity.x > 0) {
+		if (p_data->moveTypeX == RIGHT && self->velocity.x > 0) {
 			p_data->state = SLOWDOWN;
 			if (ground_collision(self) == 2)
 				p_data->turnaround = 1;
 		}
 		else
-			p_data->moveType = LEFT;
+			p_data->moveTypeX = LEFT;
 
 		if (self->velocity.x <= self->max_velocity.x) // ground
 			self->velocity.x += self->accel.x;
 		else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
-			self->velocity.x += self->accel.y;
+			self->velocity.x += self->accel.x * 2.0f;
 	}
 	else if ((gfc_input_command_down("moveright") || gfc_input_command_pressed("moveright"))
 		&& !gfc_input_command_pressed("moveleft") && p_data->state != DODGE && !p_data->wall_jump) {
 		p_data->state = MOVING;
 
-		if (p_data->moveType == LEFT && self->velocity.x > 0) {
+		if (p_data->moveTypeX == LEFT && self->velocity.x > 0) {
 			p_data->state = SLOWDOWN;
 			if (ground_collision(self) == 2)
 				p_data->turnaround = 1;
 		}
 		else
-			p_data->moveType = RIGHT;
+			p_data->moveTypeX = RIGHT;
 
 		if (self->velocity.x <= self->max_velocity.x) // ground
 			self->velocity.x += self->accel.x;
 		else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
-			self->velocity.x += self->accel.y;
+			self->velocity.x += self->accel.x * 2.0f;
 	}
 
 	/* DODGE */
 	if ((gfc_input_command_pressed("dodge")) && p_data->state != DODGE && p_data->dodge_charges > 0) {
 		if (gfc_input_command_pressed("moveright") || self->dir.x == 0)
-			p_data->moveType = RIGHT;
+			p_data->moveTypeX = RIGHT;
 		else if (gfc_input_command_pressed("moveleft") || self->dir.x == 1)
-			p_data->moveType = LEFT;
+			p_data->moveTypeX = LEFT;
 
 		p_data->state = DODGE;
 
@@ -222,19 +223,19 @@ void player_move(Entity* self) {
 		self->velocity.y = 0;
 	}
 
+	// 0 == left wall, 1 == right wall
 	i = self->dir.x == 0 ? 0 : 1;
 
+	/* BASE VERTICAL MOVEMENT (NOTE: VERTICAL MEANS NEGATIVE Y)*/
 	/* JUMP */
-	// NOTE: positive vertical movement is negativ
 	if (gfc_input_command_pressed("jump")) {
 		if (!wall_collision(self, i) && p_data->jump_count < p_data->max_jumps) {
-			// go up
 			self->velocity.y = self->max_velocity.y;
 			if (p_data->jump_count)
 				slog("dj");
 
 			p_data->jump_count++;
-
+			p_data->moveTypeY = RISING;
 		}
 		else if (wall_collision(self, i) && !p_data->wall_jump && p_data->jump_count > 0) {
 			// TODO: fix later
@@ -242,13 +243,19 @@ void player_move(Entity* self) {
 			self->velocity.y = self->max_velocity.y;
 			self->velocity.x = self->max_velocity.x;
 			//self->position.x += i ? self->max_velocity.x : -self->max_velocity.x;
-			p_data->moveType = i ? RIGHT : LEFT; // if wall jumping from right, go left (and vice versa)
+			p_data->moveTypeX = i ? RIGHT : LEFT; // if wall jumping from right, go left (and vice versa)
+			p_data->moveTypeY = RISING;
 			slog("wall jump");
 		}
 	}
+
+	if (p_data->moveTypeY == FALLING && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown"))) {
+		// remember at this point, velocity.y is negative
+		p_data->moveTypeY = FASTFALLING;
+		slog("fast falling");
+	}
 	
 	// big-ass state check to actually apply the movement
-		// 0 == left wall, 1 == right wall
 	if (p_data->state == MOVING) { // regular movement
 		if ((wall_collision(self, i) && !p_data->wall_jump) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;
@@ -258,7 +265,7 @@ void player_move(Entity* self) {
 		if (self->velocity.x > self->max_velocity.x)
 			self->velocity.x -= 0.1f;
 
-		self->position.x += p_data->moveType == RIGHT ?
+		self->position.x += p_data->moveTypeX == RIGHT ?
 							self->velocity.x : -self->velocity.x;
 	}
 	else if (p_data->state == SLOWDOWN) {
@@ -268,7 +275,7 @@ void player_move(Entity* self) {
 		}
 
 		// sliding effect
-		self->position.x += p_data->moveType == RIGHT ?
+		self->position.x += p_data->moveTypeX == RIGHT ?
 							self->velocity.x : -self->velocity.x;
 
 		// if on ground, apply friction
@@ -277,14 +284,14 @@ void player_move(Entity* self) {
 
 			if (self->velocity.x < 0) {
 				self->velocity.x = 0;
-				p_data->moveType = NONE;
+				p_data->moveTypeX = NONE_X;
 				p_data->state = IDLE;
 			}
 		}
 		else { // if in air and turning around, slow down
 			self->velocity.x -= 0.7f;
 			if (self->velocity.x < 0) {
-				p_data->moveType = p_data->moveType != RIGHT ? RIGHT : LEFT;
+				p_data->moveTypeX = p_data->moveTypeX != RIGHT ? RIGHT : LEFT;
 				p_data->turnaround = 1;
 				self->velocity.x = 0;
 			}
@@ -296,7 +303,7 @@ void player_move(Entity* self) {
 			return;
 		}
 
-		self->position.x += p_data->moveType == RIGHT ?
+		self->position.x += p_data->moveTypeX == RIGHT ?
 							self->velocity.x : -self->velocity.x;
 
 		self->velocity.x -= 0.5f;
@@ -317,6 +324,7 @@ void player_gravity(Entity* self) {
 	PlayerData* p_data;
 	GFC_Edge2D bottom;
 	Uint8 i;
+	float buf;
 
 	p_data = self->data;
 	if (!p_data) return;
@@ -339,9 +347,24 @@ void player_gravity(Entity* self) {
 		p_data->wall_jump = 0;
 	}
 	else { // falling
-		self->position.y -= self->velocity.y;
-		self->velocity.y -= GRAVITY;
+		if (p_data->moveTypeY == FASTFALLING)
+			buf = self->accel.y;
+		else
+			buf = GRAVITY;
 
+		self->position.y -= self->velocity.y;
+		self->velocity.y -= buf;
+
+		if (self->velocity.y <= 0.0f && self->velocity.y > -2.0f)
+			p_data->moveTypeY = FALLING;
+		
+		//if (self->velocity.y <= 0.0f && self->velocity.y > -3.0f) {
+		//self->velocity.y -= p_data->moveTypeY == FALLING ? GRAVITY : self->accel.y;
+
+		//}
+		//if (self->velocity.y < -17.0f)
+			//self->velocity.y = -17.0f;
+		
 		if (self->velocity.y <= 7.0f)
 			p_data->wall_jump = 0;
 	}
