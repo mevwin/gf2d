@@ -214,7 +214,7 @@ Level* get_curr_level() {
 
 GFC_Rect level_find_nearest_ground(Entity* ent) {
 	Ground* ground;
-	GFC_Edge2D left, right, g_level;
+	GFC_Edge2D left, right, g_level, g_bottom;
 	int i;
 
 	left = get_edge_from_rect(ent->boundbox.s.r, 3);
@@ -226,10 +226,11 @@ GFC_Rect level_find_nearest_ground(Entity* ent) {
 		if (!ground) continue;
 
 		g_level = get_edge_from_rect(ground->dimensions, 1);
+		g_bottom = get_edge_from_rect(ground->dimensions, 0);
 
 		if (right.x1 >= ground->region.x && left.x1 < ground->region.y
-			&& g_level.y1 - (left.y2 - ent->velocity.y) <= 7.0f 
-			&& g_level.y1 - left.y2 > -3.0f
+			&& g_level.y1 - (left.y2 - ent->velocity.y) <= 7.0f
+			&& g_bottom.y1 >(left.y2 - ent->velocity.y)
 			) {
 			// slog("%f", g_level.y1 - (left.y2 - ent->velocity.y));
 			return ground->dimensions;
@@ -357,7 +358,7 @@ Uint8 ceiling_collision(void* ent) {
 Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
 	Wall* wall;
 	GFC_Vector2D wall_point, p_point; //, p1, p2;
-	GFC_Edge2D p_side, p_bottom, p_top;
+	GFC_Edge2D p_side, p_top;
 	GFC_Color color;
 	int i;
 	float offset;
@@ -374,16 +375,27 @@ Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
 
 		if (!wall) continue;
 
-		p_bottom = get_edge_from_rect(ent->boundbox.s.r, 0);
-		p_top = get_edge_from_rect(ent->boundbox.s.r, 1);
+		p_side = get_edge_from_rect(ent->boundbox.s.r, 2);
 
 		//p1 = gfc_vector2d(wall->dimensions.x1, 0);
 		//p2 = gfc_vector2d(wall->dimensions.x2, 1200);
 		//gf2d_draw_line(p1, p2, GFC_COLOR_GREEN);
+		//p_side.y1 += ent->velocity.y;
+		//p_side.y2 += ent->velocity.y;
 
-		if (p_bottom.y1 > wall->dimensions.y1 && p_bottom.y1 < wall->dimensions.y2 &&
-			p_top.y1 < wall->dimensions.y2
-			) {
+		/*
+		if (p_side.y1 < wall->dimensions.y1 && p_side.y2 > wall->dimensions.y2) {
+			slog("case 1");
+		}
+		if (p_side.y1 > wall->dimensions.y1 && p_side.y1 < wall->dimensions.y2 && p_side.y2 > wall->dimensions.y1 && p_side.y2 < wall->dimensions.y2) {
+			slog("case 2");
+		}
+		if (p_side.y1 > wall->dimensions.y1 && p_side.y1 < wall->dimensions.y2 && p_side.y2 > wall->dimensions.y2) {
+			slog("case 3");
+		}
+		*/
+
+		if ( p_side.y2 > wall->dimensions.y1 && p_side.y1 < wall->dimensions.y2) {
 			wall_point = gfc_vector2d(wall->dimensions.x1, ent->position.y);
 			p_side = get_edge_from_rect(ent->boundbox.s.r, wall_type + 2);
 			p_point = gfc_vector2d(p_side.x1, ent->position.y);
@@ -475,3 +487,13 @@ GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side) {
 	}
 	return edge;
 }
+
+/**
+* apply bit masking/bitwise operations for layering
+* ex:
+*	01000
+*  &?????
+*	0?000
+* 
+* means if the bits match, objects are the same layer
+*/
