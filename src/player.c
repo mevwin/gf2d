@@ -358,8 +358,10 @@ void player_gravity(Entity* self) {
 			buf = GRAVITY;
 
 		self->position.y -= self->velocity.y;
-		if (ceiling_collision(self))
+		if (ceiling_collision(self)) {
 			slog("true");
+			self->velocity.y = 0;
+		}
 
 		self->velocity.y -= buf;
 
