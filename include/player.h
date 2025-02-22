@@ -43,7 +43,7 @@ typedef struct PlayerData_S{
 	Uint8			max_dodge_charges;
 
 	// movement values
-	GFC_Vector2D	dodge_vel;		// x = grounded, y = aerial
+	GFC_Vector2D	dodge_vel;
 	float			dodge_vel_reduc;
 	float			jump_speed;
 	GFC_Vector3D	friction;
@@ -54,7 +54,18 @@ typedef struct PlayerData_S{
 	// maybe add no_move toggle
 }PlayerData;
 
+/**
+* @brief spawn a player entity
+* @param position: point to spawn the player in screen space
+* @param data: pointer to json data to initialize data from
+* @note: SPAWN ONLY ONE PLAYER
+*/
 Entity* player_spawn(GFC_Vector2D position, SJson* data);
+
+/**
+* @brief pointer to player's position
+* @note used for circumstances where player position is needed w/o needing the player entity
+*/
 GFC_Vector2D* get_player_pos();
 
 #endif

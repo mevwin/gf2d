@@ -5,6 +5,7 @@
 #include "gfc_config.h"
 #define GRAVITY 0.3f
 #define RES gfc_rect(0,0,1200, 700)
+#define CURRENT_TIME (SDL_GetTicks() / 1000.0f)
 
 typedef enum WorldState_E {
 	INGAME,
