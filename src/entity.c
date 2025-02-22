@@ -2,7 +2,7 @@
 #include "gf2d_draw.h"
 #include "gfc_matrix.h"
 #include "world.h"
-#include "level.h"
+#include "collisions.h"
 #include "entity.h"
 
 // cite this page for later

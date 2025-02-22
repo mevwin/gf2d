@@ -17,16 +17,19 @@
 *.pch
 
 # Libraries
+*.lib
 *.a
 *.la
 *.lo
 
 # Shared objects (inc. Windows DLLs)
+*.dll
 *.so
 *.so.*
 *.dylib
 
 # Executables
+*.exe
 *.out
 *.app
 *.i*86
@@ -37,6 +40,7 @@
 *.dSYM/
 *.su
 *.idb
+*.pdb
 
 # Kernel Module Compile Results
 *.mod*

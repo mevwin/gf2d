@@ -24,24 +24,31 @@ typedef enum PlayerMoveY_E {
 }PlayerMoveY;
 
 typedef struct PlayerData_S{
-	GFC_Vector2D	spawn_pos;
 	PlayerState		state;
-	PlayerMoveX		moveTypeX;
-	PlayerMoveX		moveTypeY;
 
+	// player stats
 	float			currHealth;
 	float			maxHealth;
 
-	// movement flags
-	Uint8			jump_count;
+	// movement flags/checks
+	PlayerMoveX		moveTypeX;
+	PlayerMoveY		moveTypeY;
 	Uint8			max_jumps;
 	Uint8			wall_jump;
-
 	Uint8			turnaround;
-	int				dodge_charges;
-	int				max_dodge_charges;
-	GFC_Vector2D	dodge_vel;		// x = grounded, y = aerial
+	
+	// movement counters
+	Uint8			jump_count;
+	Uint8			dodge_charges;
+	Uint8			max_dodge_charges;
 
+	// movement values
+	GFC_Vector2D	dodge_vel;		// x = grounded, y = aerial
+	float			dodge_vel_reduc;
+	float			jump_speed;
+	GFC_Vector3D	friction;
+
+	GFC_Vector2D	spawn_pos;
 
 	// TODO: insert resource bar here
 	// maybe add no_move toggle

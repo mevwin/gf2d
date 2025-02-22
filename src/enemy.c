@@ -1,6 +1,6 @@
 #include "simple_logger.h"
 #include "world.h"
-#include "level.h"
+#include "collisions.h"
 #include "enemy.h"
 
 void enemy_think(Entity* self);
@@ -60,10 +60,10 @@ void enemy_gravity(Entity* self) {
 
 	bottom = get_edge_from_rect(self->boundbox.s.r, 0);
 
-	if (ground_collision(self) == 2 && self->velocity.y == 0) { // grounded
+	if (ground_collision(self) && self->velocity.y == 0) { // grounded
 		//  uhhhh....
 	}
-	else if (ground_collision(self) == 1) { // landing
+	else if (ground_collision(self)) { // landing
 		self->velocity.y = 0;
 	}
 	else {
