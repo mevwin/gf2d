@@ -4,9 +4,8 @@
 #include "gf2d_draw.h"
 #include "world.h"
 #include "collisions.h"
-#include "player_move.h"
-#include "player_attacks.h"
 #include "player.h"
+#include "player_attacks.h"
 
 // required entity functions
 void player_think(Entity* self);
@@ -78,8 +77,8 @@ PlayerData* player_data_init(Entity* self, SJson* data) {
 
 	gfc_vector2d_copy(p_data->spawn_pos, self->position);
 	p_data->state = IDLE;
-	p_data->moveTypeX = NONE_X;
-	p_data->moveTypeY = NONE_Y;
+	p_data->moveTypeX = PMOVE_NONE_X;
+	p_data->moveTypeY = PMOVE_NONE_Y;
 	p_data->jump_count = 0;
 
 	sj_object_get_uint8(data, "max_jumps", &p_data->max_jumps);
@@ -114,10 +113,10 @@ void player_update(Entity* self) {
 	//bottom = get_bottom_edge(self->boundbox.s.r);
 
 	switch (p_data->moveTypeX) {
-		case LEFT:
+		case PMOVE_LEFT:
 			self->dir.x = 1;
 			break;
-		case RIGHT:
+		case PMOVE_RIGHT:
 			self->dir.x = 0;
 			break;
 	}
@@ -178,21 +177,22 @@ void player_gravity(Entity* self) {
 		p_data->wall_jump = 0;
 	}
 	else { // falling
+		// change moveTypeY to FALLING once peak of jump has reached
+		if (p_data->moveTypeY == PMOVE_RISING &&
+			(ceiling_collision(self) || self->velocity.y < 1.0f && self->velocity.y > -2.0f)
+			) {
+			p_data->moveTypeY = PMOVE_FALLING;
+			self->velocity.y = 0;
+		}
+
 		self->position.y -= self->velocity.y;
 
-		if (ceiling_collision(self))
-			self->velocity.y = 0; 
-
 		// increase falling speed
-		self->velocity.y -= p_data->moveTypeY == FASTFALLING ? self->accel.y : GRAVITY;
+		self->velocity.y -= p_data->moveTypeY == PMOVE_FASTFALLING ? self->accel.y : GRAVITY;
 
 		// limit vertical velocity
 		if (self->velocity.y < -self->max_velocity.y)
 			self->velocity.y = -self->max_velocity.y;
-
-		// change moveTypeY to FALLING once peak of jump has reached
-		if (self->velocity.y <= 0.0f && self->velocity.y > -2.0f)
-			p_data->moveTypeY = FALLING;
 
 		// reset wall jump
 		if (self->velocity.y <= 7.0f) 

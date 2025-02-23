@@ -2,7 +2,6 @@
 #include "world.h"
 #include "player.h"
 #include "collisions.h"
-#include "player_move.h"
 
 typedef struct PlayerRecall_S {
 	// timing
@@ -40,13 +39,13 @@ void player_move(void* p) {
 		&& !gfc_input_command_pressed("moveright") && p_data->state != DODGE && !p_data->wall_jump) {
 		p_data->state = MOVING;
 
-		if (p_data->moveTypeX == RIGHT && self->velocity.x > 0) {
+		if (p_data->moveTypeX == PMOVE_RIGHT && self->velocity.x > 0) {
 			p_data->state = SLOWDOWN;
 			if (ground_collision(self))
 				p_data->turnaround = 1;
 		}
 		else
-			p_data->moveTypeX = LEFT;
+			p_data->moveTypeX = PMOVE_LEFT;
 
 		if (self->velocity.x <= self->max_velocity.x) // ground
 			self->velocity.x += self->accel.x;
@@ -57,13 +56,13 @@ void player_move(void* p) {
 		&& !gfc_input_command_pressed("moveleft") && p_data->state != DODGE && !p_data->wall_jump) {
 		p_data->state = MOVING;
 
-		if (p_data->moveTypeX == LEFT && self->velocity.x > 0) {
+		if (p_data->moveTypeX == PMOVE_LEFT && self->velocity.x > 0) {
 			p_data->state = SLOWDOWN;
 			if (ground_collision(self))
 				p_data->turnaround = 1;
 		}
 		else
-			p_data->moveTypeX = RIGHT;
+			p_data->moveTypeX = PMOVE_RIGHT;
 
 		if (self->velocity.x <= self->max_velocity.x) // ground
 			self->velocity.x += self->accel.x;
@@ -74,12 +73,12 @@ void player_move(void* p) {
 	/* DODGE */
 	if ((gfc_input_command_pressed("dodge")) && p_data->state != DODGE && p_data->dodge_charges > 0) {
 		if (gfc_input_command_pressed("moveright") || self->dir.x == 0)
-			p_data->moveTypeX = RIGHT;
+			p_data->moveTypeX = PMOVE_RIGHT;
 		else if (gfc_input_command_pressed("moveleft") || self->dir.x == 1)
-			p_data->moveTypeX = LEFT;
+			p_data->moveTypeX = PMOVE_LEFT;
 
 		p_data->state = DODGE;
-		p_data->moveTypeY = NONE_Y;
+		p_data->moveTypeY = PMOVE_NONE_Y;
 
 		self->velocity.x = p_data->dodge_vel.x;
 		if (!ground_collision(self)) {
@@ -99,20 +98,20 @@ void player_move(void* p) {
 			self->velocity.y = p_data->jump_speed;
 
 			p_data->jump_count++;
-			p_data->moveTypeY = RISING;
+			p_data->moveTypeY = PMOVE_RISING;
 		}
 		else if (wall_collision(self, i) && !p_data->wall_jump && p_data->jump_count > 0) {
 			p_data->wall_jump = 1;
 			self->velocity.y = p_data->jump_speed;
 			self->velocity.x = self->max_velocity.x;
-			p_data->moveTypeX = i ? RIGHT : LEFT; // if wall jumping from right, go left (and vice versa)
-			p_data->moveTypeY = RISING;
+			p_data->moveTypeX = i ? PMOVE_RIGHT : PMOVE_LEFT; // if wall jumping from right, go left (and vice versa)
+			p_data->moveTypeY = PMOVE_RISING;
 		}
 	}
 
-	if (p_data->moveTypeY == FALLING && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown"))) {
+	if (p_data->moveTypeY == PMOVE_FALLING && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown"))) {
 		// remember at this point, velocity.y is negative
-		p_data->moveTypeY = FASTFALLING;
+		p_data->moveTypeY = PMOVE_FASTFALLING;
 	}
 
 	// big-ass state check to actually apply the movement
@@ -125,7 +124,7 @@ void player_move(void* p) {
 		if (self->velocity.x > self->max_velocity.x)
 			self->velocity.x -= p_data->friction.z;
 
-		self->position.x += p_data->moveTypeX == RIGHT ?
+		self->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
 			self->velocity.x : -self->velocity.x;
 	}
 	else if (p_data->state == SLOWDOWN) {
@@ -135,7 +134,7 @@ void player_move(void* p) {
 		}
 
 		// sliding effect
-		self->position.x += p_data->moveTypeX == RIGHT ?
+		self->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
 			self->velocity.x : -self->velocity.x;
 
 		// if on ground, apply friction
@@ -144,7 +143,7 @@ void player_move(void* p) {
 
 			if (self->velocity.x < 0) {
 				self->velocity.x = 0;
-				p_data->moveTypeX = NONE_X;
+				p_data->moveTypeX = PMOVE_NONE_X;
 				p_data->state = IDLE;
 			}
 		}
@@ -152,7 +151,7 @@ void player_move(void* p) {
 			self->velocity.x -= p_data->friction.x;
 
 			if (self->velocity.x < 0) {
-				p_data->moveTypeX = p_data->moveTypeX != RIGHT ? RIGHT : LEFT;
+				p_data->moveTypeX = p_data->moveTypeX != PMOVE_RIGHT ? PMOVE_RIGHT : PMOVE_LEFT;
 				p_data->turnaround = 1;
 				self->velocity.x = 0;
 			}
@@ -164,7 +163,7 @@ void player_move(void* p) {
 			return;
 		}
 
-		self->position.x += p_data->moveTypeX == RIGHT ?
+		self->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
 			self->velocity.x : -self->velocity.x;
 
 		self->velocity.x -= p_data->dodge_vel_reduc;

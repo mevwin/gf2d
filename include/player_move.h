@@ -3,6 +3,19 @@
 
 #include "gfc_input.h"
 
+typedef enum PlayerMoveX_E {
+	PMOVE_LEFT,
+	PMOVE_RIGHT,
+	PMOVE_NONE_X
+}PlayerMoveX;
+
+typedef enum PlayerMoveY_E {
+	PMOVE_RISING,
+	PMOVE_FALLING,
+	PMOVE_FASTFALLING,
+	PMOVE_NONE_Y
+}PlayerMoveY;
+
 void player_move_system_init();
 
 /**

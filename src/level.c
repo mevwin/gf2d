@@ -209,6 +209,43 @@ Level* get_curr_level() {
 	return level_manager.curr_level;
 }
 
+Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type) {
+	GFC_Edge2D screen_edge, e_edge;
+	Entity* self;
+	//GFC_Vector2D p1, p2;
+	float offset;
+
+	self = (Entity*) e;
+	if (!self) return;
+	if (self->bounds) self->bounds(self);
+	// if no unique bounds function, at least restrict entity to viewspace
+	offset = 1.0f;
+
+	screen_edge = get_edge_from_rect(RES, edge_type + 2);
+	e_edge = get_edge_from_rect(self->boundbox.s.r, edge_type + 2);
+	e_edge.x1 += !edge_type ? self->velocity.x : -self->velocity.x;
+
+	//slog("p: %f, s: %f", e_edge.x1, screen_edge.x1);
+
+	if ((edge_type && e_edge.x1 <= screen_edge.x1 + offset) ||
+		(!edge_type && e_edge.x1 >= screen_edge.x1 - offset))
+		return 1;
+	else
+		return 0;
+
+	/*
+	screen_edge = get_edge_from_rect(RES, 1);
+	e_edge = get_edge_from_rect(self->boundbox.s.r, 1);
+	if (e_edge.y1 - self->velocity.y <= screen_edge.y1 + offset)
+		return 0;
+
+	screen_edge = get_edge_from_rect(RES, 0);
+	e_edge = get_edge_from_rect(self->boundbox.s.r, 0);
+	if (e_edge.y1 + self->velocity.y >= screen_edge.y1 - offset)
+		return 0;
+	*/
+}
+
 /**
 * apply bit masking/bitwise operations for layering
 * ex:

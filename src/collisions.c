@@ -6,7 +6,7 @@
 
 GFC_Rect level_find_nearest_ground(Entity* ent);
 GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top);
-Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type);
+Wall* level_find_nearest_wall(Entity* ent, WallType wall_type);
 
 GFC_Rect level_find_nearest_ground(Entity* ent) {
 	Ground* ground;
@@ -144,28 +144,14 @@ Uint8 ceiling_collision(void* ent) {
 	offset = 1.0f;
 
 	if (e_top.y1 <= ceil.y1 + offset) { // about to touch ceiling
-		self->position.y = ceil.y1 + self->boundbox.s.r.h / 2.0f + (2.0f * offset); // check to make sure not to clip through ground
+		self->position.y = ceil.y1 + (self->boundbox.s.r.h / 2.0f) + (5.0f*offset); // check to make sure not to clip through ground
 		//self->velocity.y = 0;
 		return 1;
 	}
-	else { // falling
-		if (self->type == PLAYER) {
-			//self->velocity.y = 0;
-
-			p_data = self->data;
-			if (!p_data) return 0;
-
-			p_data->moveTypeY = FALLING;
-		}
-		else if (self->type == ENEMY) {
-			// TODO
-		}
-
-		return 0;
-	}
+	else return 0;
 }
 
-Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
+Wall* level_find_nearest_wall(Entity* ent, WallType wall_type) {
 	Wall* wall;
 	GFC_Vector2D wall_point, p_point; //, p1, p2;
 	GFC_Edge2D p_side;
@@ -190,9 +176,9 @@ Wall* level_find_nearest_wall(Entity* ent, Uint8 wall_type) {
 
 		if (p_side.y2 > wall->dimensions.y1 && p_side.y1 < wall->dimensions.y2) {
 			wall_point = gfc_vector2d(wall->dimensions.x1, ent->position.y);
-			p_side = get_edge_from_rect(ent->boundbox.s.r, wall_type + 2);
+			p_side = get_edge_from_rect(ent->boundbox.s.r, ((Uint8) wall_type) + 2);
 			p_point = gfc_vector2d(p_side.x1, ent->position.y);
-			p_point.x += wall_type ? ent->velocity.x : -ent->velocity.x;
+			p_point.x += wall_type == WALL_LEFT ? ent->velocity.x : -ent->velocity.x;
 
 			//color = wall_type ? GFC_COLOR_BLUE : GFC_COLOR_RED;
 			//gf2d_draw_line(wall_point, p_point, color);
@@ -224,8 +210,8 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 		return 0;
 	}
 
-	side_type = wall_type ? 3 : 2;
-	p_side = get_edge_from_rect(self->boundbox.s.r, side_type);
+	side_type = wall_type == WALL_RIGHT ? 3 : 2;
+	p_side = get_edge_from_rect(self->boundbox.s.r, ((Uint8) side_type));
 	p_top = get_edge_from_rect(self->boundbox.s.r, 0);
 	offset = 2.0f;
 
@@ -233,8 +219,8 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 		//slog("hugging wall");
 		//return 2;
 	//}
-	if ((wall_type && p_side.x1 - self->velocity.x <= wall->dimensions.x1 + offset) || // right side
-		(!wall_type && p_side.x1 + self->velocity.x >= wall->dimensions.x1 - offset)) {// left side
+	if ((wall_type == WALL_RIGHT && p_side.x1 - self->velocity.x <= wall->dimensions.x1 + offset) || // right side
+		(wall_type == WALL_LEFT && p_side.x1 + self->velocity.x >= wall->dimensions.x1 - offset)) {// left side
 		//slog("about to touch left wall");
 		return 1;
 	}

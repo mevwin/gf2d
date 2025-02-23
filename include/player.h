@@ -2,6 +2,7 @@
 #define __PLAYER_H__
 
 #include "entity.h"
+#include "player_move.h"
 
 typedef enum PlayerState_E{
 	IDLE,
@@ -9,19 +10,6 @@ typedef enum PlayerState_E{
 	SLOWDOWN,
 	DODGE
 }PlayerState;
-
-typedef enum PlayerMoveX_E {
-	LEFT,
-	RIGHT,
-	NONE_X
-}PlayerMoveX;
-
-typedef enum PlayerMoveY_E {
-	RISING,
-	FALLING,
-	FASTFALLING,
-	NONE_Y
-}PlayerMoveY;
 
 typedef struct PlayerData_S{
 	PlayerState		state;

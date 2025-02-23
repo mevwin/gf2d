@@ -75,8 +75,6 @@ void entity_update_all();
  */
 void entity_apply_grav_all();
 
-Uint8 entity_keep_in_bounds(Entity* self, Uint8 edge_type);
-
 /**
  * @brief allocated a blank entity for use
  * @return NULL on failure (out of memory) or a pointer to the initialized entity

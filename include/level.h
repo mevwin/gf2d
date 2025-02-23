@@ -4,12 +4,17 @@
 #include "gfc_shape.h"
 
 typedef enum LevelType_E {
-	REGULAR
+	LEVEL_TYPE_REGULAR
 }LevelType;
+
+typedef enum WallType_E {
+	WALL_LEFT,
+	WALL_RIGHT
+}WallType;
 
 typedef struct Wall_S {
 	GFC_Edge2D		dimensions;
-	Uint8			type; // left = 0, right = 1
+	WallType		type; // left = 0, right = 1
 	Uint8			wjumpable;
 }Wall;
 
@@ -58,5 +63,6 @@ Level* level_load(Uint8 index);
 void level_update();
 void level_close(Level* level);
 Level* get_curr_level();
+Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type);
 
 #endif 
