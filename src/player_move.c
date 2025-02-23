@@ -26,8 +26,8 @@ void player_move(void* p) {
 
 	/* BASE HORIZONTAL MOVEMENT */
 	// to help maintain momentum in the air
-	if (!gfc_input_command_pressed("moveright") && !gfc_input_command_pressed("moveleft")
-		&& self->velocity.x > 0 && !ground_collision(self) && p_data->state != DODGE)
+	if (!gfc_input_command_down("moveright") && !gfc_input_command_down("moveleft")
+		&& self->velocity.x > 0 && !ground_collision(self) && !platform_collision(self) && p_data->state != DODGE)
 		p_data->state = MOVING;
 
 	if ((gfc_input_command_released("moveleft") || gfc_input_command_released("moveright"))
@@ -41,7 +41,7 @@ void player_move(void* p) {
 
 		if (p_data->moveTypeX == PMOVE_RIGHT && self->velocity.x > 0) {
 			p_data->state = SLOWDOWN;
-			if (ground_collision(self))
+			if (ground_collision(self) || platform_collision(self))
 				p_data->turnaround = 1;
 		}
 		else
@@ -58,7 +58,7 @@ void player_move(void* p) {
 
 		if (p_data->moveTypeX == PMOVE_LEFT && self->velocity.x > 0) {
 			p_data->state = SLOWDOWN;
-			if (ground_collision(self))
+			if (ground_collision(self) || platform_collision(self))
 				p_data->turnaround = 1;
 		}
 		else
@@ -81,7 +81,7 @@ void player_move(void* p) {
 		p_data->moveTypeY = PMOVE_NONE_Y;
 
 		self->velocity.x = p_data->dodge_vel.x;
-		if (!ground_collision(self)) {
+		if (!ground_collision(self) && !platform_collision(self)) {
 			p_data->dodge_charges--;
 			self->velocity.x = p_data->dodge_vel.y;
 		}
@@ -138,7 +138,7 @@ void player_move(void* p) {
 			self->velocity.x : -self->velocity.x;
 
 		// if on ground, apply friction
-		if (ground_collision(self) && self->velocity.x > 0) {
+		if ((ground_collision(self) || platform_collision(self)) && self->velocity.x > 0) {
 			self->velocity.x -= p_data->turnaround ? p_data->friction.x : p_data->friction.y;
 
 			if (self->velocity.x < 0) {
@@ -169,7 +169,7 @@ void player_move(void* p) {
 		self->velocity.x -= p_data->dodge_vel_reduc;
 
 		// dodge jump momentum carrying
-		if (!ground_collision(self) && gfc_input_command_pressed("jump"))
+		if (!ground_collision(self) && !platform_collision(self) && gfc_input_command_pressed("jump"))
 			p_data->state = MOVING;
 		else if (self->velocity.x < 0.4f * p_data->dodge_vel.y) {
 			self->velocity.x = 0.4f * p_data->dodge_vel.y;

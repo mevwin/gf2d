@@ -19,6 +19,7 @@ static LevelManager level_manager = { 0 };
 void level_manager_close();
 Ground* create_ground(GFC_Rect dimen, GFC_Color color);
 Wall* create_wall(GFC_Edge2D dimen, Uint8 type);
+Platform* create_platform(GFC_Rect dimen, Uint8 moving);
 
 void level_manager_init(const char* filename){	
 	SJson* level_def, *level_list;
@@ -66,11 +67,12 @@ void level_manager_close() {
 Level* level_load(Uint8 index) {
 	Level* level;
 	Ground* ground;
+	Platform* plat;
 	Wall* wall;
 	GFC_Rect dimen;
 	GFC_Vector4D rec_buf;
-	SJson *level_obj, *level_data, *ground_list, *ground_data;
-	Uint8 load_walls, load_ceil;
+	SJson *level_obj, *level_data, *ground_list, *ground_data, *plat_list, *plat_data;
+	Uint8 load_walls, load_ceil, moving;
 	int i;
 
 	level = gfc_allocate_array(sizeof(Level), 1);
@@ -88,16 +90,19 @@ Level* level_load(Uint8 index) {
 
 	level->ground_list = gfc_list_new();
 	level->wall_list = gfc_list_new();
+	level->platform_list = gfc_list_new();
 
 	// player spawn
 	sj_object_get_vector2d(level_data, "player_spawn", &level->player_spawn);
 
 	// ground list
 	ground_list = sj_object_get_value(level_data, "ground_list");
+	if (!ground_list) return;
 	for (i = 0; i < ground_list->v.array->count; i++) {
 		ground_data = sj_array_get_nth(ground_list, i);
+		if (!ground_data) continue;
 		
-		sj_object_get_vector4d(ground_data, "dimensions", &rec_buf);
+		sj_object_get_vector4d(ground_data, "rect", &rec_buf);
 		dimen = gfc_rect_from_vector4(rec_buf);
 		
 		sj_object_get_uint8(ground_data, "walls", &load_walls);
@@ -116,6 +121,7 @@ Level* level_load(Uint8 index) {
 			wall = create_wall(get_edge_from_rect(ground->dimensions, 3), 0);
 			gfc_list_append(level->wall_list, wall);
 
+
 			wall = create_wall(get_edge_from_rect(ground->dimensions, 2), 1);
 			gfc_list_append(level->wall_list, wall);
 		}
@@ -125,6 +131,23 @@ Level* level_load(Uint8 index) {
 			//slog("true");
 		}
 	}
+
+	// platform list
+	plat_list = sj_object_get_value(level_data, "platform_list");
+	if (!plat_list) return;
+	for (i = 0; i < plat_list->v.array->count; i++) {
+		plat_data = sj_array_get_nth(plat_list, i);
+		if (!plat_data) continue;
+
+		sj_object_get_vector4d(plat_data, "rect", &rec_buf);
+		dimen = gfc_rect_from_vector4(rec_buf);
+
+		sj_object_get_uint8(plat_data, "walls", &moving);
+
+		plat = create_platform(dimen, moving);
+		gfc_list_append(level->platform_list, plat);
+	}
+
 	// create level bounds
 	//gfc_list_append();
 
@@ -165,6 +188,23 @@ Wall* create_wall(GFC_Edge2D dimen, Uint8 type) {
 	return wall;
 }
 
+Platform* create_platform(GFC_Rect dimen, Uint8 moving) {
+	Platform* plat;
+
+	plat = gfc_allocate_array(sizeof(Platform), 1);
+	if (!plat) {
+		slog("failed to allocate memory for platform");
+		return NULL;
+	}
+
+	plat->dimensions = dimen;
+	plat->region = gfc_vector2d(plat->dimensions.x,
+								plat->dimensions.x + plat->dimensions.w);
+	plat->moving = moving;
+
+	return plat;
+}
+
 void level_close(Level* level) {
 	if (!level) {
 		slog("no level to close");
@@ -172,12 +212,13 @@ void level_close(Level* level) {
 	}
 
 	gfc_list_foreach(level->ground_list, free);
-	gfc_list_clear(level->ground_list);
 	gfc_list_delete(level->ground_list);
 
 	gfc_list_foreach(level->wall_list, free);
-	gfc_list_clear(level->wall_list);
 	gfc_list_delete(level->wall_list);
+
+	gfc_list_foreach(level->platform_list, free);
+	gfc_list_delete(level->platform_list);
 
 	free(level);
 }
@@ -186,12 +227,15 @@ void level_update() {
 	int i;
 	//float offset;
 	Ground* ground;
+	Platform* plat;
 
 	//offset = 1.0f;
 
 	// draw ground
 	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
 		ground = (Ground*)gfc_list_nth(level_manager.curr_level->ground_list, i);
+		if (!ground) continue;
+
 		gf2d_draw_rect_filled(ground->dimensions, ground->color);
 		
 		/* Testing moving collision
@@ -203,6 +247,22 @@ void level_update() {
 		*/
 	}
 	//gf2d_draw_rect_filled(level_manager.curr_level->ground, GFC_COLOR_BLACK);
+
+	// draw platforms
+	for (i = 0; i < level_manager.curr_level->platform_list->count; i++) {
+		plat = (Platform*)gfc_list_nth(level_manager.curr_level->platform_list, i);
+		if (!plat) continue;
+
+		gf2d_draw_rect_filled(plat->dimensions, GFC_COLOR_BLACK);
+
+		/* Testing moving collision
+		ground->dimensions.x += offset;
+		gfc_vector2d_add(ground->region, ground->region, gfc_vector2d(offset, offset));
+		if(ground->dimensions.x + ground->dimensions.w + offset >= ground->region.y ||
+			ground->dimensions.x + offset <= ground->region.x)
+			offset = -offset;
+		*/
+	}
 }
 
 Level* get_curr_level() {

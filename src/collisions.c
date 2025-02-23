@@ -5,6 +5,7 @@
 #include "enemy.h"
 
 GFC_Rect level_find_nearest_ground(Entity* ent);
+GFC_Rect level_find_nearest_plat(Entity* ent);
 GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top);
 Wall* level_find_nearest_wall(Entity* ent, WallType wall_type);
 
@@ -40,10 +41,9 @@ GFC_Rect level_find_nearest_ground(Entity* ent) {
 
 Uint8 ground_collision(void* ent) {
 	Entity* self;
-	PlayerData* p_data;
-	GFC_Edge2D edge, bottom;
+	GFC_Edge2D g_top, e_bottom;
 	GFC_Rect ground;
-	Level* level;
+	float offset;
 
 	self = (Entity*)ent;
 	if (!self) {
@@ -54,42 +54,86 @@ Uint8 ground_collision(void* ent) {
 	ground = level_find_nearest_ground(self);
 	if (ground.x == -20.f)
 		return 0;
+	
+	offset = 1.0f;
 
-	level = get_curr_level();
+	g_top = get_edge_from_rect(ground, 1);
 
-	edge = get_edge_from_rect(ground, 1);
+	e_bottom = get_edge_from_rect(self->boundbox.s.r, 0); // player's bottom edge
+	e_bottom.y1 += -self->velocity.y;
 
-	bottom = get_edge_from_rect(self->boundbox.s.r, 0); // player's bottom edge
-	bottom.y1 += -self->velocity.y;
-
-	if (bottom.y1 >= edge.y1 - 1.0f) { // about to touch ground
-		self->position.y = edge.y1 - self->boundbox.s.r.h / 2.0f; // check to make sure not to clip through ground
+	if (e_bottom.y1 >= g_top.y1 - offset) { // about to touch ground
+		self->position.y = g_top.y1 - self->boundbox.s.r.h / 2.0f; // check to make sure not to clip through ground
 		return 1;
 	}
-	else { // falling
-		if (self->type == PLAYER) {
-			p_data = self->data;
-			if (!p_data) return 0;
+	else return 0;
+}
 
-			// increment jump counter by 1 to avoid the MultiVersus DJ
-			if (!p_data->jump_count)
-				p_data->jump_count++;
+GFC_Rect level_find_nearest_plat(Entity* ent) {
+	Platform* plat;
+	GFC_Edge2D e_left, e_right, p_top, p_bottom;
+	Level* level;
+	int i;
 
-			//slog("player: %f, ground: %f", bottom.y1, edge.y1);
+	e_left = get_edge_from_rect(ent->boundbox.s.r, 3);
+	e_right = get_edge_from_rect(ent->boundbox.s.r, 2);
+	level = get_curr_level();
+
+	for (i = 0; i < level->platform_list->count; i++) {
+		plat = (Platform*)gfc_list_nth(level->platform_list, i);
+
+		if (!plat) continue;
+
+		p_top = get_edge_from_rect(plat->dimensions, 1);
+		p_bottom = get_edge_from_rect(plat->dimensions, 0);
+
+		if (e_right.x1 >= plat->region.x && e_left.x1 < plat->region.y
+			&& p_top.y1 - (e_left.y2 - ent->velocity.y) <= 7.0f
+			&& p_bottom.y1 >(e_left.y2 - ent->velocity.y)
+			) {
+			// slog("%f", g_level.y1 - (left.y2 - ent->velocity.y));
+			return plat->dimensions;
 		}
-		else if (self->type == ENEMY) {
-			// TODO
-		}
+	}
+	return gfc_rect(-20.0f, 1000.0f, 1800.0f, 200.0f);
+}
 
+Uint8 platform_collision(void* ent) {
+	GFC_Rect plat;
+	Entity* self;
+	GFC_Edge2D e_bottom, e_top, plat_top;
+	float offset;
+
+	self = (Entity*)ent;
+	if (!self) {
+		slog("no entity");
 		return 0;
 	}
+	
+	plat = level_find_nearest_plat(self);
+	if (plat.x == -20.f)
+		return 0;
+
+	offset = 1.0f;
+
+	plat_top = get_edge_from_rect(plat, 1);
+
+	e_top = get_edge_from_rect(self->boundbox.s.r, 1);
+	e_bottom = get_edge_from_rect(self->boundbox.s.r, 0); // player's bottom edge
+	e_top.y1 -= self->velocity.y;
+	e_bottom.y1 -= self->velocity.y;
+
+	if (e_bottom.y1 > plat_top.y1 - offset && !gfc_rect_overlap(self->boundbox.s.r, plat)) { // about to touch ground
+		self->position.y = plat_top.y1 - self->boundbox.s.r.h / 2.0f; // check to make sure not to clip through ground
+		return 1;
+	}
+	else return 0;
 }
 
 GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top) {
 	Ground* ground;
 	GFC_Vector2D ceil_point, e_point;
 	GFC_Edge2D g_bottom;
-	//GFC_Color color;
 	int i;
 	float offset;
 	Level* level;
@@ -101,20 +145,14 @@ GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top) {
 	for (i = 0; i < level->ground_list->count; i++) {
 		ground = (Ground*)gfc_list_nth(level->ground_list, i);
 
-		if (!ground || !ground->ceil_flag) {
-			//slog("%i", i);
-			continue;
-		}
+		if (!ground || !ground->ceil_flag) continue;
 
 		g_bottom = get_edge_from_rect(ground->dimensions, 0);
 
 		if (e_top.x2 > g_bottom.x1 && e_top.x1 < g_bottom.x2) {
 			ceil_point = gfc_vector2d(ent->position.x, g_bottom.y1);
 			e_point = gfc_vector2d(ent->position.x, e_top.y1);
-			//e_point.y += ent->velocity.y;
 
-			//color = GFC_COLOR_BLUE;
-			//gf2d_draw_line(ceil_point, e_point, color);
 			if (gfc_vector2d_distance_between_less_than(ceil_point, e_point, offset))
 				return g_bottom;
 		}
@@ -124,7 +162,6 @@ GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top) {
 
 Uint8 ceiling_collision(void* ent) {
 	Entity* self;
-	PlayerData* p_data;
 	GFC_Edge2D e_top, ceil;
 	float offset;
 
@@ -144,8 +181,7 @@ Uint8 ceiling_collision(void* ent) {
 	offset = 1.0f;
 
 	if (e_top.y1 <= ceil.y1 + offset) { // about to touch ceiling
-		self->position.y = ceil.y1 + (self->boundbox.s.r.h / 2.0f) + (5.0f*offset); // check to make sure not to clip through ground
-		//self->velocity.y = 0;
+		self->position.y = ceil.y1 + (self->boundbox.s.r.h / 2.0f) + (2.0f*offset); // check to make sure not to clip through ground
 		return 1;
 	}
 	else return 0;
@@ -180,9 +216,6 @@ Wall* level_find_nearest_wall(Entity* ent, WallType wall_type) {
 			p_point = gfc_vector2d(p_side.x1, ent->position.y);
 			p_point.x += wall_type == WALL_LEFT ? ent->velocity.x : -ent->velocity.x;
 
-			//color = wall_type ? GFC_COLOR_BLUE : GFC_COLOR_RED;
-			//gf2d_draw_line(wall_point, p_point, color);
-
 			if (gfc_vector2d_distance_between_less_than(wall_point, p_point, offset))
 				return wall;
 		}
@@ -215,10 +248,6 @@ Uint8 wall_collision(void* ent, Uint8 wall_type) {
 	p_top = get_edge_from_rect(self->boundbox.s.r, 0);
 	offset = 2.0f;
 
-	//if (roundf(p_side.x1) == wall->dimensions.x1) { // touching wall
-		//slog("hugging wall");
-		//return 2;
-	//}
 	if ((wall_type == WALL_RIGHT && p_side.x1 - self->velocity.x <= wall->dimensions.x1 + offset) || // right side
 		(wall_type == WALL_LEFT && p_side.x1 + self->velocity.x >= wall->dimensions.x1 - offset)) {// left side
 		//slog("about to touch left wall");

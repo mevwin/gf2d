@@ -7,19 +7,19 @@
         "ground_list":
         [
             {
-                "dimensions": [0, 600, 400, 120],
+                "rect": [0, 600, 400, 120],
                 "color": [0, 0, 0, 255],
                 "walls": 1,
                 "ceiling": 0
             },
             {
-                "dimensions": [800, 600, 400, 120],
+                "rect": [800, 600, 400, 120],
                 "color": [255, 255, 0, 255],
                 "walls": 1,
                 "ceiling": 0
             },
             {
-                "dimensions": [500, 300, 200, 100],
+                "rect": [500, 300, 200, 100],
                 "color": [0, 255, 0, 255],
                 "walls": 1,
                 "ceiling": 1
@@ -27,7 +27,10 @@
         ],
         "platform_list":
         [
-
+            {
+                "rect": [300, 300, 150, 50],
+                "moving": 0
+            }
         ]
     },
     "enemy_spawns":

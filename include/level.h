@@ -27,13 +27,13 @@ typedef struct Ground_S {
 	//Sprite*			sprite;
 }Ground;
 
-/*
 typedef struct Platform_S {
 	GFC_Rect		dimensions;
+	GFC_Vector2D	region;
+	Uint8			moving;
 	//Sprite*			sprite;
 	// TODO: add specifics later
 }Platform;
-*/
 
 typedef struct Level_S {
 	//LevelType		level_type;
@@ -49,8 +49,8 @@ typedef struct Level_S {
 	//Ground*			curr_ground;
 	GFC_Vector2D	player_spawn;
 	GFC_List*		ground_list;
+	GFC_List*		platform_list;
 	GFC_List*		wall_list;
-	//GFC_List*		platform_list;
 	//GFC_List*		enemy_spawns;
 	//GFC_List*		item_spawns;
 }Level;

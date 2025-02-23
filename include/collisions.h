@@ -9,6 +9,8 @@
 */
 Uint8 ground_collision(void* ent);
 
+Uint8 platform_collision(void* ent);
+
 /**
 * @brief check if entity is colliding with ground
 * @param wall_type: collision with a wall; left == 0, right == 1

@@ -153,7 +153,6 @@ void player_update(Entity* self) {
 void player_gravity(Entity* self) {
 	PlayerData* p_data;
 	GFC_Edge2D bottom;
-	Uint8 i;
 
 	p_data = self->data;
 	if (!p_data) return;
@@ -161,15 +160,14 @@ void player_gravity(Entity* self) {
 
 	bottom = get_edge_from_rect(self->boundbox.s.r, 0);
 
-	i = ground_collision(self);
-	if (i && !p_data->jump_count) { // grounded
+	if ((ground_collision(self) || platform_collision(self)) && !p_data->jump_count) { // grounded
 		if (self->velocity.x == 0)
 			p_data->turnaround = 0;
 
 		if (self->velocity.x > 0)
 			p_data->state = SLOWDOWN;
 	}
-	else if (i && p_data->jump_count) { // landing
+	else if ((ground_collision(self) || platform_collision(self)) && p_data->jump_count) { // landing
 		// reset some flags and values as needed before landing
 		p_data->dodge_charges = p_data->max_dodge_charges;
 		p_data->jump_count = 0;
