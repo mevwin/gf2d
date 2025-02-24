@@ -315,7 +315,6 @@ Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type) {
 
 	self = (Entity*) e;
 	if (!self) return;
-	if (self->bounds) self->bounds(self);
 	// if no unique bounds function, at least restrict entity to viewspace
 	offset = 1.0f;
 

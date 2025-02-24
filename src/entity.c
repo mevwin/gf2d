@@ -94,12 +94,12 @@ void entity_think_all() {
 void entity_update(Entity* self) {
     if (!self) return;
     if (self->update) { 
-        self->update(self); 
         update_hurtbox(self);
         update_boundbox(self);
-
         if (platform_collision(self))
             handle_ent_plat_collision(self);
+
+        self->update(self); 
     }
 }
 

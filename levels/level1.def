@@ -36,7 +36,6 @@
                 "move_speed": [1.0, 1.0],
                 "#move_bounds" : "[left edge bound, right edge bound, top edge bound, bottom edge bound]",
                 "move_bounds": [300, 900, 300, 500]
-                
             }
         ]
     },

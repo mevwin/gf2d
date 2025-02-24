@@ -37,8 +37,7 @@ typedef struct Entity_S{
 
     void (*free)    (struct Entity_S *self);    // called when the entity is cleaned up
     void (*draw)    (struct Entity_S *self);    // for custom draw calls
-    void (*grav)    (struct Entity_S *self);    // for custom gravity
-    void (*bounds)  (struct Entity_S* self);
+    void (*grav)    (struct Entity_S *self);    // for custom gravity   
     void*           data;                       // entity data
 
     GFC_Shape       hurtbox;                    // for entity interaction

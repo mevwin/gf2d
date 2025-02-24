@@ -37,7 +37,9 @@ Uint8 ceiling_collision(void* ent);
 */
 GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side);
 
-
+/**
+* @brief get nearest colliding platform
+*/
 Platform* get_colliding_plat(void* ent);
 
 #endif

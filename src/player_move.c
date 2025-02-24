@@ -7,7 +7,7 @@ typedef struct PlayerRecall_S {
 	// timing
 	float	cooldown_time;
 	float   next_recall;
-
+	GFC_List* pathToPlayer;
 
 }PlayerRecall;
 
