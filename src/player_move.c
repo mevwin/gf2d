@@ -127,7 +127,7 @@ void player_move(void* p) {
 		self->plat_flag = 0;
 	}
 
-	/* big - ass state check to actually apply the movement */
+	/* big ass state check to actually apply the movement */
 	if (p_data->state == MOVING) { // regular movement
 		if ((wall_collision(self, i) && !p_data->wall_jump) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;

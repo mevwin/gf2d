@@ -5,7 +5,7 @@
 #include "enemy.h"
 
 GFC_Rect level_find_nearest_ground(Entity* ent);
-GFC_Rect level_find_nearest_plat(Entity* ent);
+Platform* level_find_nearest_plat(Entity* ent);
 GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top);
 Wall* level_find_nearest_wall(Entity* ent, WallType wall_type);
 
@@ -69,7 +69,7 @@ Uint8 ground_collision(void* ent) {
 	else return 0;
 }
 
-GFC_Rect level_find_nearest_plat(Entity* ent) {
+Platform* level_find_nearest_plat(Entity* ent) {
 	Platform* plat;
 	GFC_Edge2D e_left, e_right, p_top, p_bottom;
 	Level* level;
@@ -92,16 +92,16 @@ GFC_Rect level_find_nearest_plat(Entity* ent) {
 			&& p_bottom.y1 >(e_left.y2 - ent->velocity.y)
 			) {
 			// slog("%f", g_level.y1 - (left.y2 - ent->velocity.y));
-			return plat->dimensions;
+			return plat;
 		}
 	}
-	return gfc_rect(-20.0f, 1000.0f, 1800.0f, 200.0f);
+	return NULL;
 }
 
 Uint8 platform_collision(void* ent) {
-	GFC_Rect plat;
+	Platform* plat;
 	Entity* self;
-	GFC_Edge2D e_bottom, e_top, plat_top;
+	GFC_Edge2D e_bottom, plat_top;
 	float offset;
 
 	self = (Entity*)ent;
@@ -111,23 +111,60 @@ Uint8 platform_collision(void* ent) {
 	}
 	
 	plat = level_find_nearest_plat(self);
-	if (plat.x == -20.f)
+	if (!plat)
 		return 0;
 
 	offset = 1.0f;
 
-	plat_top = get_edge_from_rect(plat, 1);
+	plat_top = get_edge_from_rect(plat->dimensions, 1);
 
-	e_top = get_edge_from_rect(self->boundbox.s.r, 1);
 	e_bottom = get_edge_from_rect(self->boundbox.s.r, 0); // player's bottom edge
-	e_top.y1 -= self->velocity.y;
 	e_bottom.y1 -= self->velocity.y;
 
-	if (self->plat_flag && e_bottom.y1 >= plat_top.y1 - offset && !gfc_rect_overlap(self->boundbox.s.r, plat)) { // about to touch ground
+	if (!plat->pass_through)
+		self->plat_flag = 0;
+
+	if (self->plat_flag && e_bottom.y1 >= plat_top.y1 - offset && !gfc_rect_overlap(self->boundbox.s.r, plat->dimensions)) { // about to touch ground
 		self->position.y = plat_top.y1 - self->boundbox.s.r.h / 2.0f - offset; // check to make sure not to clip through plat
 		return 1;
 	}
 	else return 0;
+}
+
+void handle_ent_plat_collision(void* e) {
+	Entity* ent;
+	Platform* plat;
+	GFC_Edge2D e_bottom, plat_top;
+	float offset;
+
+	ent = (Entity*) e;
+	if (!ent) return;
+
+	plat = level_find_nearest_plat(ent);
+	if (!plat) return;
+
+	offset = 1.0f;
+	plat_top = get_edge_from_rect(plat->dimensions, 1);
+	e_bottom = get_edge_from_rect(ent->boundbox.s.r, 0); // player's bottom edge
+	e_bottom.y1 -= ent->velocity.y;
+
+	// adjust player position if on moving platform
+	if (plat->moving) {
+		switch (plat->moveType) {
+			case PLATFORM_MOVE_LEFT:
+				ent->position.x -= plat->move_speed.x;
+
+				break;
+
+			case PLATFORM_MOVE_RIGHT:
+				ent->position.x += plat->move_speed.x;
+
+				break;
+		}
+	}
+
+	//adjust player's y position to stay on top of platform
+	ent->position.y = plat_top.y1 - ent->boundbox.s.r.h / 2.0f - offset;
 }
 
 GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top) {
@@ -294,4 +331,8 @@ GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side) {
 		);
 	}
 	return edge;
+}
+
+Platform* get_colliding_plat(void* ent) {
+	return level_find_nearest_plat(ent);
 }

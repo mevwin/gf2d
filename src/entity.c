@@ -97,6 +97,9 @@ void entity_update(Entity* self) {
         self->update(self); 
         update_hurtbox(self);
         update_boundbox(self);
+
+        if (platform_collision(self))
+            handle_ent_plat_collision(self);
     }
 }
 

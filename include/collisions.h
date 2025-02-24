@@ -15,6 +15,8 @@ Uint8 ground_collision(void* ent);
 */
 Uint8 platform_collision(void* ent);
 
+void handle_ent_plat_collision(void* e);
+
 /**
 * @brief check if entity is colliding with ground
 * @param wall_type: collision with a wall; left == 0, right == 1
@@ -34,5 +36,8 @@ Uint8 ceiling_collision(void* ent);
 * @param side: 3 = left, 2 = right, 1 = top, 0 = bottom
 */
 GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side);
+
+
+Platform* get_colliding_plat(void* ent);
 
 #endif

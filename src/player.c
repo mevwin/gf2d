@@ -103,7 +103,7 @@ void player_think(Entity* self) {
 
 void player_update(Entity* self) {
 	PlayerData* p_data;
-	//GFC_Edge2D bottom;
+	Platform* plat;
 	//float ground_level;
 
 	p_data = self->data;
@@ -125,7 +125,8 @@ void player_update(Entity* self) {
 	if (self->position.y > RES.y + RES.h)
 		gfc_vector2d_copy(self->position, p_data->spawn_pos);
 
-	//slog("%i", wall_collision(self, 1));
+	// 
+	//if (platform_collision(self)) handle_
 
 	/*DEBUG: center checking*/
 	gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
