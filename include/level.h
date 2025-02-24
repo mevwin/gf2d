@@ -12,6 +12,14 @@ typedef enum WallType_E {
 	WALL_RIGHT
 }WallType;
 
+typedef enum PlatformMove_E {
+	PLATFORM_MOVE_NONE,
+	PLATFORM_MOVE_LEFT,
+	PLATFORM_MOVE_RIGHT,
+	PLATFORM_MOVE_UP,
+	PLATFORM_MOVE_DOWN
+}PlatformMove;
+
 typedef struct Wall_S {
 	GFC_Edge2D		dimensions;
 	WallType		type; // left = 0, right = 1
@@ -30,7 +38,13 @@ typedef struct Ground_S {
 typedef struct Platform_S {
 	GFC_Rect		dimensions;
 	GFC_Vector2D	region;
+	Uint8			pass_through;
 	Uint8			moving;
+
+	// if moving platform
+	GFC_Vector2D	move_speed;
+	GFC_Vector4D	move_bounds;
+	PlatformMove	moveType;
 	//Sprite*			sprite;
 	// TODO: add specifics later
 }Platform;
@@ -62,6 +76,7 @@ Level* level_load(Uint8 index);
 
 void level_update();
 void level_close(Level* level);
+
 Level* get_curr_level();
 Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type);
 

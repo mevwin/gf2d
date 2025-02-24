@@ -17,9 +17,11 @@ typedef struct LevelManager_S {
 static LevelManager level_manager = { 0 };
 
 void level_manager_close();
-Ground* create_ground(GFC_Rect dimen, GFC_Color color);
+Ground* create_ground(SJson* ground_data, Level* level);
 Wall* create_wall(GFC_Edge2D dimen, Uint8 type);
-Platform* create_platform(GFC_Rect dimen, Uint8 moving);
+Platform* create_platform(SJson* plat_data);
+void update_platforms();
+void move_platform(Platform* plat);
 
 void level_manager_init(const char* filename){	
 	SJson* level_def, *level_list;
@@ -68,11 +70,7 @@ Level* level_load(Uint8 index) {
 	Level* level;
 	Ground* ground;
 	Platform* plat;
-	Wall* wall;
-	GFC_Rect dimen;
-	GFC_Vector4D rec_buf;
-	SJson *level_obj, *level_data, *ground_list, *ground_data, *plat_list, *plat_data;
-	Uint8 load_walls, load_ceil, moving;
+	SJson *level_obj, *level_data, *list, *data;
 	int i;
 
 	level = gfc_allocate_array(sizeof(Level), 1);
@@ -96,55 +94,29 @@ Level* level_load(Uint8 index) {
 	sj_object_get_vector2d(level_data, "player_spawn", &level->player_spawn);
 
 	// ground list
-	ground_list = sj_object_get_value(level_data, "ground_list");
-	if (!ground_list) return;
-	for (i = 0; i < ground_list->v.array->count; i++) {
-		ground_data = sj_array_get_nth(ground_list, i);
-		if (!ground_data) continue;
+	list = sj_object_get_value(level_data, "ground_list");
+	if (!list) return;
+	for (i = 0; i < list->v.array->count; i++) {
+		data = sj_array_get_nth(list, i);
+		if (!data) continue;
 		
-		sj_object_get_vector4d(ground_data, "rect", &rec_buf);
-		dimen = gfc_rect_from_vector4(rec_buf);
-		
-		sj_object_get_uint8(ground_data, "walls", &load_walls);
-		sj_object_get_uint8(ground_data, "ceiling", &load_ceil);
-		
-		ground = create_ground(dimen, sj_object_get_color(ground_data, "color"));
+		ground = create_ground(data, level);
 		if (!ground) {
 			slog("ground failed to be created");
 			continue;
 		}
+		
 		gfc_list_append(level->ground_list, ground);
-
-		// initalize walls if toggled
-		if (load_walls) {
-			// create left wall
-			wall = create_wall(get_edge_from_rect(ground->dimensions, 3), 0);
-			gfc_list_append(level->wall_list, wall);
-
-
-			wall = create_wall(get_edge_from_rect(ground->dimensions, 2), 1);
-			gfc_list_append(level->wall_list, wall);
-		}
-
-		if (load_ceil) {
-			ground->ceil_flag = 1;
-			//slog("true");
-		}
 	}
 
 	// platform list
-	plat_list = sj_object_get_value(level_data, "platform_list");
-	if (!plat_list) return;
-	for (i = 0; i < plat_list->v.array->count; i++) {
-		plat_data = sj_array_get_nth(plat_list, i);
-		if (!plat_data) continue;
+	list = sj_object_get_value(level_data, "platform_list");
+	if (!list) return;
+	for (i = 0; i < list->v.array->count; i++) {
+		data = sj_array_get_nth(list, i);
+		if (!data) continue;
 
-		sj_object_get_vector4d(plat_data, "rect", &rec_buf);
-		dimen = gfc_rect_from_vector4(rec_buf);
-
-		sj_object_get_uint8(plat_data, "walls", &moving);
-
-		plat = create_platform(dimen, moving);
+		plat = create_platform(data);
 		gfc_list_append(level->platform_list, plat);
 	}
 
@@ -158,17 +130,35 @@ Level* level_load(Uint8 index) {
 	return level;
 }
 
-Ground* create_ground(GFC_Rect dimen, GFC_Color color) {
+Ground* create_ground(SJson* ground_data, Level* level) {
 	Ground* ground;
+	Wall* wall;
+	GFC_Vector4D rec_buf;
 
 	ground = gfc_allocate_array(sizeof(Ground), 1);
-	if (!ground)
+	if (!ground || !ground_data)
 		return NULL;
 
-	ground->dimensions = dimen;
+	sj_object_get_vector4d(ground_data, "rect", &rec_buf);
+	ground->dimensions = gfc_rect_from_vector4(rec_buf);
 	ground->region = gfc_vector2d(ground->dimensions.x,
-								  ground->dimensions.x + ground->dimensions.w);
-	ground->color = color;
+								ground->dimensions.x + ground->dimensions.w);
+
+	ground->color = sj_object_get_color(ground_data, "color");
+
+	// initalize walls if toggled
+	sj_object_get_uint8(ground_data, "walls", &ground->wall_flag);
+	if (ground->wall_flag) {
+		// create left wall
+		wall = create_wall(get_edge_from_rect(ground->dimensions, 3), 0);
+		gfc_list_append(level->wall_list, wall);
+
+
+		wall = create_wall(get_edge_from_rect(ground->dimensions, 2), 1);
+		gfc_list_append(level->wall_list, wall);
+	}
+
+	sj_object_get_uint8(ground_data, "ceiling", &ground->ceil_flag);
 
 	return ground;
 }
@@ -188,21 +178,82 @@ Wall* create_wall(GFC_Edge2D dimen, Uint8 type) {
 	return wall;
 }
 
-Platform* create_platform(GFC_Rect dimen, Uint8 moving) {
+Platform* create_platform(SJson* plat_data) {
 	Platform* plat;
+	GFC_Vector4D rec_buf;
+	GFC_Rect dimen;
+	Uint8 ibuf;
 
 	plat = gfc_allocate_array(sizeof(Platform), 1);
-	if (!plat) {
+	if (!plat || !plat_data) {
 		slog("failed to allocate memory for platform");
 		return NULL;
 	}
 
+	sj_object_get_vector4d(plat_data, "rect", &rec_buf);
+	dimen = gfc_rect_from_vector4(rec_buf);
 	plat->dimensions = dimen;
 	plat->region = gfc_vector2d(plat->dimensions.x,
 								plat->dimensions.x + plat->dimensions.w);
-	plat->moving = moving;
 
+	sj_object_get_uint8(plat_data, "pass_through", &plat->pass_through);
+
+	sj_object_get_uint8(plat_data, "starting_move", &ibuf);
+	plat->moveType = (PlatformMove)ibuf;
+
+	sj_object_get_uint8(plat_data, "moving", &plat->moving);
+	if (plat->moving) {
+		sj_object_get_vector2d(plat_data, "move_speed", &plat->move_speed);
+		sj_object_get_vector4d(plat_data, "move_bounds", &plat->move_bounds);
+	}
+
+	
 	return plat;
+}
+
+void update_platforms() {
+	Platform* plat;
+	int i;
+
+	for (i = 0; i < level_manager.curr_level->platform_list->count; i++) {
+		plat = (Platform*)gfc_list_nth(level_manager.curr_level->platform_list, i);
+		if (!plat) continue;
+
+		// draw plat
+		gf2d_draw_rect_filled(plat->dimensions, GFC_COLOR_BLACK);
+
+		// move platform if allowed
+		if (plat->moving)
+			move_platform(plat);
+	}
+}
+
+void move_platform(Platform* plat) {
+	if (!plat) return;
+	
+	switch (plat->moveType) {
+		case PLATFORM_MOVE_LEFT:
+			plat->dimensions.x -= plat->move_speed.x;
+			if (plat->dimensions.x <= plat->move_bounds.x)
+				plat->moveType = PLATFORM_MOVE_RIGHT;
+
+			break;
+
+		case PLATFORM_MOVE_RIGHT:
+			plat->dimensions.x += plat->move_speed.x;
+			if (plat->dimensions.x + plat->dimensions.w >= plat->move_bounds.y)
+				plat->moveType = PLATFORM_MOVE_LEFT;
+
+			break;
+
+		default:
+			// do nothing
+			;
+	}
+
+	// update region
+	plat->region = gfc_vector2d(plat->dimensions.x,
+								plat->dimensions.x + plat->dimensions.w);
 }
 
 void level_close(Level* level) {
@@ -249,20 +300,7 @@ void level_update() {
 	//gf2d_draw_rect_filled(level_manager.curr_level->ground, GFC_COLOR_BLACK);
 
 	// draw platforms
-	for (i = 0; i < level_manager.curr_level->platform_list->count; i++) {
-		plat = (Platform*)gfc_list_nth(level_manager.curr_level->platform_list, i);
-		if (!plat) continue;
-
-		gf2d_draw_rect_filled(plat->dimensions, GFC_COLOR_BLACK);
-
-		/* Testing moving collision
-		ground->dimensions.x += offset;
-		gfc_vector2d_add(ground->region, ground->region, gfc_vector2d(offset, offset));
-		if(ground->dimensions.x + ground->dimensions.w + offset >= ground->region.y ||
-			ground->dimensions.x + offset <= ground->region.x)
-			offset = -offset;
-		*/
-	}
+	update_platforms();
 }
 
 Level* get_curr_level() {

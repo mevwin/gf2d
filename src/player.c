@@ -191,11 +191,10 @@ void player_gravity(Entity* self) {
 		self->position.y -= self->velocity.y;
 
 		// increase falling speed
-		self->velocity.y -= p_data->moveTypeY == PMOVE_FASTFALLING ? self->accel.y : GRAVITY;
-
-		// limit vertical velocity
-		if (self->velocity.y < -self->max_velocity.y)
+		if (self->velocity.y < -self->max_velocity.y) // limit vertical velocity
 			self->velocity.y = -self->max_velocity.y;
+		else
+			self->velocity.y -= p_data->moveTypeY == PMOVE_FASTFALLING ? self->accel.y : GRAVITY;
 
 		// reset wall jump
 		if (self->velocity.y <= 7.0f) 

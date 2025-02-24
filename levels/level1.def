@@ -3,7 +3,7 @@
     {
         "type": 0,
         "obj": 0,
-        "player_spawn": [600, 200],
+        "player_spawn": [200, 500],
         "ground_list":
         [
             {
@@ -19,7 +19,7 @@
                 "ceiling": 0
             },
             {
-                "rect": [500, 300, 200, 100],
+                "rect": [500, 400, 200, 70],
                 "color": [0, 255, 0, 255],
                 "walls": 1,
                 "ceiling": 1
@@ -29,7 +29,14 @@
         [
             {
                 "rect": [300, 300, 150, 50],
-                "moving": 0
+                "sprite": "bruh",
+                "pass_through": 1,
+                "starting_move": 1,
+                "moving": 1,
+                "move_speed": [1.0, 1.0],
+                "#move_bounds" : "[left edge bound, right edge bound, top edge bound, bottom edge bound]",
+                "move_bounds": [300, 900, 300, 500]
+                
             }
         ]
     },
