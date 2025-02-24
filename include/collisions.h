@@ -9,6 +9,10 @@
 */
 Uint8 ground_collision(void* ent);
 
+/**
+* @brief check if entity is colliding with platform
+* @note compare entity's bottom edge with nearest plat from current level's plat list
+*/
 Uint8 platform_collision(void* ent);
 
 /**

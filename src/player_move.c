@@ -99,6 +99,9 @@ void player_move(void* p) {
 
 			p_data->jump_count++;
 			p_data->moveTypeY = PMOVE_RISING;
+
+			if (!self->plat_flag)
+				self->plat_flag = 1;
 		}
 		else if (wall_collision(self, i) && !p_data->wall_jump && p_data->jump_count > 0) {
 			p_data->wall_jump = 1;
@@ -106,6 +109,9 @@ void player_move(void* p) {
 			self->velocity.x = self->max_velocity.x;
 			p_data->moveTypeX = i ? PMOVE_RIGHT : PMOVE_LEFT; // if wall jumping from right, go left (and vice versa)
 			p_data->moveTypeY = PMOVE_RISING;
+
+			if (!self->plat_flag)
+				self->plat_flag = 1;
 		}
 	}
 
@@ -114,7 +120,14 @@ void player_move(void* p) {
 		p_data->moveTypeY = PMOVE_FASTFALLING;
 	}
 
-	// big-ass state check to actually apply the movement
+	/* MOVE THROUGH PLATFORM */
+	if (p_data->moveTypeY == PMOVE_FASTFALLING || 
+		(platform_collision(self) && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown")))
+		) {
+		self->plat_flag = 0;
+	}
+
+	/* big - ass state check to actually apply the movement */
 	if (p_data->state == MOVING) { // regular movement
 		if ((wall_collision(self, i) && !p_data->wall_jump) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;

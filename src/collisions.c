@@ -63,7 +63,7 @@ Uint8 ground_collision(void* ent) {
 	e_bottom.y1 += -self->velocity.y;
 
 	if (e_bottom.y1 >= g_top.y1 - offset) { // about to touch ground
-		self->position.y = g_top.y1 - self->boundbox.s.r.h / 2.0f; // check to make sure not to clip through ground
+		self->position.y = g_top.y1 - self->boundbox.s.r.h / 2.0f - offset; // check to make sure not to clip through ground
 		return 1;
 	}
 	else return 0;
@@ -123,8 +123,8 @@ Uint8 platform_collision(void* ent) {
 	e_top.y1 -= self->velocity.y;
 	e_bottom.y1 -= self->velocity.y;
 
-	if (e_bottom.y1 > plat_top.y1 - offset && !gfc_rect_overlap(self->boundbox.s.r, plat)) { // about to touch ground
-		self->position.y = plat_top.y1 - self->boundbox.s.r.h / 2.0f; // check to make sure not to clip through ground
+	if (self->plat_flag && e_bottom.y1 >= plat_top.y1 - offset && !gfc_rect_overlap(self->boundbox.s.r, plat)) { // about to touch ground
+		self->position.y = plat_top.y1 - self->boundbox.s.r.h / 2.0f - offset; // check to make sure not to clip through plat
 		return 1;
 	}
 	else return 0;

@@ -121,6 +121,7 @@ void player_update(Entity* self) {
 			break;
 	}
 
+	// dummy respawn
 	if (self->position.y > RES.y + RES.h)
 		gfc_vector2d_copy(self->position, p_data->spawn_pos);
 
@@ -166,6 +167,9 @@ void player_gravity(Entity* self) {
 
 		if (self->velocity.x > 0)
 			p_data->state = SLOWDOWN;
+
+		if (!self->plat_flag)
+			self->plat_flag = 1;
 	}
 	else if ((ground_collision(self) || platform_collision(self)) && p_data->jump_count) { // landing
 		// reset some flags and values as needed before landing
@@ -173,6 +177,7 @@ void player_gravity(Entity* self) {
 		p_data->jump_count = 0;
 		self->velocity.y = 0;
 		p_data->wall_jump = 0;
+		p_data->moveTypeY = PMOVE_NONE_Y;
 	}
 	else { // falling
 		// change moveTypeY to FALLING once peak of jump has reached

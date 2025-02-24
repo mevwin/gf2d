@@ -131,6 +131,7 @@ Entity* entity_new() {
         // any default values should be set
         ent_manager.entityList[i]._inuse = 1;
         ent_manager.entityList[i].scale = gfc_vector2d(1, 1); // scale of zero means entity doesn't exist
+        ent_manager.entityList[i].plat_flag = 1;
 
         return &ent_manager.entityList[i];
     }
