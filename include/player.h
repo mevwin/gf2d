@@ -5,10 +5,11 @@
 #include "player_move.h"
 
 typedef enum PlayerState_E{
-	IDLE,
-	MOVING,
-	SLOWDOWN,
-	DODGE
+	PLAYER_IDLE,			// no movement
+	PLAYER_MOVING,			// currently moving
+	PLAYER_SLOWDOWN,		// slowing down on surface
+	PLAYER_DODGE,			// currently dodging
+	PLAYER_DAMAGED
 }PlayerState;
 
 typedef struct PlayerData_S{
@@ -17,6 +18,13 @@ typedef struct PlayerData_S{
 	// player stats
 	float			currHealth;
 	float			maxHealth;
+
+	// player ability/upgrade checks
+	Uint8			canRecall;
+	Uint8			canDoubleJump;
+	Uint8			canBash;
+	Uint8			canWallJump;
+	Uint8			canDodge;
 
 	// movement flags/checks
 	PlayerMoveX		moveTypeX;

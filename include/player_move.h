@@ -16,7 +16,13 @@ typedef enum PlayerMoveY_E {
 	PMOVE_NONE_Y
 }PlayerMoveY;
 
-void player_move_system_init();
+typedef enum RecallState_E {
+	RECALL_START,
+	RECALL_REWIND,
+	RECALL_STOP
+}RecallState;
+
+
 
 /**
 * @brief function for basic movement options based on inputs

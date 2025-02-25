@@ -9,6 +9,14 @@
     },
     "player_data":
     {
+        "ability_checks":
+        {
+            "canRecall": 1,
+            "canDoubleJump": 1,
+            "canBash": 1,
+            "canWallJump": 1,
+            "canDodge": 1
+        },
         "max_jumps": 2,
         "max_dodge_charges": 2,
         "#dodge_vel": "[ground_speed, air_speed]",

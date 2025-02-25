@@ -71,18 +71,28 @@ void player_free(Entity* self) {
 
 PlayerData* player_data_init(Entity* self, SJson* data) {
 	PlayerData* p_data;
+	SJson *ability_checks;
 
 	p_data = gfc_allocate_array(sizeof(PlayerData), 1);
 	if (!p_data) return NULL;
 
 	gfc_vector2d_copy(p_data->spawn_pos, self->position);
-	p_data->state = IDLE;
+	p_data->state = PLAYER_IDLE;
 	p_data->moveTypeX = PMOVE_NONE_X;
 	p_data->moveTypeY = PMOVE_NONE_Y;
 	p_data->jump_count = 0;
 
+	// ability checks
+	ability_checks = sj_object_get_value(data, "ability_checks");
+	sj_object_get_uint8(ability_checks, "canRecall", &p_data->canRecall);
+	sj_object_get_uint8(ability_checks, "canDoubleJump", &p_data->canDoubleJump);
+	sj_object_get_uint8(ability_checks, "canBash", &p_data->canBash);
+	sj_object_get_uint8(ability_checks, "canWallJump", &p_data->canWallJump);
+	sj_object_get_uint8(ability_checks, "canDodge", &p_data->canDodge);
+
+	// movement values
 	sj_object_get_uint8(data, "max_jumps", &p_data->max_jumps);
-	sj_object_get_int(data, "max_dodge_charges", &p_data->max_dodge_charges);
+	sj_object_get_uint8(data, "max_dodge_charges", &p_data->max_dodge_charges);
 	p_data->dodge_charges = p_data->max_dodge_charges;
 	sj_object_get_vector2d(data, "dodge_vel", &p_data->dodge_vel);
 	sj_object_get_float(data, "dodge_vel_reduc", &p_data->dodge_vel_reduc);
@@ -154,20 +164,17 @@ void player_update(Entity* self) {
 
 void player_gravity(Entity* self) {
 	PlayerData* p_data;
-	GFC_Edge2D bottom;
 
 	p_data = self->data;
 	if (!p_data) return;
-	if (p_data->state == DODGE) return;
-
-	bottom = get_edge_from_rect(self->boundbox.s.r, 0);
+	if (p_data->state == PLAYER_DODGE) return;
 
 	if ((ground_collision(self) || platform_collision(self)) && !p_data->jump_count) { // grounded
 		if (self->velocity.x == 0)
 			p_data->turnaround = 0;
 
 		if (self->velocity.x > 0)
-			p_data->state = SLOWDOWN;
+			p_data->state = PLAYER_SLOWDOWN;
 
 		if (!self->plat_flag)
 			self->plat_flag = 1;

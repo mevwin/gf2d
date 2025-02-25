@@ -5,9 +5,10 @@
 
 typedef struct PlayerRecall_S {
 	// timing
-	float	cooldown_time;
-	float   next_recall;
-	GFC_List* pathToPlayer;
+	float			cooldown_time;
+	float			next_recall;
+	RecallState		state;
+	GFC_List	   *pathToPlayer;
 
 }PlayerRecall;
 
@@ -27,20 +28,20 @@ void player_move(void* p) {
 	/* BASE HORIZONTAL MOVEMENT */
 	// to help maintain momentum in the air
 	if (!gfc_input_command_down("moveright") && !gfc_input_command_down("moveleft")
-		&& self->velocity.x > 0 && !ground_collision(self) && !platform_collision(self) && p_data->state != DODGE)
-		p_data->state = MOVING;
+		&& self->velocity.x > 0 && !ground_collision(self) && !platform_collision(self) && p_data->state != PLAYER_DODGE)
+		p_data->state = PLAYER_MOVING;
 
 	if ((gfc_input_command_released("moveleft") || gfc_input_command_released("moveright"))
-		&& self->velocity.x > 0 && p_data->state != DODGE)
-		p_data->state = SLOWDOWN;
+		&& self->velocity.x > 0 && p_data->state != PLAYER_DODGE)
+		p_data->state = PLAYER_SLOWDOWN;
 
 	// input checks
 	if ((gfc_input_command_down("moveleft") || gfc_input_command_pressed("moveleft"))
-		&& !gfc_input_command_pressed("moveright") && p_data->state != DODGE && !p_data->wall_jump) {
-		p_data->state = MOVING;
+		&& !gfc_input_command_pressed("moveright") && p_data->state != PLAYER_DODGE && !p_data->wall_jump) {
+		p_data->state = PLAYER_MOVING;
 
 		if (p_data->moveTypeX == PMOVE_RIGHT && self->velocity.x > 0) {
-			p_data->state = SLOWDOWN;
+			p_data->state = PLAYER_SLOWDOWN;
 			if (ground_collision(self) || platform_collision(self))
 				p_data->turnaround = 1;
 		}
@@ -53,11 +54,11 @@ void player_move(void* p) {
 			self->velocity.x += self->accel.x * 2.0f;
 	}
 	else if ((gfc_input_command_down("moveright") || gfc_input_command_pressed("moveright"))
-		&& !gfc_input_command_pressed("moveleft") && p_data->state != DODGE && !p_data->wall_jump) {
-		p_data->state = MOVING;
+		&& !gfc_input_command_pressed("moveleft") && p_data->state != PLAYER_DODGE && !p_data->wall_jump) {
+		p_data->state = PLAYER_MOVING;
 
 		if (p_data->moveTypeX == PMOVE_LEFT && self->velocity.x > 0) {
-			p_data->state = SLOWDOWN;
+			p_data->state = PLAYER_SLOWDOWN;
 			if (ground_collision(self) || platform_collision(self))
 				p_data->turnaround = 1;
 		}
@@ -71,13 +72,13 @@ void player_move(void* p) {
 	}
 
 	/* DODGE */
-	if ((gfc_input_command_pressed("dodge")) && p_data->state != DODGE && p_data->dodge_charges > 0) {
+	if ((p_data->canDodge && gfc_input_command_pressed("dodge")) && p_data->state != PLAYER_DODGE && p_data->dodge_charges > 0) {
 		if (gfc_input_command_pressed("moveright") || self->dir.x == 0)
 			p_data->moveTypeX = PMOVE_RIGHT;
 		else if (gfc_input_command_pressed("moveleft") || self->dir.x == 1)
 			p_data->moveTypeX = PMOVE_LEFT;
 
-		p_data->state = DODGE;
+		p_data->state = PLAYER_DODGE;
 		p_data->moveTypeY = PMOVE_NONE_Y;
 
 		self->velocity.x = p_data->dodge_vel.x;
@@ -94,6 +95,9 @@ void player_move(void* p) {
 	/* BASE VERTICAL MOVEMENT (NOTE: VERTICAL MEANS NEGATIVE Y)*/
 	/* JUMP */
 	if (gfc_input_command_pressed("jump")) {
+		if (!p_data->canDoubleJump) p_data->max_jumps = 1;
+		if (!p_data->canWallJump) p_data->wall_jump = 1;
+
 		if (!wall_collision(self, i) && p_data->jump_count < p_data->max_jumps) {
 			self->velocity.y = p_data->jump_speed;
 
@@ -103,7 +107,7 @@ void player_move(void* p) {
 			if (!self->plat_flag)
 				self->plat_flag = 1;
 		}
-		else if (wall_collision(self, i) && !p_data->wall_jump && p_data->jump_count > 0) {
+		else if (wall_collision(self, i) && !p_data->wall_jump && p_data->moveTypeY != PMOVE_NONE_Y) { // wall_jump
 			p_data->wall_jump = 1;
 			self->velocity.y = p_data->jump_speed;
 			self->velocity.x = self->max_velocity.x;
@@ -128,7 +132,7 @@ void player_move(void* p) {
 	}
 
 	/* big ass state check to actually apply the movement */
-	if (p_data->state == MOVING) { // regular movement
+	if (p_data->state == PLAYER_MOVING) { // regular movement
 		if ((wall_collision(self, i) && !p_data->wall_jump) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;
 			return;
@@ -140,7 +144,7 @@ void player_move(void* p) {
 		self->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
 			self->velocity.x : -self->velocity.x;
 	}
-	else if (p_data->state == SLOWDOWN) {
+	else if (p_data->state == PLAYER_SLOWDOWN) {
 		if (wall_collision(self, i) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;
 			return;
@@ -157,7 +161,7 @@ void player_move(void* p) {
 			if (self->velocity.x < 0) {
 				self->velocity.x = 0;
 				p_data->moveTypeX = PMOVE_NONE_X;
-				p_data->state = IDLE;
+				p_data->state = PLAYER_IDLE;
 			}
 		}
 		else { // if in air and turning around, slow down
@@ -170,7 +174,7 @@ void player_move(void* p) {
 			}
 		}
 	}
-	else if (p_data->state == DODGE) {
+	else if (p_data->state == PLAYER_DODGE) {
 		if (entity_keep_in_bounds(self, i) || wall_collision(self, i)) {
 			self->velocity.x = 0;
 			return;
@@ -183,10 +187,10 @@ void player_move(void* p) {
 
 		// dodge jump momentum carrying
 		if (!ground_collision(self) && !platform_collision(self) && gfc_input_command_pressed("jump"))
-			p_data->state = MOVING;
+			p_data->state = PLAYER_MOVING;
 		else if (self->velocity.x < 0.4f * p_data->dodge_vel.y) {
 			self->velocity.x = 0.4f * p_data->dodge_vel.y;
-			p_data->state = SLOWDOWN;
+			p_data->state = PLAYER_SLOWDOWN;
 		}
 	}
 }
