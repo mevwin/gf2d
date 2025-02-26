@@ -9,6 +9,7 @@ typedef enum PlayerState_E{
 	PLAYER_MOVING,			// currently moving
 	PLAYER_SLOWDOWN,		// slowing down on surface
 	PLAYER_DODGE,			// currently dodging
+	PLAYER_RECALL,
 	PLAYER_DAMAGED
 }PlayerState;
 

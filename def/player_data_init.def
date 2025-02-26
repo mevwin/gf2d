@@ -13,7 +13,7 @@
         {
             "canRecall": 1,
             "canDoubleJump": 1,
-            "canBash": 1,
+            "canBash": 0,
             "canWallJump": 1,
             "canDodge": 1
         },

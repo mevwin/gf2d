@@ -16,6 +16,7 @@ void player_free(Entity* self);
 /**
 * @brief initialize PlayerData
 * @param data: json data to initialize PlayerData
+* @note SHOULD ONLY BE USED ONCE
 */
 PlayerData* player_data_init(Entity* self, SJson* data);
 
@@ -90,6 +91,8 @@ PlayerData* player_data_init(Entity* self, SJson* data) {
 	sj_object_get_uint8(ability_checks, "canWallJump", &p_data->canWallJump);
 	sj_object_get_uint8(ability_checks, "canDodge", &p_data->canDodge);
 
+	if (p_data->canRecall) player_recall_init();
+
 	// movement values
 	sj_object_get_uint8(data, "max_jumps", &p_data->max_jumps);
 	sj_object_get_uint8(data, "max_dodge_charges", &p_data->max_dodge_charges);
@@ -108,7 +111,6 @@ void player_think(Entity* self) {
 	p_data = self->data;
 
 	player_move(self);
-	
 }
 
 void player_update(Entity* self) {
@@ -130,6 +132,8 @@ void player_update(Entity* self) {
 			self->dir.x = 0;
 			break;
 	}
+
+	if (p_data->canRecall) track_player(self, p_data);
 
 	// dummy respawn
 	if (self->position.y > RES.y + RES.h)

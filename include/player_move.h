@@ -17,11 +17,16 @@ typedef enum PlayerMoveY_E {
 }PlayerMoveY;
 
 typedef enum RecallState_E {
+	RECALL_NONE,
 	RECALL_START,
 	RECALL_REWIND,
 	RECALL_STOP
 }RecallState;
 
+typedef struct RecallPosition_S {
+	GFC_Vector2D	point;
+	float			time;
+}RecallPosition;
 
 
 /**
@@ -30,12 +35,14 @@ typedef enum RecallState_E {
 */
 void player_move(void* p);
 
-void track_player(void* p);
-
 /**
-* @brief recall ability: return player to a previous position while restoring resources
+* @brief track previous player positions for recall ability
 */
-void player_recall(void* p);
+void track_player(void* p, void* data);
+
+void player_recall_init();
+
+RecallPosition* create_recall_pos(GFC_Vector2D pos, float time);
 
 // TODO: fix later
 void player_bash(void* p);

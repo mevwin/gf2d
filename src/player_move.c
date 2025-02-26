@@ -7,12 +7,42 @@ typedef struct PlayerRecall_S {
 	// timing
 	float			cooldown_time;
 	float			next_recall;
+
+	// 'player-tracking' data
+	GFC_List*		pathToPlayer;
+	Uint32			max_positions;
+	float			time_to_record;
+	float			next_recording_time;
+
 	RecallState		state;
-	GFC_List	   *pathToPlayer;
+}RecallManager;
 
-}PlayerRecall;
+void player_recall_close();
 
-static PlayerRecall recall_manager = { 0 };
+/**
+* @brief recall ability: return player to a previous position while restoring resources
+*/
+void player_recall(void* p, void* data);
+
+static RecallManager recall_manager = { 0 };
+
+void player_recall_init() {
+	recall_manager.cooldown_time = 3.0f;
+	recall_manager.next_recall = CURRENT_TIME;
+	recall_manager.state = RECALL_NONE;
+	recall_manager.max_positions = 2;
+	recall_manager.pathToPlayer = gfc_list_new();
+	recall_manager.time_to_record = 0.5f;
+	recall_manager.next_recording_time = CURRENT_TIME + recall_manager.time_to_record;
+
+	atexit(player_recall_close);
+}
+
+void player_recall_close() {
+	gfc_list_foreach(recall_manager.pathToPlayer, free);
+	gfc_list_delete(recall_manager.pathToPlayer);
+	memset(&recall_manager, 0, sizeof(RecallManager));
+}
 
 void player_move(void* p) {
 	PlayerData* p_data;
@@ -72,7 +102,7 @@ void player_move(void* p) {
 	}
 
 	/* DODGE */
-	if ((p_data->canDodge && gfc_input_command_pressed("dodge")) && p_data->state != PLAYER_DODGE && p_data->dodge_charges > 0) {
+	if (p_data->canDodge && gfc_input_command_pressed("dodge") && p_data->state != PLAYER_DODGE && p_data->dodge_charges > 0) {
 		if (gfc_input_command_pressed("moveright") || self->dir.x == 0)
 			p_data->moveTypeX = PMOVE_RIGHT;
 		else if (gfc_input_command_pressed("moveleft") || self->dir.x == 1)
@@ -89,12 +119,22 @@ void player_move(void* p) {
 		self->velocity.y = 0;
 	}
 
+	if (p_data->canRecall && gfc_input_command_pressed("recall")){
+		if (CURRENT_TIME >= recall_manager.next_recall) {
+			recall_manager.state = RECALL_START;
+			player_recall(self, p_data);
+		}
+		else
+			slog("waiting");
+	}
+
 	// 0 == left wall, 1 == right wall
 	i = self->dir.x == 0 ? 0 : 1;
 
 	/* BASE VERTICAL MOVEMENT (NOTE: VERTICAL MEANS NEGATIVE Y)*/
 	/* JUMP */
 	if (gfc_input_command_pressed("jump")) {
+		// item upgrade checks
 		if (!p_data->canDoubleJump) p_data->max_jumps = 1;
 		if (!p_data->canWallJump) p_data->wall_jump = 1;
 
@@ -195,12 +235,58 @@ void player_move(void* p) {
 	}
 }
 
-void track_player(void* p) {
+void track_player(void* p, void* data) {
 	PlayerData* p_data;
-	Entity* self;
+	Entity* player;
+	RecallPosition* pos;
+
+	player = (Entity*)p;
+	p_data = (PlayerData*)data;
+	if (!player || !p_data || recall_manager.state != RECALL_NONE) return;
+
+	if (CURRENT_TIME >= recall_manager.next_recording_time) {
+		gfc_list_append(recall_manager.pathToPlayer, create_recall_pos(player->position, CURRENT_TIME));
+		recall_manager.next_recording_time = CURRENT_TIME + recall_manager.time_to_record;
+		//slog("saved position");
+	}
+}
+	
+
+void player_recall(void* p, void* data) {
+	PlayerData* p_data;
+	Entity* player;
+	GFC_Vector2D *point;
+	int i;
+
+	player = (Entity*)p;
+	p_data = (PlayerData*)data;
+	if (!player || !p_data) return;
+
+	for (i = 0; i < recall_manager.pathToPlayer->count; i++) {
+		point = gfc_list_nth(recall_manager.pathToPlayer, i);
+		if (point) {
+			gfc_vector2d_copy(player->position, gfc_vector2d(point->x, point->y));
+
+			slog("recalled to (%f, %f)", player->position.x, player->position.y);
+		}
+		else slog("point dne");
+	}
+	
+	gfc_list_foreach(recall_manager.pathToPlayer, free);
+	gfc_list_clear(recall_manager.pathToPlayer);
+	recall_manager.next_recording_time = CURRENT_TIME + recall_manager.time_to_record;
+	recall_manager.next_recall = CURRENT_TIME + recall_manager.cooldown_time;
+	
+	gfc_list_append(recall_manager.pathToPlayer, create_recall_pos(player->position, CURRENT_TIME));
+	recall_manager.state = RECALL_STOP;
 }
 
-void player_recall(void* p) {
-	PlayerData* p_data;
-	Entity* self;
+RecallPosition* create_recall_pos(GFC_Vector2D pos, float time) {
+	RecallPosition* rp;
+
+	rp = gfc_allocate_array(sizeof(RecallPosition), 1);
+	gfc_vector2d_copy(rp->point, gfc_vector2d(pos.x, pos.y));
+	rp->time = time;
+	
+	return rp;
 }
