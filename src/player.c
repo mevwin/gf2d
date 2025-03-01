@@ -92,6 +92,7 @@ PlayerData* player_data_init(Entity* self, SJson* data) {
 	sj_object_get_uint8(ability_checks, "canDodge", &p_data->canDodge);
 
 	if (p_data->canRecall) player_recall_init();
+	if (p_data->canBash) player_bash_init();
 
 	// movement values
 	sj_object_get_uint8(data, "max_jumps", &p_data->max_jumps);
@@ -135,7 +136,9 @@ void player_update(Entity* self) {
 
 	if (p_data->canRecall) track_player(self, p_data);
 
+	// special movement abilties
 	if (p_data->state == PLAYER_RECALL) player_recall(self, p_data);
+	else if (p_data->state == PLAYER_BASH) player_bash(self, p_data);
 
 	// dummy respawn
 	if (self->position.y > RES.y + RES.h) {

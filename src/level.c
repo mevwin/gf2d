@@ -124,7 +124,7 @@ Level* level_load(Uint8 index) {
 	//gfc_list_append();
 
 	// enemy spawns
-	//enemy_spawn(BRUISER, gfc_vector2d(300, 200));
+	enemy_spawn(BRUISER, gfc_vector2d(300, 200));
 
 	sj_free(level_data);
 	return level;

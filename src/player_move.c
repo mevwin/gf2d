@@ -14,6 +14,7 @@ typedef struct RecallManager_S {
 	GFC_List*			pathToPlayer;
 	RecallPoint*		curr_point;
 
+	RecallState			state;
 	GFC_Vector2D		recall_dir;
 	float				rewind_velocity_mag;
 	float				rewind_max_vel_mag;
@@ -21,24 +22,35 @@ typedef struct RecallManager_S {
 
 	float				total_distance;
 	float				time_to_record;
-	float				next_recording_time;
-
-	RecallState		state;
+	float				next_recording_time;	
 }RecallManager;
 
 typedef struct BashManager_S {
-	float				cooldown_time;
-	float				next_bash;
+	//float				cooldown_time;
+	//float				next_bash;
+
+	BashState			state;
+	BashDir				bash_dir;
+	GFC_Vector2D		bash_vel;
+	float				bash_velocity_mag;
+	float				bash_decel_mag;
+
+	//GFC_Vector2D		bash_final_pos;
+	float				bashing_duration;	// allotted time to wait for an input
+	float				bashing_stop_time;
 }BashManager;
 
 static RecallManager recall_manager = { 0 };
-//static BashManager bash_manager = { 0 };
+static BashManager bash_manager = { 0 };
 
 // recall functions
 void player_recall_close();
 void move_player_to_recall_pos(Entity* player, GFC_Vector2D dir);
 float calc_total_recall_distance(GFC_Vector2D initial);
 void trim_pathToPlayer(GFC_List* list);
+
+// bash functions
+void player_bash_close();
 
 void player_recall_init() {
 	recall_manager.cooldown_time = 6.0f;
@@ -58,6 +70,21 @@ void player_recall_close() {
 	memset(&recall_manager, 0, sizeof(RecallManager));
 }
 
+void player_bash_init() {
+	bash_manager.state = BASH_NONE;
+	bash_manager.bash_velocity_mag = 12.0f;
+	bash_manager.bash_decel_mag = 0.5f;
+
+	bash_manager.bashing_duration = 3.0f;
+	//bash_manager.bashing_stop_time = CURRENT_TIME + bash_manager.bashing_duration;
+
+	atexit(player_bash_close);
+}
+
+void player_bash_close() {
+	memset(&bash_manager, 0, sizeof(BashManager));
+}
+
 void player_move(void* p) {
 	PlayerData* p_data;
 	Entity* self;
@@ -67,7 +94,7 @@ void player_move(void* p) {
 	if (!self) return;
 
 	p_data = self->data;
-	if (!p_data || p_data->state == PLAYER_RECALL) return;
+	if (!p_data || p_data->state == PLAYER_RECALL || p_data->state == PLAYER_BASH) return;
 
 	/* BASE HORIZONTAL MOVEMENT */
 	// to help maintain momentum in the air
@@ -144,6 +171,17 @@ void player_move(void* p) {
 			slog("waiting");
 	}
 
+	/* BASH */
+	if (p_data->canBash && p_data->state != PLAYER_BASH && gfc_input_command_pressed("bash")) {
+		//if (CURRENT_TIME >= bash_manager.next_bash) { // if next to a bash-able object
+			bash_manager.state = BASH_START;
+			p_data->state = PLAYER_BASH;
+			return;
+		//}
+		//else
+			//slog("waiting");
+	}
+
 	// 0 == left wall, 1 == right wall
 	i = self->dir.x == 0 ? 0 : 1;
 
@@ -175,6 +213,7 @@ void player_move(void* p) {
 		}
 	}
 
+	/* FAST FALLING */
 	if (p_data->moveTypeY == PMOVE_FALLING && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown"))) {
 		// remember at this point, velocity.y is negative
 		p_data->moveTypeY = PMOVE_FASTFALLING;
@@ -198,7 +237,7 @@ void player_move(void* p) {
 			self->velocity.x -= p_data->friction.z;
 
 		self->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
-			self->velocity.x : -self->velocity.x;
+							self->velocity.x : -self->velocity.x;
 	}
 	else if (p_data->state == PLAYER_SLOWDOWN) {
 		if (wall_collision(self, i) || entity_keep_in_bounds(self, i)) {
@@ -266,7 +305,7 @@ void track_player(void* p, void* data) {
 
 		gfc_list_append(recall_manager.pathToPlayer, create_recall_pos(player->position, CURRENT_TIME));
 		recall_manager.next_recording_time = CURRENT_TIME + recall_manager.time_to_record;
-		slog("saved position");
+		//slog("saved position");
 	}
 }
 
@@ -293,7 +332,9 @@ void player_recall(void* p, void* data) {
 
 			// stop current player movement
 			gfc_vector2d_clear(player->velocity);
-			
+			player->grav_flag = 0;
+			player->plat_flag = 0;
+
 			// initialize rewind values
 			recall_manager.curr_point = gfc_list_nth(recall_manager.pathToPlayer, recall_manager.pathToPlayer_index);
 			recall_manager.total_distance = calc_total_recall_distance(player->position);
@@ -306,8 +347,6 @@ void player_recall(void* p, void* data) {
 			gfc_vector2d_set_magnitude(&recall_manager.recall_dir, recall_manager.rewind_velocity_mag);
 
 			// change state
-			player->grav_flag = 0;
-			player->plat_flag = 0;
 			recall_manager.state = RECALL_REWIND;
 			break;
 
@@ -422,4 +461,87 @@ void trim_pathToPlayer(GFC_List* list) {
 	rp = gfc_list_nth(list, 0);
 	gfc_list_delete_nth(list, 0);
 	free(rp);
+}
+
+void player_bash(void* p, void* data) {
+	PlayerData* p_data;
+	Entity* player;
+
+	player = (Entity*)p;
+	p_data = (PlayerData*)data;
+	if (!player || !p_data) return;
+
+	switch (bash_manager.state) {
+		case BASH_START:
+			player->grav_flag = 0;
+			player->plat_flag = 0;
+			gfc_vector2d_clear(player->velocity);
+
+			bash_manager.bash_velocity_mag = 15.0f;
+			bash_manager.bashing_stop_time = CURRENT_TIME + bash_manager.bashing_duration;
+			bash_manager.state = BASH_WAIT;
+
+			break;
+		case BASH_WAIT:
+			if (gfc_input_command_held("movedown")) {
+				bash_manager.bash_dir = BASH_DOWN;
+				p_data->moveTypeY = PMOVE_FALLING;
+			}
+			else if (gfc_input_command_held("moveright")) {
+				bash_manager.bash_dir = BASH_RIGHT;
+				p_data->moveTypeX = PMOVE_RIGHT;
+			}
+			else if (gfc_input_command_held("moveleft")) {
+				bash_manager.bash_dir = BASH_LEFT;
+				p_data->moveTypeX = PMOVE_LEFT;
+			}
+			else { // if holding up or no input, always hold up
+				bash_manager.bash_dir = BASH_UP;
+				p_data->moveTypeY = PMOVE_RISING;
+			}
+
+			if (CURRENT_TIME > bash_manager.bashing_stop_time || gfc_input_command_released("bash")) {
+				bash_manager.state = BASH_MOVE;
+
+				switch (bash_manager.bash_dir) {
+					case BASH_DOWN:
+						bash_manager.bash_vel = gfc_vector2d(0, 1);
+						break;
+					case BASH_RIGHT:
+						bash_manager.bash_vel = gfc_vector2d(1, 0);
+						break;
+					case BASH_LEFT:
+						bash_manager.bash_vel = gfc_vector2d(-1, 0);
+						break;
+					default: // BASH_UP
+						bash_manager.bash_vel = gfc_vector2d(0, -1);
+				}
+				gfc_vector2d_set_magnitude(&bash_manager.bash_vel, bash_manager.bash_velocity_mag);
+			}
+
+			break;
+
+		case BASH_MOVE:
+			gfc_vector2d_add(player->position, player->position, bash_manager.bash_vel);
+			bash_manager.bash_velocity_mag -= bash_manager.bash_decel_mag;
+			gfc_vector2d_set_magnitude(&bash_manager.bash_vel, bash_manager.bash_velocity_mag);
+			if (bash_manager.bash_velocity_mag <= 5.0f)
+				bash_manager.state = BASH_STOP;
+
+			break;
+
+		case BASH_STOP:
+			player->grav_flag = 1;
+			player->plat_flag = 1;
+			p_data->state = PLAYER_MOVING;
+
+			// carry over leftover velocity
+			if (bash_manager.bash_dir != BASH_RIGHT)
+				gfc_vector2d_negate(bash_manager.bash_vel, bash_manager.bash_vel);
+
+			gfc_vector2d_copy(player->velocity, bash_manager.bash_vel);
+
+			bash_manager.state = BASH_NONE;
+			break;
+	}
 }

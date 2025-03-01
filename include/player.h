@@ -11,7 +11,7 @@ typedef enum PlayerState_E{
 	PLAYER_DODGE,			// currently dodging
 	PLAYER_RECALL,
 	PLAYER_BASH,
-	PLAYER_DAMAGED
+	PLAYER_DAMAGED			// TODO: fix later
 }PlayerState;
 
 typedef struct PlayerData_S{

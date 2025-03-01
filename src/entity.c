@@ -49,7 +49,7 @@ void entity_system_close() {
 void entity_draw(Entity* self) {
     GFC_Vector2D offset, position;
 
-    if (self->draw) self->draw(self);
+    //if (self->draw) self->draw(self);
 
     offset = gfc_vector2d(self->sprite->frame_w, self->sprite->frame_h);
     offset.x /= 2.0f;

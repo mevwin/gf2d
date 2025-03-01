@@ -27,9 +27,17 @@ typedef enum RecallState_E {
 typedef enum BashState_E {
 	BASH_NONE,
 	BASH_START,
+	BASH_WAIT,
 	BASH_MOVE,
 	BASH_STOP
 }BashState;
+
+typedef enum BashDir_E {
+	BASH_LEFT,
+	BASH_RIGHT,
+	BASH_UP,
+	BASH_DOWN
+}BashDir;
 
 typedef struct RecallPoint_S {
 	GFC_Vector2D	point;
@@ -59,7 +67,9 @@ void player_recall_reset(void* p, void* data);
 
 RecallPoint* create_recall_pos(GFC_Vector2D pos, float time);
 
+void player_bash_init();
+
 // TODO: fix later
-void player_bash(void* p);
+void player_bash(void* p, void* data);
 
 #endif

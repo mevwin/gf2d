@@ -24,7 +24,8 @@ typedef struct Entity_S{
     GFC_Vector2D	accel;
     Uint8           grav_flag;      // apply gravity to entity?
     Uint8           plat_flag;      // let entity pass through plat?
-    Uint8           canBeDamaged;   // let entity collide?
+    Uint8           canBeDamaged;   // let entity be damaged?
+    Uint8           canBeBashed;
 
     GFC_Vector2D    rotation;       // how to rotate it
     GFC_Vector2D    scale;          // stretching
@@ -37,7 +38,7 @@ typedef struct Entity_S{
     void (*update)  (struct Entity_S *self);    // called every frame for the entity to update its state
 
     void (*free)    (struct Entity_S *self);    // called when the entity is cleaned up
-    void (*draw)    (struct Entity_S *self);    // for custom draw calls
+    //void (*draw)    (struct Entity_S *self);    // for custom draw calls
     void (*grav)    (struct Entity_S *self);    // for custom gravity   
     void*           data;                       // entity data
 
