@@ -1,5 +1,5 @@
-#ifndef __COLLISIONS_H_
-#define __COLLISIONS_H_
+#ifndef __COLLISIONS_H__
+#define __COLLISIONS_H__
 
 #include "level.h"
 

@@ -5,24 +5,25 @@
 
 typedef struct PlayerRecall_S {
 	// timing
-	float			cooldown_time;
-	float			next_recall;
+	float				cooldown_time;
+	float				next_recall;
 
-	// 'player-tracking' data
-	GFC_List*		pathToPlayer;
-	Uint32			max_positions;
-	float			time_to_record;
-	float			next_recording_time;
+	/*' player-tracking' data */
+	GFC_List*			pathToPlayer;
+	int					pathToPlayer_index;
+
+	GFC_Vector2D		rewind_velocity;
+	GFC_Vector2D		rewind_accel;
+
+	float				time_to_record;
+	float				next_recording_time;
 
 	RecallState		state;
 }RecallManager;
 
 void player_recall_close();
 
-/**
-* @brief recall ability: return player to a previous position while restoring resources
-*/
-void player_recall(void* p, void* data);
+void move_player_to_recall_pos(Entity* player, RecallPosition* pos);
 
 static RecallManager recall_manager = { 0 };
 
@@ -30,7 +31,6 @@ void player_recall_init() {
 	recall_manager.cooldown_time = 3.0f;
 	recall_manager.next_recall = CURRENT_TIME;
 	recall_manager.state = RECALL_NONE;
-	recall_manager.max_positions = 2;
 	recall_manager.pathToPlayer = gfc_list_new();
 	recall_manager.time_to_record = 0.5f;
 	recall_manager.next_recording_time = CURRENT_TIME + recall_manager.time_to_record;
@@ -53,7 +53,7 @@ void player_move(void* p) {
 	if (!self) return;
 
 	p_data = self->data;
-	if (!p_data) return;
+	if (!p_data || p_data->state == PLAYER_RECALL) return;
 
 	/* BASE HORIZONTAL MOVEMENT */
 	// to help maintain momentum in the air
@@ -122,7 +122,8 @@ void player_move(void* p) {
 	if (p_data->canRecall && gfc_input_command_pressed("recall")){
 		if (CURRENT_TIME >= recall_manager.next_recall) {
 			recall_manager.state = RECALL_START;
-			player_recall(self, p_data);
+			p_data->state = PLAYER_RECALL;
+			return;
 		}
 		else
 			slog("waiting");
@@ -221,7 +222,7 @@ void player_move(void* p) {
 		}
 
 		self->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
-			self->velocity.x : -self->velocity.x;
+							self->velocity.x : -self->velocity.x;
 
 		self->velocity.x -= p_data->dodge_vel_reduc;
 
@@ -238,7 +239,7 @@ void player_move(void* p) {
 void track_player(void* p, void* data) {
 	PlayerData* p_data;
 	Entity* player;
-	RecallPosition* pos;
+	//RecallPosition* pos;
 
 	player = (Entity*)p;
 	p_data = (PlayerData*)data;
@@ -247,7 +248,7 @@ void track_player(void* p, void* data) {
 	if (CURRENT_TIME >= recall_manager.next_recording_time) {
 		gfc_list_append(recall_manager.pathToPlayer, create_recall_pos(player->position, CURRENT_TIME));
 		recall_manager.next_recording_time = CURRENT_TIME + recall_manager.time_to_record;
-		//slog("saved position");
+		slog("saved position");
 	}
 }
 	
@@ -261,24 +262,64 @@ void player_recall(void* p, void* data) {
 	player = (Entity*)p;
 	p_data = (PlayerData*)data;
 	if (!player || !p_data) return;
+	
+	if (!recall_manager.pathToPlayer->count) { 
+		recall_manager.state = RECALL_NONE;
+		return; 
+	}
 
-	for (i = 0; i < recall_manager.pathToPlayer->count; i++) {
+	switch (recall_manager.state) {
+		case RECALL_START: // prepare player and recall_manager for recall
+			// stop current player movement;
+			gfc_vector2d_copy(player->velocity, gfc_vector2d(0, 0));
+			recall_manager.pathToPlayer_index = (int) recall_manager.pathToPlayer->count;
+
+			// initialize rewind values
+			recall_manager.rewind_velocity = gfc_vector2d(1.0f, 1.0f);
+			recall_manager.rewind_accel = gfc_vector2d(0.1f, 0.1f);
+			
+			// change state
+			recall_manager.state = RECALL_REWIND;
+			break;
+		case RECALL_REWIND:
+			// move player in increments until pathToPlayer_index is zero
+			point = gfc_list_nth(recall_manager.pathToPlayer, recall_manager.pathToPlayer_index);
+			move_player_to_recall_pos(player, point);
+
+			if (recall_manager.pathToPlayer_index < 0) // if reached last position
+				recall_manager.state = RECALL_FINISH;
+			//else
+				//recall_manager.state = RECALL_STOP;
+			break;
+		case RECALL_STOP: // initialize next rewind attempt
+
+
+
+			break;
+		case RECALL_FINISH:
+			gfc_list_foreach(recall_manager.pathToPlayer, free);
+			gfc_list_clear(recall_manager.pathToPlayer);
+			recall_manager.next_recording_time = CURRENT_TIME + recall_manager.time_to_record + recall_manager.time_to_record;
+			recall_manager.next_recall = CURRENT_TIME + recall_manager.cooldown_time;
+
+			//gfc_list_append(recall_manager.pathToPlayer, create_recall_pos(player->position, CURRENT_TIME));
+			p_data->state = PLAYER_IDLE;
+			recall_manager.state = RECALL_NONE;
+			break;
+	}
+
+	for (i = recall_manager.pathToPlayer->count - 1; i >= 0; i--) {
 		point = gfc_list_nth(recall_manager.pathToPlayer, i);
 		if (point) {
-			gfc_vector2d_copy(player->position, gfc_vector2d(point->x, point->y));
+			//gfc_vector2d_copy(player->position, gfc_vector2d(point->x, point->y));
+			//gfc_vector2d_copy(player->velocity, gfc_vector2d(0,0));
+			move_player_to_recall_pos(player, point);
 
+			//if ()
 			slog("recalled to (%f, %f)", player->position.x, player->position.y);
 		}
-		else slog("point dne");
+		else slog("point DNE");
 	}
-	
-	gfc_list_foreach(recall_manager.pathToPlayer, free);
-	gfc_list_clear(recall_manager.pathToPlayer);
-	recall_manager.next_recording_time = CURRENT_TIME + recall_manager.time_to_record;
-	recall_manager.next_recall = CURRENT_TIME + recall_manager.cooldown_time;
-	
-	gfc_list_append(recall_manager.pathToPlayer, create_recall_pos(player->position, CURRENT_TIME));
-	recall_manager.state = RECALL_STOP;
 }
 
 RecallPosition* create_recall_pos(GFC_Vector2D pos, float time) {
@@ -289,4 +330,12 @@ RecallPosition* create_recall_pos(GFC_Vector2D pos, float time) {
 	rp->time = time;
 	
 	return rp;
+}
+
+void move_player_to_recall_pos(Entity* player, RecallPosition* pos) {
+	GFC_Vector2D recall_vel;
+
+	if (!player || !pos) return;
+
+	
 }

@@ -135,6 +135,8 @@ void player_update(Entity* self) {
 
 	if (p_data->canRecall) track_player(self, p_data);
 
+	if (p_data->state == PLAYER_RECALL) player_recall(self, p_data);
+
 	// dummy respawn
 	if (self->position.y > RES.y + RES.h)
 		gfc_vector2d_copy(self->position, p_data->spawn_pos);

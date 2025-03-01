@@ -1,5 +1,5 @@
-#ifndef __PLAYER_MOVE_H
-#define __PLAYER_MOVE_H
+#ifndef __PLAYER_MOVE_H__
+#define __PLAYER_MOVE_H__
 
 #include "gfc_input.h"
 
@@ -20,14 +20,14 @@ typedef enum RecallState_E {
 	RECALL_NONE,
 	RECALL_START,
 	RECALL_REWIND,
-	RECALL_STOP
+	RECALL_STOP,
+	RECALL_FINISH
 }RecallState;
 
 typedef struct RecallPosition_S {
 	GFC_Vector2D	point;
 	float			time;
 }RecallPosition;
-
 
 /**
 * @brief function for basic movement options based on inputs
@@ -41,6 +41,11 @@ void player_move(void* p);
 void track_player(void* p, void* data);
 
 void player_recall_init();
+
+/**
+* @brief recall ability: return player to a previous position while restoring resources
+*/
+void player_recall(void* p, void* data);
 
 RecallPosition* create_recall_pos(GFC_Vector2D pos, float time);
 

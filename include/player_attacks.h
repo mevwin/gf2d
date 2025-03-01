@@ -1,5 +1,5 @@
-#ifndef __PLAYER_ATTACKS_H
-#define __PLAYER_ATTACKS_H
+#ifndef __PLAYER_ATTACKS_H__
+#define __PLAYER_ATTACKS_H__
 
 #include "gfc_input.h"
 
