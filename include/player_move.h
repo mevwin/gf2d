@@ -24,6 +24,13 @@ typedef enum RecallState_E {
 	RECALL_FINISH
 }RecallState;
 
+typedef enum BashState_E {
+	BASH_NONE,
+	BASH_START,
+	BASH_MOVE,
+	BASH_STOP
+}BashState;
+
 typedef struct RecallPoint_S {
 	GFC_Vector2D	point;
 	float			time;
@@ -47,6 +54,8 @@ void player_recall_init();
 * @brief recall ability: return player to a previous position while restoring resources
 */
 void player_recall(void* p, void* data);
+
+void player_recall_reset(void* p, void* data);
 
 RecallPoint* create_recall_pos(GFC_Vector2D pos, float time);
 

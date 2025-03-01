@@ -138,8 +138,10 @@ void player_update(Entity* self) {
 	if (p_data->state == PLAYER_RECALL) player_recall(self, p_data);
 
 	// dummy respawn
-	if (self->position.y > RES.y + RES.h)
+	if (self->position.y > RES.y + RES.h) {
+		player_recall_reset(self, p_data);
 		gfc_vector2d_copy(self->position, p_data->spawn_pos);
+	}
 
 	// 
 	//if (platform_collision(self)) handle_
