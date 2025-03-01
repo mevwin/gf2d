@@ -24,14 +24,15 @@ typedef enum RecallState_E {
 	RECALL_FINISH
 }RecallState;
 
-typedef struct RecallPosition_S {
+typedef struct RecallPoint_S {
 	GFC_Vector2D	point;
 	float			time;
-}RecallPosition;
+}RecallPoint;
 
 /**
 * @brief function for basic movement options based on inputs
 * @note always being called in think function
+* @note wall collisions are handled here
 */
 void player_move(void* p);
 
@@ -47,7 +48,7 @@ void player_recall_init();
 */
 void player_recall(void* p, void* data);
 
-RecallPosition* create_recall_pos(GFC_Vector2D pos, float time);
+RecallPoint* create_recall_pos(GFC_Vector2D pos, float time);
 
 // TODO: fix later
 void player_bash(void* p);

@@ -24,6 +24,7 @@ typedef struct Entity_S{
     GFC_Vector2D	accel;
     Uint8           grav_flag;      // apply gravity to entity?
     Uint8           plat_flag;      // let entity pass through plat?
+    Uint8           canBeDamaged;   // let entity collide?
 
     GFC_Vector2D    rotation;       // how to rotate it
     GFC_Vector2D    scale;          // stretching
