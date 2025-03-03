@@ -1,13 +1,28 @@
 #ifndef __PLAYER_ATTACKS_H__
 #define __PLAYER_ATTACKS_H__
 
-#include "gfc_input.h"
-
 typedef enum PlayerAttackState_E {
 	PLAYER_ATTACK_NONE,
 	PLAYER_ATTACK_STARTUP,
 	PLAYER_ATTACK_ACTIVE,
 	PLAYER_ATTACK_RECOVERY
 }PlayerAttackState;
+
+typedef enum PlayerAttackType_E {
+	PLAYER_ATTACK_TYPE_F_TILT,
+	PLAYER_ATTACK_TYPE_U_TILT,
+	PLAYER_ATTACK_TYPE_D_TILT,
+	//PLAYER_ATTACK_TYPE_F_AIR,
+	//PLAYER_ATTACK_TYPE_U_AIR,
+	//PLAYER_ATTACK_TYPE_D_AIR,
+	PLAYER_ATTACK_TYPE_F_SPECIAL,
+	PLAYER_ATTACK_TYPE_U_SPECIAL,
+	PLAYER_ATTACK_TYPE_D_SPECIAL
+}PlayerAttackType;
+
+
+void player_atk_system_init();
+
+void player_attack(void* p, void* data);
 
 #endif

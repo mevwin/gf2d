@@ -1,4 +1,5 @@
 #include "simple_logger.h"
+#include "gf2d_graphics.h"
 #include "gf2d_draw.h"
 #include "world.h"
 #include "collisions.h"
@@ -144,7 +145,7 @@ Ground* create_ground(SJson* ground_data, Level* level) {
 	ground->region = gfc_vector2d(ground->dimensions.x,
 								ground->dimensions.x + ground->dimensions.w);
 
-	ground->color = sj_object_get_color(ground_data, "color");
+	ground->color = sj_object_get_color(ground_data, "color"); 	//REMOVE LATER
 
 	// initalize walls if toggled
 	sj_object_get_uint8(ground_data, "walls", &ground->wall_flag);
@@ -274,6 +275,38 @@ void level_close(Level* level) {
 	free(level);
 }
 
+/** 
+ * optimizing draw calls for static surfaces:
+ * initialize a surface:
+ * 		- for each piece of ground
+ * 			- gf2d_sprite_draw_to_surface
+ * 		- create sprite from surface
+ * 		- gf2d_sprite_load_all
+ * 
+ * 
+*/
+
+/*
+void draw_ground_to_surface(GFC_List* ground_list){
+	SDL_Surface *surface;
+	Ground* ground;
+	GFC_Vector2D position;
+	int i;
+	
+	if (!ground_list) return;
+
+	surface = gf2d_graphics_create_surface(RES.x + RES.w, RES.y + RES.h);
+
+	for (i = 0; ground_list->count; i++){
+		ground = (Ground*) gfc_list_nth(ground_list, i);
+		if (!ground) continue;
+
+		position = gfc_vector2d(ground->dimensions.x, ground->dimensions.y);
+		gf2d_sprite_draw_to_surface(sprite, position, NULL, NULL, 1, surface);
+	}
+}
+*/
+
 void level_update() {
 	int i;
 	//float offset;
@@ -288,20 +321,13 @@ void level_update() {
 		if (!ground) continue;
 
 		gf2d_draw_rect_filled(ground->dimensions, ground->color);
-		
-		/* Testing moving collision
-		ground->dimensions.x += offset;
-		gfc_vector2d_add(ground->region, ground->region, gfc_vector2d(offset, offset));
-		if(ground->dimensions.x + ground->dimensions.w + offset >= ground->region.y || 
-			ground->dimensions.x + offset <= ground->region.x)
-			offset = -offset;
-		*/
 	}
 	//gf2d_draw_rect_filled(level_manager.curr_level->ground, GFC_COLOR_BLACK);
 
 	// draw platforms
 	update_platforms();
 }
+
 
 Level* get_curr_level() {
 	return level_manager.curr_level;
