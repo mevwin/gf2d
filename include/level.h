@@ -29,10 +29,10 @@ typedef struct Wall_S {
 typedef struct Ground_S {
 	GFC_Rect		dimensions;
 	GFC_Vector2D	region;
-	GFC_Color		color;
+	GFC_Color		color; 		// remove later
 	Uint8			wall_flag; //has active walls
 	Uint8			ceil_flag;
-	//Sprite*			sprite;
+	Sprite*			sprite;
 }Ground;
 
 typedef struct Platform_S {

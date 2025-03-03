@@ -111,18 +111,16 @@ void player_think(Entity* self) {
 	p_data = self->data;
 
 	player_move(self);
+	player_attack(self, p_data);
+	
 }
 
 void player_update(Entity* self) {
 	PlayerData* p_data;
-	Platform* plat;
 	//float ground_level;
 
 	p_data = self->data;
 	if (!p_data) return;
-
-	//ground_level = get_ground_level();
-	//bottom = get_bottom_edge(self->boundbox.s.r);
 
 	switch (p_data->moveTypeX) {
 		case PMOVE_LEFT:
@@ -133,8 +131,8 @@ void player_update(Entity* self) {
 			break;
 	}
 
+	// update player based on movement
 	if (p_data->canRecall) track_player(self, p_data);
-
 	if (p_data->state == PLAYER_RECALL) player_recall(self, p_data);
 
 	// dummy respawn
@@ -147,7 +145,7 @@ void player_update(Entity* self) {
 	//if (platform_collision(self)) handle_
 
 	/*DEBUG: center checking*/
-	gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
+	//gf2d_draw_rect(self->boundbox.s.r, GFC_COLOR_RED);
 
 	/*
 	gf2d_draw_line(
