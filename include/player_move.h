@@ -29,6 +29,7 @@ typedef enum BashState_E {
 	BASH_START,
 	BASH_WAIT,
 	BASH_MOVE,
+	BASH_COLLIDED_MOVE,
 	BASH_STOP
 }BashState;
 

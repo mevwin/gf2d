@@ -26,18 +26,21 @@ typedef struct RecallManager_S {
 }RecallManager;
 
 typedef struct BashManager_S {
-	//float				cooldown_time;
-	//float				next_bash;
-
 	BashState			state;
 	BashDir				bash_dir;
 	GFC_Vector2D		bash_vel;
 	float				bash_velocity_mag;
 	float				bash_decel_mag;
 
-	//GFC_Vector2D		bash_final_pos;
 	float				bashing_duration;	// allotted time to wait for an input
 	float				bashing_stop_time;
+
+	// for collision detection
+	Uint8				collided;
+	WallType			wall_type;
+	void*				collided_obj;
+	GFC_Rect			collided_ground;
+	GFC_Edge2D			collided_ceil;
 }BashManager;
 
 static RecallManager recall_manager = { 0 };
@@ -172,7 +175,7 @@ void player_move(void* p) {
 	}
 
 	/* BASH */
-	if (p_data->canBash && p_data->state != PLAYER_BASH && gfc_input_command_pressed("bash")) {
+	if (p_data->canBash && !ground_collision(self) && p_data->state != PLAYER_BASH && gfc_input_command_pressed("bash")) {
 		//if (CURRENT_TIME >= bash_manager.next_bash) { // if next to a bash-able object
 			bash_manager.state = BASH_START;
 			p_data->state = PLAYER_BASH;
@@ -230,6 +233,7 @@ void player_move(void* p) {
 	if (p_data->state == PLAYER_MOVING) { // regular movement
 		if ((wall_collision(self, i) && !p_data->wall_jump) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;
+			p_data->state = PLAYER_IDLE;
 			return;
 		}
 
@@ -242,6 +246,7 @@ void player_move(void* p) {
 	else if (p_data->state == PLAYER_SLOWDOWN) {
 		if (wall_collision(self, i) || entity_keep_in_bounds(self, i)) {
 			self->velocity.x = 0;
+			p_data->state = PLAYER_IDLE;
 			return;
 		}
 
@@ -272,6 +277,7 @@ void player_move(void* p) {
 	else if (p_data->state == PLAYER_DODGE) {
 		if (entity_keep_in_bounds(self, i) || wall_collision(self, i)) {
 			self->velocity.x = 0;
+			p_data->state = PLAYER_IDLE;
 			return;
 		}
 
@@ -463,9 +469,12 @@ void trim_pathToPlayer(GFC_List* list) {
 	free(rp);
 }
 
+// TODO: ADD COLLISION DETECTION
 void player_bash(void* p, void* data) {
 	PlayerData* p_data;
 	Entity* player;
+	GFC_Vector2D coll;
+	GFC_Edge2D p_edge;
 
 	player = (Entity*)p;
 	p_data = (PlayerData*)data;
@@ -517,16 +526,74 @@ void player_bash(void* p, void* data) {
 						bash_manager.bash_vel = gfc_vector2d(0, -1);
 				}
 				gfc_vector2d_set_magnitude(&bash_manager.bash_vel, bash_manager.bash_velocity_mag);
+
+				// collision detection set-up
+				gfc_vector2d_copy(player->velocity, bash_manager.bash_vel); // FOR COLLISION CHECKING PURPOSES, DO NOT USE FOR BASH MOVEMENT
+				bash_manager.wall_type = bash_manager.bash_dir == BASH_RIGHT ? WALL_LEFT : WALL_RIGHT;
 			}
 
 			break;
 
 		case BASH_MOVE:
+			// if collision detection, adjust move speed
+			if ((bash_manager.bash_dir == BASH_RIGHT || bash_manager.bash_dir == BASH_LEFT) ||
+				(entity_keep_in_bounds(player, bash_manager.wall_type) || wall_collision(player, bash_manager.wall_type))
+				) {
+				bash_manager.state = BASH_COLLIDED_MOVE;
+				bash_manager.collided = 1;
+
+				break;
+			}
+			else if (bash_manager.bash_dir == BASH_UP && ceiling_collision(player)){
+				bash_manager.state = BASH_COLLIDED_MOVE;
+				bash_manager.collided = 1;
+				break;
+			}
+			else if (bash_manager.bash_dir == BASH_DOWN && ground_collision(player)) {
+				bash_manager.state = BASH_COLLIDED_MOVE;
+				bash_manager.collided = 1;
+
+				bash_manager.collided_ground = get_colliding_ground(player);
+				coll = gfc_vector2d(player->position.x, bash_manager.collided_ground.y);
+				p_edge = get_edge_from_rect(player->boundbox.s.r, 0);
+
+				bash_manager.bash_velocity_mag = coll.y - p_edge.y1;
+				bash_manager.bash_vel = gfc_vector2d(0, 1);
+				break;
+			}
+			
 			gfc_vector2d_add(player->position, player->position, bash_manager.bash_vel);
+			
+			// slowdown bash speed
 			bash_manager.bash_velocity_mag -= bash_manager.bash_decel_mag;
 			gfc_vector2d_set_magnitude(&bash_manager.bash_vel, bash_manager.bash_velocity_mag);
+
+			// stop bashing after below certain speed
 			if (bash_manager.bash_velocity_mag <= 5.0f)
 				bash_manager.state = BASH_STOP;
+
+			break;
+		case BASH_COLLIDED_MOVE:
+			switch (bash_manager.bash_dir) {
+				case BASH_DOWN:
+					gfc_vector2d_set_magnitude(&bash_manager.bash_vel, 0.5f* bash_manager.bash_velocity_mag);
+					//0.4f*(coll.y - p_edge.y1)
+					break;
+				case BASH_RIGHT:
+					bash_manager.bash_vel = gfc_vector2d(1, 0);
+					break;
+				case BASH_LEFT:
+					bash_manager.bash_vel = gfc_vector2d(-1, 0);
+					break;
+				default: // BASH_UP
+					bash_manager.bash_vel = gfc_vector2d(0, -1);
+			}
+
+			gfc_vector2d_add(player->position, player->position, bash_manager.bash_vel);
+
+
+			
+			//bash_manager.state = BASH_STOP;
 
 			break;
 
@@ -535,11 +602,16 @@ void player_bash(void* p, void* data) {
 			player->plat_flag = 1;
 			p_data->state = PLAYER_MOVING;
 
-			// carry over leftover velocity
-			if (bash_manager.bash_dir != BASH_RIGHT)
-				gfc_vector2d_negate(bash_manager.bash_vel, bash_manager.bash_vel);
-
-			gfc_vector2d_copy(player->velocity, bash_manager.bash_vel);
+			// carry over leftover velocity if no collision
+			if (!bash_manager.collided) {
+				if (bash_manager.bash_dir != BASH_RIGHT)
+					gfc_vector2d_negate(bash_manager.bash_vel, bash_manager.bash_vel);
+				gfc_vector2d_copy(player->velocity, bash_manager.bash_vel);
+			}
+			else {
+				slog("collided");
+				gfc_vector2d_clear(player->velocity);
+			}
 
 			bash_manager.state = BASH_NONE;
 			break;

@@ -332,6 +332,14 @@ GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side) {
 	return edge;
 }
 
+GFC_Rect get_colliding_ground(void* ent) {
+	return level_find_nearest_ground(ent);
+}
+
+Wall* get_colliding_wall(void* ent, WallType wall_type) {
+	return level_find_nearest_wall(ent, wall_type);
+}
+
 Platform* get_colliding_plat(void* ent) {
 	return level_find_nearest_plat(ent);
 }

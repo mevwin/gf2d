@@ -37,9 +37,11 @@ Uint8 ceiling_collision(void* ent);
 */
 GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side);
 
-/**
-* @brief get nearest colliding platform
-*/
+// Getters for colliding level objects
+// @note: just simply calls 'find_nearest_thing' but should only be used when ent is close to the given obj
+GFC_Rect get_colliding_ground(void* ent);
+Wall* get_colliding_wall(void* ent, WallType wall_type);
 Platform* get_colliding_plat(void* ent);
+GFC_Edge2D get_colliding_ceiling(void* ent);
 
 #endif
