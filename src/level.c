@@ -1,5 +1,4 @@
 #include "simple_logger.h"
-#include "gf2d_graphics.h"
 #include "gf2d_draw.h"
 #include "world.h"
 #include "collisions.h"
@@ -311,7 +310,7 @@ void level_update() {
 	int i;
 	//float offset;
 	Ground* ground;
-	Platform* plat;
+	//Platform* plat;
 
 	//offset = 1.0f;
 

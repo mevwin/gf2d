@@ -2,6 +2,7 @@
 #define __LEVEL_H__
 
 #include "gfc_shape.h"
+#include "gf2d_sprite.h"
 
 typedef enum LevelType_E {
 	LEVEL_TYPE_REGULAR
@@ -68,8 +69,6 @@ typedef struct Level_S {
 	//GFC_List*		enemy_spawns;
 	//GFC_List*		item_spawns;
 }Level;
-
-
 
 void level_manager_init(const char* filename);
 Level* level_load(Uint8 index);
