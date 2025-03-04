@@ -8,10 +8,12 @@ typedef enum PlayerState_E{
 	PLAYER_IDLE,			// no movement
 	PLAYER_MOVING,			// currently moving
 	PLAYER_SLOWDOWN,		// slowing down on surface
+	
+	// special states
 	PLAYER_DODGE,			// currently dodging
 	PLAYER_RECALL,
 	PLAYER_BASH,
-	PLAYER_DAMAGED			// TODO: fix later
+	PLAYER_KNOCKBACK			// TODO: fix later
 }PlayerState;
 
 typedef struct PlayerData_S{

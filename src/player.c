@@ -113,7 +113,6 @@ void player_think(Entity* self) {
 
 	player_move(self);
 	player_attack(self, p_data);
-	
 }
 
 void player_update(Entity* self) {

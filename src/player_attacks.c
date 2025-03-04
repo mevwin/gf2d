@@ -33,6 +33,13 @@ void player_attack(void* p, void* data) {
 
 	player = (Entity*) p;
 	p_data = (PlayerData*) data;
+
+	if (!player || !p_data) return;
+
+	// player should only attack during when idle, moving, or slowing down
+	if (p_data->state != PLAYER_IDLE && p_data->state != PLAYER_MOVING && p_data->state != PLAYER_SLOWDOWN) return;
+	
+	if (!player || !p_data) return;
 	/*
 	if (p_data->state != PLAYER_DODGE && p_data->state != PLAYER_BASH) {
 		if (gfc_input_command_pressed("attack")) {
