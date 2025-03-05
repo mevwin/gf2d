@@ -11,7 +11,10 @@ typedef struct PlayerAttackManager_S {
 	PlayerAtk*			curr_atk;
 
 	PlayerAtkState		atk_state;
+
+	// timing
 	float				atk_state_end;
+	float				then;
 
 	// attack flags
 	Uint8				active;			// deal damage once, turn off once damage has been dealt
@@ -85,7 +88,7 @@ void player_attack(void* p, void* data) {
 	Entity* player;
 	PlayerData* p_data;
 	Uint8 atk_index;
-	float fps;
+	float fps, time;
 
 	player = (Entity*) p;
 	p_data = (PlayerData*) data;
@@ -95,16 +98,17 @@ void player_attack(void* p, void* data) {
 	// player should only attack during when idle, moving, or slowing down
 	if (p_data->state != PLAYER_IDLE && p_data->state != PLAYER_MOVING && p_data->state != PLAYER_SLOWDOWN) return;
 
-	fps = 60.0f;
+	fps = gf2d_graphics_get_frames_per_second();
+	time = CURRENT_TIME;
 
 	switch (atk_manager.atk_state) {
 		case PLAYER_ATK_STARTUP:
-			if (CURRENT_TIME - floorf(CURRENT_TIME) > (1.0f/60.0f)) {
+			if (time - atk_manager.then > 0.016) {
 				atk_manager.frame++;
+				atk_manager.then = time;
 				slog("startup: %i", atk_manager.frame);
 			}
-			slog("time diff: %f (%f, - %f)", CURRENT_TIME - floorf(CURRENT_TIME), CURRENT_TIME, floorf(CURRENT_TIME));
-
+		
 			if (CURRENT_TIME > atk_manager.atk_state_end) {
 				atk_manager.atk_state_end = CURRENT_TIME + (atk_manager.curr_atk->activeFrames / fps);
 				slog("active time: %f", atk_manager.curr_atk->activeFrames / fps);
@@ -114,11 +118,11 @@ void player_attack(void* p, void* data) {
 			break;
 
 		case PLAYER_ATK_ACTIVE:
-			if (CURRENT_TIME - floorf(CURRENT_TIME) > (1.0f / 60.0f)) {
+			if (time - atk_manager.then > 0.016) {
 				atk_manager.frame++;
+				atk_manager.then = time;
 				slog("active: %i", atk_manager.frame);
 			}
-			//else slog("time diff: %f", CURRENT_TIME - floorf(CURRENT_TIME));
 
 			if (CURRENT_TIME > atk_manager.atk_state_end) {
 				atk_manager.atk_state_end = CURRENT_TIME + (atk_manager.curr_atk->recovFrames / fps);
@@ -129,14 +133,16 @@ void player_attack(void* p, void* data) {
 			break;
 
 		case PLAYER_ATK_RECOVERY:
-			if (CURRENT_TIME - floorf(CURRENT_TIME) > (1.0f / 60.0f)) {
+			if (time - atk_manager.then > 0.016) {
 				atk_manager.frame++;
+				atk_manager.then = time;
 				slog("recovery: %i", atk_manager.frame);
 			}
-			//else slog("time diff: %f", CURRENT_TIME - floorf(CURRENT_TIME));
 
 			if (CURRENT_TIME > atk_manager.atk_state_end) {
+				// reset manager values
 				atk_manager.frame = 0;
+				atk_manager.then = 0;
 				atk_manager.atk_state = PLAYER_ATK_NONE;
 			}
 
@@ -188,7 +194,8 @@ void player_attack(void* p, void* data) {
 					return;
 				}
 
-				atk_manager.atk_state_end = CURRENT_TIME + (atk_manager.curr_atk->startupFrames / fps);
+				atk_manager.atk_state_end = time + (atk_manager.curr_atk->startupFrames / fps);
+				atk_manager.then = time;
 				slog("startup time: %f", atk_manager.curr_atk->startupFrames / fps);
 
 				// change state
