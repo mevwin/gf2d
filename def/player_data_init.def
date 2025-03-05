@@ -13,7 +13,7 @@
         {
             "canRecall": 1,
             "canDoubleJump": 1,
-            "canBash": 1,
+            "canBash": 0,
             "canWallJump": 1,
             "canDodge": 1
         },
@@ -25,5 +25,33 @@
         "jump_speed": 10.0,
         "#friction": "[turnaround, no input, kinetic friction]",
         "friction": [0.5, 0.17, 0.1]
-    }
+    },
+    "#player_attacks": "JSON ARRAY ORDER FOR ATTACKS MUST MATCH ENUM IN PLAYER_ATTACKS.H",
+    "player_attacks":
+    [
+        {
+            "#name": "F_ATK",
+            "hitbox": [70, 30],
+            "damage": 8,
+            "startupFrames": 6,
+            "activeFrames": 2,
+            "recovFrames": 20
+        },
+        {
+            "#name": "U_ATK",
+            "hitbox": [30, 50],
+            "damage": 8,
+            "startupFrames": 5,
+            "activeFrames": 4,
+            "recovFrames": 30
+        },
+        {
+            "#name": "D_ATK",
+            "hitbox": [30, 50],
+            "damage": 8,
+            "startupFrames": 9,
+            "activeFrames": 4,
+            "recovFrames": 20
+        }
+    ]
 }

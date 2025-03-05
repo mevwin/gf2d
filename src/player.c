@@ -61,6 +61,8 @@ Entity* player_spawn(GFC_Vector2D position, SJson* data) {
 		return NULL;
 	}
 
+	player_atk_system_init(sj_object_get_value(data, "player_attacks"));
+
 	return player;
 }
 
