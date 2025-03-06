@@ -1,6 +1,6 @@
 #include "simple_logger.h"
 #include "gfc_config.h"
-#include "gf2d_graphics.h"
+#include "gf2d_draw.h"
 #include "world.h"
 #include "player.h"
 #include "collisions.h"
@@ -13,7 +13,7 @@ typedef struct PlayerAttackManager_S {
 	PlayerAtkState		atk_state;
 
 	// timing
-	float				atk_state_end;
+	float				frame_dur;
 	float				then;
 
 	// attack flags
@@ -45,7 +45,7 @@ void player_atk_system_init(void* data) {
 		create_player_atk(sj_array_get_nth(atk_list, i), i);
 	}
 
-	atk_manager.atk_state_end = 0;
+	atk_manager.frame_dur = 0.016f;
 	atk_manager.frame = 0;
 	atk_manager.atk_state = PLAYER_ATK_NONE;
 
@@ -78,8 +78,12 @@ void create_player_atk(SJson* atk_data, Uint8 index) {
 	sj_object_get_float(atk_data, "damage", &atk->damage);
 
 	sj_object_get_uint32(atk_data, "startupFrames", &atk->startupFrames);
+
 	sj_object_get_uint32(atk_data, "activeFrames", &atk->activeFrames);
+	atk->activeFrames += atk->startupFrames;
+
 	sj_object_get_uint32(atk_data, "recovFrames", &atk->recovFrames);
+	atk->recovFrames += atk->activeFrames;
 
 	gfc_list_append(atk_manager.atk_list, atk);
 }
@@ -88,7 +92,7 @@ void player_attack(void* p, void* data) {
 	Entity* player;
 	PlayerData* p_data;
 	Uint8 atk_index;
-	float fps, time;
+	float time;
 
 	player = (Entity*) p;
 	p_data = (PlayerData*) data;
@@ -98,48 +102,73 @@ void player_attack(void* p, void* data) {
 	// player should only attack during when idle, moving, or slowing down
 	if (p_data->state != PLAYER_IDLE && p_data->state != PLAYER_MOVING && p_data->state != PLAYER_SLOWDOWN) return;
 
-	fps = gf2d_graphics_get_frames_per_second();
 	time = CURRENT_TIME;
 
 	switch (atk_manager.atk_state) {
-		case PLAYER_ATK_STARTUP:
-			if (time - atk_manager.then > 0.016) {
+		case PLAYER_ATK_STARTUP: // simply delaying until active
+			if (time - atk_manager.then > atk_manager.frame_dur) {
 				atk_manager.frame++;
 				atk_manager.then = time;
-				slog("startup: %i", atk_manager.frame);
+				//slog("startup: %i", atk_manager.frame);
 			}
 		
-			if (CURRENT_TIME > atk_manager.atk_state_end) {
-				atk_manager.atk_state_end = CURRENT_TIME + (atk_manager.curr_atk->activeFrames / fps);
-				slog("active time: %f", atk_manager.curr_atk->activeFrames / fps);
+			if (atk_manager.frame == atk_manager.curr_atk->startupFrames)
 				atk_manager.atk_state = PLAYER_ATK_ACTIVE;
-			}
 
 			break;
 
 		case PLAYER_ATK_ACTIVE:
-			if (time - atk_manager.then > 0.016) {
-				atk_manager.frame++;
-				atk_manager.then = time;
-				slog("active: %i", atk_manager.frame);
+			/* display hitbox */
+			// first shift rect coords based on player coords and type of move
+			switch (atk_manager.curr_atk->atk_type) {
+				case PLAYER_ATK_TYPE_F_BASIC:
+					atk_manager.curr_atk->hitbox.x = player->position.x;
+					atk_manager.curr_atk->hitbox.x += player->dir.x == 0 ? (player->hurtbox.s.r.w * 0.5f) : 
+													-(player->hurtbox.s.r.w * 0.5f + atk_manager.curr_atk->hitbox.w);
+					
+					atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f);
+
+					break;
+
+				case PLAYER_ATK_TYPE_U_BASIC:
+					atk_manager.curr_atk->hitbox.x = player->position.x - (atk_manager.curr_atk->hitbox.w * 0.5f);
+					atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f) - (atk_manager.curr_atk->hitbox.h);
+
+					//gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, GFC_COLOR_RED);
+
+					break;
+	
+				case PLAYER_ATK_TYPE_D_BASIC:
+					atk_manager.curr_atk->hitbox.x = player->position.x - (atk_manager.curr_atk->hitbox.w * 0.5f);
+					atk_manager.curr_atk->hitbox.y = player->position.y + (player->hurtbox.s.r.h * 0.5f);
+
+					//gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, GFC_COLOR_RED);
+
+					break;
 			}
 
-			if (CURRENT_TIME > atk_manager.atk_state_end) {
-				atk_manager.atk_state_end = CURRENT_TIME + (atk_manager.curr_atk->recovFrames / fps);
-				slog("recovery time: %f", atk_manager.curr_atk->recovFrames / fps);
-				atk_manager.atk_state = PLAYER_ATK_RECOVERY;
+			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(255, 0, 0,120));
+
+			// frame checking
+			if (time - atk_manager.then > atk_manager.frame_dur) {
+				atk_manager.frame++;
+				atk_manager.then = time;
+				//slog("active: %i", atk_manager.frame);
 			}
+
+			if (atk_manager.frame == atk_manager.curr_atk->activeFrames) 
+				atk_manager.atk_state = PLAYER_ATK_RECOVERY;			
 
 			break;
 
 		case PLAYER_ATK_RECOVERY:
-			if (time - atk_manager.then > 0.016) {
+			if (time - atk_manager.then > atk_manager.frame_dur) {
 				atk_manager.frame++;
 				atk_manager.then = time;
-				slog("recovery: %i", atk_manager.frame);
+				//slog("recovery: %i", atk_manager.frame);
 			}
 
-			if (CURRENT_TIME > atk_manager.atk_state_end) {
+			if (atk_manager.frame == atk_manager.curr_atk->recovFrames) {
 				// reset manager values
 				atk_manager.frame = 0;
 				atk_manager.then = 0;
@@ -193,10 +222,7 @@ void player_attack(void* p, void* data) {
 					slog("no atk found at this index or atk is null");
 					return;
 				}
-
-				atk_manager.atk_state_end = time + (atk_manager.curr_atk->startupFrames / fps);
 				atk_manager.then = time;
-				slog("startup time: %f", atk_manager.curr_atk->startupFrames / fps);
 
 				// change state
 				atk_manager.atk_state = PLAYER_ATK_STARTUP;

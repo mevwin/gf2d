@@ -25,9 +25,6 @@ typedef struct PlayerAtk_S {
 	Uint32				startupFrames;
 	Uint32				activeFrames;
 	Uint32				recovFrames;
-
-	// extra things for later
-	
 }PlayerAtk;
 
 
