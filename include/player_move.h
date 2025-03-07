@@ -40,37 +40,50 @@ typedef enum BashDir_E {
 	BASH_DOWN
 }BashDir;
 
-typedef struct RecallPoint_S {
-	GFC_Vector2D	point;
-	float			time;
-}RecallPoint;
-
 /**
 * @brief function for basic movement options based on inputs
 * @note always being called in think function
-* @note wall collisions are handled here
+* @note wall collisions for player are handled here
 */
 void player_move(void* p);
 
 /**
-* @brief track previous player positions for recall ability
+* @brief track previous player positions at defined intervals for recall ability
+* @param p: point to player entity (must be casted to Entity* in definition)
+* @param p: point to player entity's data (must be casted to PlayerData* in defintion)
 */
 void track_player(void* p, void* data);
 
+
+/**
+* @brief initialize player recall manager
+*/
 void player_recall_init();
 
 /**
+* @brief initalize player bash manager
+*/
+void player_bash_init();
+
+/**
 * @brief recall ability: return player to a previous position while restoring resources
+* @param p: point to player entity (must be casted to Entity* in definition)
+* @param p: point to player entity's data (must be casted to PlayerData* in defintion)
 */
 void player_recall(void* p, void* data);
 
-void player_recall_reset(void* p, void* data);
+/**
+* @brief reset player values and recall manager values
+* @param p: point to player entity (must be casted to Entity* in definition)
+* @param p: point to player entity's data (must be casted to PlayerData* in defintion)
+*/
+void player_recall_reset(void* p, void* data, float time);
 
-RecallPoint* create_recall_pos(GFC_Vector2D pos, float time);
-
-void player_bash_init();
-
-// TODO: fix later
+/**
+* @brief bash ability: player dashes in a cardinal direction from a nearby entity (if a projectile, reverse its direction)
+* @param p: point to player entity (must be casted to Entity* in definition)
+* @param p: point to player entity's data (must be casted to PlayerData* in defintion)
+*/
 void player_bash(void* p, void* data);
 
 #endif

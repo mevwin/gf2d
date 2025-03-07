@@ -141,7 +141,7 @@ void player_update(Entity* self) {
 
 	// dummy respawn
 	if (self->position.y > RES.y + RES.h) {
-		player_recall_reset(self, p_data);
+		player_recall_reset(self, p_data, CURRENT_TIME);
 		gfc_vector2d_copy(self->position, p_data->spawn_pos);
 	}
 
