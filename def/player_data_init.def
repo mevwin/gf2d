@@ -43,7 +43,7 @@
             "damage": 8,
             "startupFrames": 5,
             "activeFrames": 4,
-            "recovFrames": 30
+            "recovFrames": 20
         },
         {
             "#name": "D_ATK",

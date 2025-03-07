@@ -21,7 +21,7 @@ typedef struct PlayerAttackManager_S {
 	Uint8				aerial;
 
 	// debug
-	Uint8				frame;
+	Uint32				frame;
 }PlayerAttackManager;
 
 static PlayerAttackManager atk_manager = { 0 };
@@ -88,6 +88,11 @@ void create_player_atk(SJson* atk_data, Uint8 index) {
 	gfc_list_append(atk_manager.atk_list, atk);
 }
 
+/**
+* TODO:
+* - add collision detection/damage to damageable entities
+* - add changes between aerial attacks
+*/
 void player_attack(void* p, void* data) {
 	Entity* player;
 	PlayerData* p_data;
@@ -172,6 +177,7 @@ void player_attack(void* p, void* data) {
 				// reset manager values
 				atk_manager.frame = 0;
 				atk_manager.then = 0;
+
 				atk_manager.atk_state = PLAYER_ATK_NONE;
 			}
 
@@ -214,7 +220,6 @@ void player_attack(void* p, void* data) {
 				}
 			}
 			
-			//slog("atk_index: %i", atk_index - 1);
 			if (atk_index) { // if attack has been set
 				// set startup timer
 				atk_manager.curr_atk = (PlayerAtk*) gfc_list_nth(atk_manager.atk_list, atk_index - 1);
@@ -227,8 +232,5 @@ void player_attack(void* p, void* data) {
 				// change state
 				atk_manager.atk_state = PLAYER_ATK_STARTUP;
 			}
-
-
-
 	}
 }

@@ -18,8 +18,6 @@ typedef struct Menu_S {
     //GFC_TextLine    text;
 }Menu;
 
-
-
 void ui_system_init();
 
 #endif

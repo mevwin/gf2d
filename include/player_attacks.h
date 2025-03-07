@@ -22,6 +22,8 @@ typedef struct PlayerAtk_S {
 	PlayerAtkType		atk_type;
 	GFC_Rect			hitbox;
 	float				damage;
+
+	// frame timing
 	Uint32				startupFrames;
 	Uint32				activeFrames;
 	Uint32				recovFrames;
