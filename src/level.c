@@ -5,11 +5,20 @@
 #include "player.h"
 #include "enemy.h"
 
+typedef enum LevelState_E {
+	LEVEL_NONE,
+	LEVEL_LOADING,
+	LEVEL_START,
+	LEVEL_ACTIVE,
+	LEVEL_END
+}LevelState;
+
 typedef struct LevelManager_S {
 	Level*			curr_level;
 	GFC_List*		level_list; // a list of filepaths for levels
 	Uint8			level_num;
-	Uint8			w_collision;  // 0 for left, 1 for right
+
+	LevelState		state;
 }LevelManager;
 
 //NOTE: ONLY ONE LEVEL LOADED AT A TIME
@@ -41,15 +50,17 @@ void level_manager_init(const char* filename){
 	level_manager.level_num = 0;
 
 	// load first level
+	level_manager.state = LEVEL_LOADING;
 	level_manager.curr_level = level_load(level_manager.level_num);
 	if (!level_manager.curr_level) {
 		slog("failed to initialiaze first level");
-		world_done_change();
+		change_world_state(WORLD_GAMECLOSE);
 		return;
 	}
 
 	sj_free(level_def);
 
+	level_manager.state = LEVEL_START;
 	atexit(level_manager_close);
 }
 
@@ -82,7 +93,7 @@ Level* level_load(Uint8 index) {
 	level_data = sj_object_get_value(level_obj, "level");
 	if (!level_data) {
 		slog("level not found");
-		world_done_change();
+		change_world_state(WORLD_GAMECLOSE);
 		return NULL;
 	}
 
@@ -128,6 +139,10 @@ Level* level_load(Uint8 index) {
 
 	sj_free(level_data);
 	return level;
+}
+
+void level_start(Level* level) {
+
 }
 
 Ground* create_ground(SJson* ground_data, Level* level) {

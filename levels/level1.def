@@ -39,12 +39,27 @@
             }
         ]
     },
-    "enemy_spawns":
-    [
-        {
-            "dimensions": [850, 500, 200, 220],
-            "color": [0, 255, 0, 255],
-            "walls": 1
-        }
-    ]
+    "enemies":
+    {
+        "#spawn_position": "if both -1, use random position",
+        "list":
+        [
+            {
+                "type": 0,
+                "spawn_position": [-1, -1]
+            }
+        ],
+        "random_spawns":
+        [
+            {
+                "position": [220, 250]
+            },
+            {
+                "position": [580, 280]
+            },
+            {
+                "position": [900, 400]
+            }
+        ]
+    }
 }

@@ -36,6 +36,7 @@ typedef struct PlayerData_S{
 	Uint8			max_jumps;
 	Uint8			wall_jump;
 	Uint8			turnaround;
+	Uint8			isAttacking;
 	
 	// movement counters
 	Uint8			jump_count;

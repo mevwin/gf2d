@@ -241,6 +241,7 @@ void player_move(void* p) {
 	}
 
 	/* FAST FALLING */
+	// TODO: double tapping down for fast-falling
 	/* 3/5/25: turn off for atk testing
 	if (p_data->moveTypeY == PMOVE_FALLING && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown"))) {
 		// remember at this point, velocity.y is negative

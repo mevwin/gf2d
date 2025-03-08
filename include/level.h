@@ -72,6 +72,7 @@ typedef struct Level_S {
 
 void level_manager_init(const char* filename);
 Level* level_load(Uint8 index);
+void level_start(Level* level);
 
 void level_update();
 void level_close(Level* level);

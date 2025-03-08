@@ -117,8 +117,10 @@ void player_attack(void* p, void* data) {
 				//slog("startup: %i", atk_manager.frame);
 			}
 		
-			if (atk_manager.frame == atk_manager.curr_atk->startupFrames)
+			if (atk_manager.frame == atk_manager.curr_atk->startupFrames) {
+				p_data->isAttacking = 1;
 				atk_manager.atk_state = PLAYER_ATK_ACTIVE;
+			}
 
 			break;
 
@@ -179,6 +181,7 @@ void player_attack(void* p, void* data) {
 				atk_manager.then = 0;
 
 				atk_manager.atk_state = PLAYER_ATK_NONE;
+				p_data->isAttacking = 0;
 			}
 
 			break;

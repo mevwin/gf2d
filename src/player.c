@@ -79,11 +79,16 @@ PlayerData* player_data_init(Entity* self, SJson* data) {
 	p_data = gfc_allocate_array(sizeof(PlayerData), 1);
 	if (!p_data) return NULL;
 
+	// default values
 	gfc_vector2d_copy(p_data->spawn_pos, self->position);
 	p_data->state = PLAYER_IDLE;
 	p_data->moveTypeX = PMOVE_NONE_X;
 	p_data->moveTypeY = PMOVE_NONE_Y;
 	p_data->jump_count = 0;
+
+	// player stats
+	sj_object_get_float(data, "maxHealth", &p_data->maxHealth);
+	p_data->currHealth = p_data->maxHealth;
 
 	// ability checks
 	ability_checks = sj_object_get_value(data, "ability_checks");
@@ -124,13 +129,15 @@ void player_update(Entity* self) {
 	p_data = self->data;
 	if (!p_data) return;
 
-	switch (p_data->moveTypeX) {
-		case PMOVE_LEFT:
-			self->dir.x = 1;
-			break;
-		case PMOVE_RIGHT:
-			self->dir.x = 0;
-			break;
+	if (!p_data->isAttacking) {
+		switch (p_data->moveTypeX) {
+			case PMOVE_LEFT:
+				self->dir.x = 1;
+				break;
+			case PMOVE_RIGHT:
+				self->dir.x = 0;
+				break;
+			}
 	}
 
 	// update player based on movement

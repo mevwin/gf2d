@@ -3,6 +3,8 @@
 #include "collisions.h"
 #include "enemy.h"
 
+EnemyData* enemy_data_init(SJson* data);
+
 void enemy_think(Entity* self);
 void enemy_update(Entity* self);
 void enemy_gravity(Entity* self);
@@ -39,31 +41,50 @@ void enemy_spawn(EnemyType type, GFC_Vector2D position) {
 	enemy->scale = gfc_vector2d(1, 1);
 	enemy->dir = gfc_vector2d(0, 0);
 
+	//enemy_data_init();
+
 	update_hurtbox(enemy);
 	update_boundbox(enemy);
 
-	world_append_enemy(enemy);
+	//world_append_enemy(enemy);
+}
+
+EnemyData* enemy_data_init(SJson* data) {
+	EnemyData* e_data;
+
+	
 }
 
 void enemy_think(Entity* self) {
+	EnemyData* e_data;
+
+	e_data = self->data;
+	if (!e_data) return;
+
 	//if (self->velocity.y == 0)
 		//self->velocity.y = 9.0f;
 
 }
 
 void enemy_update(Entity* self) {
+	EnemyData* e_data;
+
+	e_data = self->data;
+	if (!e_data) return;
+
 
 }
 
 void enemy_gravity(Entity* self) {
-	GFC_Edge2D bottom;
+	EnemyData* e_data;
 
-	bottom = get_edge_from_rect(self->boundbox.s.r, 0);
+	e_data = self->data;
+	if (!e_data) return;
 
-	if (ground_collision(self) && self->velocity.y == 0) { // grounded
+	if ((ground_collision(self) || platform_collision(self)) && self->velocity.y == 0) { // grounded
 		//  uhhhh....
 	}
-	else if (ground_collision(self)) { // landing
+	else if (ground_collision(self) || platform_collision(self)) { // landing
 		self->velocity.y = 0;
 	}
 	else {
@@ -79,8 +100,10 @@ void enemy_free(Entity* self) {
 }
 
 void enemy_move(Entity* self) {
-	//EnemyData* e_data;
+	EnemyData* e_data;
 
-	
+	e_data = self->data;
+	if (!e_data) return;
+
 
 }

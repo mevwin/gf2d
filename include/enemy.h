@@ -8,7 +8,7 @@ typedef enum EnemyType_E{
 }EnemyType;
 
 typedef struct EnemyData_S{
-    EnemyType   type;
+    EnemyType       type;
 
     float			currHealth;
 	float			maxHealth;
