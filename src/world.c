@@ -7,13 +7,9 @@
 
 typedef struct WorldManager_S {
 	Entity*			player;
-	//GFC_List*		enemy_list;
+	GFC_List*		enemy_list;
 	Uint8			close_game;
 	WorldState		state;
-
-	// insert UI data
-	// insert level data
-	GFC_List*		def_strings;
 }WorldManager;
 
 static WorldManager world_manager = { 0 };
@@ -25,32 +21,30 @@ void world_init() {
 	world_manager.close_game = 0;
 	world_manager.state = WORLD_MAINMENU;
 
+	world_manager.enemy_list = gfc_list_new();;
+
+	// initialize level_manager
+	level_manager_init("config/level_list.cfg");
+	
 	atexit(world_close);
 }
 
 void world_gamestart() {
 	Level* level;
-	SJson* def_strings, * string_list, * data;
-	int i;
+	SJson* data;
 
-	// init lists
-	//world_manager.enemy_list = gfc_list_new();
-	world_manager.def_strings = gfc_list_new();
-	def_strings = sj_load("config/def_strings.cfg");
-	string_list = sj_object_get_value(def_strings, "list");
-	for (i = 0; i < string_list->v.array->count; i++) {
-		gfc_list_append(
-			world_manager.def_strings,
-			sj_object_get_string(sj_array_get_nth(string_list, i), "path")
-		);
+	// load first level
+	level_load(0);
+
+	level = get_curr_level();
+	if (!level) {
+		slog("failed to load first level");
+		world_manager.close_game = 1;
+		return;
 	}
 
-	// initialize level (CHANGE LATER)
-	level_manager_init(gfc_list_nth(world_manager.def_strings, 1));
-	level = get_curr_level();
-
 	// load player
-	data = sj_load(gfc_list_nth(world_manager.def_strings, 0));
+	data = sj_load("def/player_data_init.def");
 	if (!data) {
 		slog("def file not found");
 		world_manager.close_game = 1;
@@ -60,22 +54,15 @@ void world_gamestart() {
 	world_manager.player = player_spawn(level->player_spawn, data);
 	sj_free(data);
 	if (!world_manager.player) {
-		sj_free(def_strings);
 		world_manager.close_game = 1;
 		return;
 	}
-
-	sj_free(def_strings);
 }
 
 void world_close() {
 	entity_system_close();
 
-	gfc_list_clear(world_manager.def_strings);
-	gfc_list_delete(world_manager.def_strings);
-
-	//gfc_list_clear(world_manager.enemy_list);
-	//gfc_list_delete(world_manager.enemy_list);
+	gfc_list_delete(world_manager.enemy_list);
 
 	memset(&world_manager, 0, sizeof(WorldManager));
 }
@@ -111,6 +98,8 @@ void world_update() {
 			break;
 
 		case WORLD_LEVELCOMPLETE:
+			// load next level here
+
 
 			break;
 
@@ -127,8 +116,8 @@ void world_update() {
 	//gf2d_draw_rect(RES, GFC_COLOR_RED);
 }
 
-/*
-void world_append_enemy(void* enemy) {
+
+void world_record_enemy(void* enemy) {
 	Entity* enem;
 
 	enem = (Entity*)enemy;
@@ -139,7 +128,7 @@ void world_append_enemy(void* enemy) {
 
 	gfc_list_append(world_manager.enemy_list, enem);
 }
-*/
+
 
 /*
 WorldState getWorldState() {

@@ -3,7 +3,7 @@
 #include "collisions.h"
 #include "enemy.h"
 
-EnemyData* enemy_data_init(SJson* data);
+EnemyData* enemy_data_init(SJson* data, EnemyType type);
 
 void enemy_think(Entity* self);
 void enemy_update(Entity* self);
@@ -12,24 +12,40 @@ void enemy_free(Entity* self);
 
 void enemy_move(Entity* self);
 
-void enemy_spawn(EnemyType type, GFC_Vector2D position) {
+void enemy_spawn(int type, GFC_Vector2D position) {
+	SJson* file, *enemy_type, *init_data;
 	Entity* enemy;
 
 	enemy = entity_new();
 	if (!enemy) {
 		slog("failed to initialize enemy");
-		return NULL;
+		return;
 	}
 
+	file = sj_load("def/enemy.def");
+	if (!file) {
+		slog("couldn't get enemy.def");
+		entity_free(enemy);
+		return;
+	}
+
+	enemy_type = sj_array_get_nth(sj_object_get_value(file, "enemy_list"), type);
+	if (!enemy_type) {
+		slog("invalid index");
+		entity_free(enemy);
+		return;
+	}
+	init_data = sj_object_get_value(enemy_type, "entity_data");
+
 	enemy->type = ENEMY;
-	gfc_line_cpy(enemy->name, "Enemy");
+	//gfc_line_cpy(enemy->name, "Enemy");
 
 	gfc_vector2d_copy(enemy->position, position);
 	enemy->velocity = gfc_vector2d(0, 0);
-	enemy->max_velocity = gfc_vector2d(5.0f, 5.0f);
-	enemy->accel = gfc_vector2d(0.1f, 0.2f);
 
-	enemy->sprite = gf2d_sprite_load_image("sprites/coke.png");
+	sj_object_get_vector2d(init_data, "max_velocity", &enemy->max_velocity);
+	sj_object_get_vector2d(init_data, "accel", &enemy->max_velocity);
+	enemy->sprite = gf2d_sprite_load_image(sj_object_get_string(init_data, "sprite"));
 	enemy->frame = 0;
 	
 	enemy->think = enemy_think;
@@ -41,18 +57,33 @@ void enemy_spawn(EnemyType type, GFC_Vector2D position) {
 	enemy->scale = gfc_vector2d(1, 1);
 	enemy->dir = gfc_vector2d(0, 0);
 
-	//enemy_data_init();
+	enemy->data = enemy_data_init(sj_object_get_value(enemy_type, "enemy_data"), type);
 
 	update_hurtbox(enemy);
 	update_boundbox(enemy);
 
-	//world_append_enemy(enemy);
+	world_record_enemy(enemy);
 }
 
-EnemyData* enemy_data_init(SJson* data) {
+EnemyData* enemy_data_init(SJson* data, EnemyType type) {
 	EnemyData* e_data;
 
-	
+	if (!data) {
+		slog("no json file");
+		return NULL;
+	}
+
+	e_data = gfc_allocate_array(sizeof(EnemyData), 1);
+	if (!e_data) {
+		slog("failed to allocate space fo e_data");
+		return NULL;
+	}
+
+	e_data->type = type;
+	sj_object_get_float(data, "maxHealth", &e_data->maxHealth);
+	e_data->currHealth = e_data->maxHealth;
+
+	return e_data;
 }
 
 void enemy_think(Entity* self) {

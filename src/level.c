@@ -1,24 +1,15 @@
 #include "simple_logger.h"
 #include "gf2d_draw.h"
+#include "gfc_types.h"
 #include "world.h"
 #include "collisions.h"
 #include "player.h"
 #include "enemy.h"
 
-typedef enum LevelState_E {
-	LEVEL_NONE,
-	LEVEL_LOADING,
-	LEVEL_START,
-	LEVEL_ACTIVE,
-	LEVEL_END
-}LevelState;
-
 typedef struct LevelManager_S {
 	Level*			curr_level;
 	GFC_List*		level_list; // a list of filepaths for levels
-	Uint8			level_num;
-
-	LevelState		state;
+	Uint8			curr_level_index;
 }LevelManager;
 
 //NOTE: ONLY ONE LEVEL LOADED AT A TIME
@@ -34,6 +25,7 @@ void move_platform(Platform* plat);
 
 void level_manager_init(const char* filename){	
 	SJson* level_def, *level_list;
+	GFC_TextLine *path;
 	int i;
 	
 	// load level list
@@ -42,25 +34,13 @@ void level_manager_init(const char* filename){
 	level_list = sj_object_get_value(level_def, "list");
 
 	for (i = 0; i < level_list->v.array->count; i++) {
-		gfc_list_append(
-			level_manager.level_list,
-			sj_object_get_string(sj_array_get_nth(level_list, i), "path")
-			);
+		path = gfc_allocate_array(sizeof(GFC_TextLine), 1);
+		gfc_line_cpy(path, sj_object_get_string(sj_array_get_nth(level_list, i), "path"));
+		gfc_list_append(level_manager.level_list, path);
 	}
-	level_manager.level_num = 0;
-
-	// load first level
-	level_manager.state = LEVEL_LOADING;
-	level_manager.curr_level = level_load(level_manager.level_num);
-	if (!level_manager.curr_level) {
-		slog("failed to initialiaze first level");
-		change_world_state(WORLD_GAMECLOSE);
-		return;
-	}
+	level_manager.curr_level_index = 0;
 
 	sj_free(level_def);
-
-	level_manager.state = LEVEL_START;
 	atexit(level_manager_close);
 }
 
@@ -70,32 +50,35 @@ void level_manager_close() {
 	level_close(level_manager.curr_level);
 
 	for (i = 0; i < level_manager.level_list->count; i++) {
-		//free(gfc_list_nth(level_manager.level_list, i));
+		free(gfc_list_nth(level_manager.level_list, i));
 	}
-	gfc_list_clear(level_manager.level_list);
+
 	gfc_list_delete(level_manager.level_list);
 	memset(&level_manager, 0, sizeof(LevelManager));
 }
 
-Level* level_load(Uint8 index) {
+void level_load(Uint8 index) {
 	Level* level;
 	Ground* ground;
 	Platform* plat;
-	SJson *level_obj, *level_data, *list, *data;
-	int i;
+	SJson *level_obj, *level_data, *list, *data, *enemy;
+	GFC_Vector2D e_spawn;
+	int i, enemy_type, random;
 
 	level = gfc_allocate_array(sizeof(Level), 1);
 	if (!level) {
-		slog("failed to initialize level");
-		return NULL;
+		slog("failed to allocate space for level");
+		return;
 	}
+
 	level_obj = sj_load(gfc_list_nth(level_manager.level_list, index));
-	level_data = sj_object_get_value(level_obj, "level");
-	if (!level_data) {
+	if (!level_obj) {
 		slog("level not found");
 		change_world_state(WORLD_GAMECLOSE);
-		return NULL;
+		return;
 	}
+
+	level_data = sj_object_get_value(level_obj, "level");
 
 	level->ground_list = gfc_list_new();
 	level->wall_list = gfc_list_new();
@@ -106,7 +89,12 @@ Level* level_load(Uint8 index) {
 
 	// ground list
 	list = sj_object_get_value(level_data, "ground_list");
-	if (!list) return;
+	if (!list) {
+		slog("no ground list");
+		sj_free(level_obj);
+		free(level);
+		return;
+	}
 	for (i = 0; i < list->v.array->count; i++) {
 		data = sj_array_get_nth(list, i);
 		if (!data) continue;
@@ -122,7 +110,12 @@ Level* level_load(Uint8 index) {
 
 	// platform list
 	list = sj_object_get_value(level_data, "platform_list");
-	if (!list) return;
+	if (!list) { 
+		slog("no platform list");
+		sj_free(level_obj);
+		free(level);
+		return; 
+	}
 	for (i = 0; i < list->v.array->count; i++) {
 		data = sj_array_get_nth(list, i);
 		if (!data) continue;
@@ -131,18 +124,35 @@ Level* level_load(Uint8 index) {
 		gfc_list_append(level->platform_list, plat);
 	}
 
-	// create level bounds
-	//gfc_list_append();
-
 	// enemy spawns
-	//enemy_spawn(BRUISER, gfc_vector2d(300, 200));
+	enemy = sj_object_get_value(level_data, "enemies");
+	list = sj_object_get_value(enemy, "list");
+	if (!list) {
+		slog("no enemy list");
+		sj_free(level_obj);
+		free(level);
+		return;
+	}
+	for (i = 0; i < list->v.array->count; i++) {
+		data = sj_array_nth(list, i);
+		if (!data) {
+			slog("no enemy found");
+			continue;
+		}
+		sj_object_get_int(data, "type", &enemy_type);
+		sj_object_get_vector2d(data, "spawn_position", &e_spawn);
+		
+		// check if enemy spawns at random position
+		if (e_spawn.x == -1.0f && e_spawn.y == -1.0f) {
+			data = sj_object_get_value(enemy, "random_spawns");
+			random = gfc_random_int(data->v.array->count);
+			sj_object_get_vector2d(sj_array_nth(data, random), "position", &e_spawn);
+		}
+		enemy_spawn(enemy_type, e_spawn);
+	}
 
-	sj_free(level_data);
-	return level;
-}
-
-void level_start(Level* level) {
-
+	level_manager.curr_level = level;
+	sj_free(level_obj);
 }
 
 Ground* create_ground(SJson* ground_data, Level* level) {
@@ -323,11 +333,7 @@ void draw_ground_to_surface(GFC_List* ground_list){
 
 void level_update() {
 	int i;
-	//float offset;
 	Ground* ground;
-	//Platform* plat;
-
-	//offset = 1.0f;
 
 	// draw ground
 	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
@@ -336,12 +342,10 @@ void level_update() {
 
 		gf2d_draw_rect_filled(ground->dimensions, ground->color);
 	}
-	//gf2d_draw_rect_filled(level_manager.curr_level->ground, GFC_COLOR_BLACK);
 
 	// draw platforms
 	update_platforms();
 }
-
 
 Level* get_curr_level() {
 	return level_manager.curr_level;

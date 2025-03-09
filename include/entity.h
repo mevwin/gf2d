@@ -9,7 +9,6 @@
 typedef enum EntityType_S{
     PLAYER,
     ENEMY,
-    PLATFORM,
     ITEM,
     HAZARD
 }EntityType;

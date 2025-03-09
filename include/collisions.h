@@ -44,4 +44,6 @@ Wall* get_colliding_wall(void* ent, WallType wall_type);
 Platform* get_colliding_plat(void* ent);
 GFC_Edge2D get_colliding_ceiling(void* ent);
 
+void entity_damage(void* in, void* recip, void* atk);
+
 #endif

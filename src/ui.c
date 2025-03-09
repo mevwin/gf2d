@@ -201,7 +201,7 @@ void menu_check_input(Menu* menu) {
 
             break;
 
-        case MENU_BUTTON_CARDINAL:
+        case MENU_BUTTON_CARDINAL: //TODO: fix later
             if (gfc_input_command_pressed("moveup")) {
                 if (ui_manager.active_button)
                     ui_manager.active_button--;
@@ -227,5 +227,4 @@ void menu_check_input(Menu* menu) {
         active_button = &menu->buttonList[ui_manager.active_button];
         active_button->selected = 1;
     }
- 
 }

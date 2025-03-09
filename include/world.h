@@ -21,7 +21,7 @@ void world_init();
 void world_update();
 Uint8 close_game_check();
 void change_world_state(WorldState new_state);
-//void world_append_enemy(void* enemy);
+void world_record_enemy(void* enemy);
 
 //WorldState getWorldState();
 

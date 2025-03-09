@@ -1,5 +1,5 @@
 {
-    "enemy_types":
+    "enemy_list":
     [
         {
             "#name": "BRUISER",

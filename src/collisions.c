@@ -6,7 +6,7 @@
 
 GFC_Rect level_find_nearest_ground(Entity* ent);
 Platform* level_find_nearest_plat(Entity* ent);
-GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top);
+GFC_Edge2D level_find_nearest_ceiling(Entity* ent);
 Wall* level_find_nearest_wall(Entity* ent, WallType wall_type);
 
 GFC_Rect level_find_nearest_ground(Entity* ent) {
@@ -166,10 +166,10 @@ void handle_ent_plat_collision(void* e) {
 	ent->position.y = plat_top.y1 - ent->boundbox.s.r.h / 2.0f - offset;
 }
 
-GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top) {
+GFC_Edge2D level_find_nearest_ceiling(Entity* ent) {
 	Ground* ground;
 	GFC_Vector2D ceil_point, e_point;
-	GFC_Edge2D g_bottom;
+	GFC_Edge2D g_bottom, e_top;
 	int i;
 	float offset;
 	Level* level;
@@ -177,6 +177,9 @@ GFC_Edge2D level_find_nearest_ceiling(Entity* ent, GFC_Edge2D e_top) {
 	level = get_curr_level();
 
 	offset = 7.0f;
+
+	e_top = get_edge_from_rect(ent->boundbox.s.r, 1);
+	e_top.y1 += ent->velocity.y;
 
 	for (i = 0; i < level->ground_list->count; i++) {
 		ground = (Ground*)gfc_list_nth(level->ground_list, i);
@@ -210,7 +213,7 @@ Uint8 ceiling_collision(void* ent) {
 	e_top = get_edge_from_rect(self->boundbox.s.r, 1);
 	e_top.y1 += self->velocity.y;
 
-	ceil = level_find_nearest_ceiling(self, e_top);
+	ceil = level_find_nearest_ceiling(self);
 	if (ceil.x1 == -20.f)
 		return 0;
 
@@ -342,4 +345,23 @@ Wall* get_colliding_wall(void* ent, WallType wall_type) {
 
 Platform* get_colliding_plat(void* ent) {
 	return level_find_nearest_plat(ent);
+}
+
+GFC_Edge2D get_colliding_ceiling(void* ent) {
+	return level_find_nearest_ceiling(ent);
+}
+
+void entity_damage(void* in, void* recip, void* atk) {
+	Entity* inflictor, * recipient;
+	
+	inflictor = (Entity*) in;
+	recipient = (Entity*) recip;
+	if (!inflictor || !recipient ) {
+		slog("somethings missing");
+		return;
+	}
+
+
+
+
 }
