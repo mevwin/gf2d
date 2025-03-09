@@ -2,23 +2,23 @@
 #include "gfc_config.h"
 #include "gf2d_draw.h"
 #include "world.h"
+#include "player_attack.h"
 #include "player.h"
 #include "collisions.h"
-#include "player_attacks.h"
+
+typedef enum PlayerAtkState_E {
+	PLAYER_ATK_NONE,
+	PLAYER_ATK_STARTUP,
+	PLAYER_ATK_ACTIVE,
+	PLAYER_ATK_RECOVERY
+}PlayerAtkState;
 
 typedef struct PlayerAttackManager_S {
 	GFC_List*			atk_list;
-	PlayerAtk*			curr_atk;
-
+	EntityAtk*			curr_atk;
 	PlayerAtkState		atk_state;
-
-	// timing
-	float				frame_dur;
-	float				then;
-
-	// attack flags
-	Uint8				active;			// deal damage once, turn off once damage has been dealt
-	Uint8				aerial;
+	float				then;			// timing
+	Uint8				aerial;			// attack flags
 
 	// debug
 	Uint32				frame;
@@ -45,7 +45,6 @@ void player_atk_system_init(void* data) {
 		create_player_atk(sj_array_get_nth(atk_list, i), i);
 	}
 
-	atk_manager.frame_dur = 0.016f;
 	atk_manager.frame = 0;
 	atk_manager.atk_state = PLAYER_ATK_NONE;
 
@@ -61,17 +60,17 @@ void player_atk_system_close() {
 
 void create_player_atk(SJson* atk_data, Uint8 index) {
 	GFC_Vector2D hitbox_dimen;
-	PlayerAtk *atk;
+	EntityAtk *atk;
 
 	if (!atk_data) return;
 
-	atk = gfc_allocate_array(sizeof(PlayerAtk), 1);
+	atk = gfc_allocate_array(sizeof(EntityAtk), 1);
 	if (!atk) {
 		slog("failed to allocate space for atk");
 		return;
 	}
 
-	atk->atk_type = (PlayerAtkType) (index + 1);
+	atk->atk_type = index + 1;
 	sj_object_get_vector2d(atk_data, "hitbox", &hitbox_dimen);
 	atk->hitbox = gfc_rect(0, 0, hitbox_dimen.x, hitbox_dimen.y);
 
@@ -86,6 +85,8 @@ void create_player_atk(SJson* atk_data, Uint8 index) {
 	atk->recovFrames += atk->activeFrames;
 
 	gfc_list_append(atk_manager.atk_list, atk);
+
+	atk->active = 1;
 }
 
 /**
@@ -111,10 +112,10 @@ void player_attack(void* p, void* data) {
 
 	switch (atk_manager.atk_state) {
 		case PLAYER_ATK_STARTUP: // simply delaying until active
-			if (time - atk_manager.then > atk_manager.frame_dur) {
+			if (time - atk_manager.then > FRAME_DUR) {
 				atk_manager.frame++;
 				atk_manager.then = time;
-				//slog("startup: %i", atk_manager.frame);
+				slog("startup: %i", atk_manager.frame);
 			}
 		
 			if (atk_manager.frame == atk_manager.curr_atk->startupFrames) {
@@ -156,8 +157,11 @@ void player_attack(void* p, void* data) {
 
 			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(255, 0, 0,120));
 
+			if (atk_manager.curr_atk->active)
+				entity_damage(player, find_nearest_entity(player, atk_manager.curr_atk), atk_manager.curr_atk);
+
 			// frame checking
-			if (time - atk_manager.then > atk_manager.frame_dur) {
+			if (time - atk_manager.then > FRAME_DUR) {
 				atk_manager.frame++;
 				atk_manager.then = time;
 				//slog("active: %i", atk_manager.frame);
@@ -169,7 +173,7 @@ void player_attack(void* p, void* data) {
 			break;
 
 		case PLAYER_ATK_RECOVERY:
-			if (time - atk_manager.then > atk_manager.frame_dur) {
+			if (time - atk_manager.then > FRAME_DUR) {
 				atk_manager.frame++;
 				atk_manager.then = time;
 				//slog("recovery: %i", atk_manager.frame);
@@ -179,6 +183,8 @@ void player_attack(void* p, void* data) {
 				// reset manager values
 				atk_manager.frame = 0;
 				atk_manager.then = 0;
+
+				atk_manager.curr_atk->active = 1;
 
 				atk_manager.atk_state = PLAYER_ATK_NONE;
 				p_data->isAttacking = 0;
@@ -190,44 +196,43 @@ void player_attack(void* p, void* data) {
 			atk_index = PLAYER_ATK_TYPE_NONE;
 			if (gfc_input_command_pressed("attack")) {
 				if (gfc_input_command_down("moveup")) {
-					slog("UP_TILT");
+					//slog("UP_TILT");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_U_BASIC;
 					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
 				}
 				else if (gfc_input_command_down("movedown")) {
-					slog("DOWN_TILT");
+					//slog("DOWN_TILT");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_D_BASIC;
 					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
 				}
 				else { // forward by default
-					slog("F_TILT");
+					//slog("F_TILT");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_F_BASIC;
 					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
 				}
 			}
 			else if (gfc_input_command_pressed("special")) {
 				if (gfc_input_command_down("moveup")) {
-					slog("UP_SPECIAL");
+					//slog("UP_SPECIAL");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_U_SPECIAL;
 					
 				}
 				else if (gfc_input_command_down("movedown")) {
-					slog("DOWN_SPECIAL");
+					//slog("DOWN_SPECIAL");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_D_SPECIAL;
 					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
 				}
 				else { // forward by default
-					slog("FORWARD_SPECIAL");
+					//slog("FORWARD_SPECIAL");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_F_SPECIAL;
 					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
 				}
 			}
 			
 			if (atk_index) { // if attack has been set
-				// set startup timer
-				atk_manager.curr_atk = (PlayerAtk*) gfc_list_nth(atk_manager.atk_list, atk_index - 1);
+				atk_manager.curr_atk = (EntityAtk*) gfc_list_nth(atk_manager.atk_list, atk_index - 1);
 				if (!atk_manager.curr_atk) {
-					slog("no atk found at this index or atk is null");
+					//slog("no atk found at this index or atk is null");
 					return;
 				}
 				atk_manager.then = time;

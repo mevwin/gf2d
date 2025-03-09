@@ -5,8 +5,11 @@
 
 typedef struct RecallManager_S {
 	// timing
-	float				cooldown_time;			// cooldown duration after recalling
-	float				next_recall;			// time until next recall attempt
+	int					cooldown_frames;		// cooldown duration after recalling
+	int					cooldown_counter;		// counts the frames until it matches cooldown_frames
+	int					frames_to_record;		// time to wait for recording next player position
+	float				then_track;				// tracker variable for position tracking time-deltas
+	float				then_cooldown;			// tracker variable for cooldown time time-deltas
 
 	/*' player-tracking' data */
 	Uint8				max_positions;			// max number of previous recall points	
@@ -20,8 +23,6 @@ typedef struct RecallManager_S {
 	float				rewind_accel_mag;		// rate of change of rewind speed
 
 	//float				total_distance;			// MEV_NOTE: old implementation used total_distance, commented out for later use?
-	float				time_to_record;			// time to wait for recording next player position
-	float				next_recording_time;	// timestamp to record next player position
 }RecallManager;
 
 typedef struct BashManager_S {
@@ -78,13 +79,12 @@ void player_recall_init() {
 	float time;
 
 	time = CURRENT_TIME;
-	recall_manager.cooldown_time = 6.0f;
-	recall_manager.next_recall = time;
+	recall_manager.cooldown_frames = 360;
+	recall_manager.frames_to_record = 12;
+	recall_manager.cooldown_counter = 0;
 	recall_manager.state = RECALL_NONE;
 	recall_manager.max_positions = 10;
 	recall_manager.pathToPlayer = gfc_list_new_size(recall_manager.max_positions);
-	recall_manager.time_to_record = 0.2f;
-	recall_manager.next_recording_time = time + recall_manager.time_to_record;
 	
 	atexit(player_recall_close);
 }
@@ -189,7 +189,7 @@ void player_move(void* p) {
 
 	/* RECALL */
 	if (p_data->canRecall && gfc_input_command_pressed("recall")){
-		if (CURRENT_TIME >= recall_manager.next_recall) {
+		if (recall_manager.cooldown_counter > recall_manager.cooldown_frames) {
 			recall_manager.state = RECALL_START;
 			p_data->state = PLAYER_RECALL;
 			return;
@@ -326,18 +326,24 @@ void player_move(void* p) {
 void track_player(void* p, void* data) {
 	PlayerData* p_data;
 	Entity* player;
-	//RecallPosition* pos;
+	float time;
 
 	player = (Entity*)p;
 	p_data = (PlayerData*)data;
 	if (!player || !p_data || recall_manager.state != RECALL_NONE) return;
+	
+	time = CURRENT_TIME;
 
-	if (CURRENT_TIME >= recall_manager.next_recording_time) {
+	// increment cooldown counter frames
+	if (time - recall_manager.then_cooldown > FRAME_DUR && recall_manager.cooldown_counter <= recall_manager.cooldown_frames)
+		recall_manager.cooldown_counter++;
+
+	if (time - recall_manager.then_track > (FRAME_DUR * recall_manager.frames_to_record)) {
 		if (recall_manager.pathToPlayer->count > recall_manager.max_positions) 
 			trim_pathToPlayer(recall_manager.pathToPlayer);
 
 		gfc_list_append(recall_manager.pathToPlayer, create_recall_pos(player->position));
-		recall_manager.next_recording_time = CURRENT_TIME + recall_manager.time_to_record;
+		recall_manager.then_track = time;
 		//slog("saved position");
 	}
 }
@@ -356,8 +362,7 @@ void player_recall(void* p, void* data) {
 	time = CURRENT_TIME;
 	if (!recall_manager.pathToPlayer->count) { 
 		recall_manager.state = RECALL_NONE;
-		recall_manager.next_recording_time = time + 1.0f;
-		recall_manager.next_recall = time + recall_manager.cooldown_time;
+		recall_manager.cooldown_counter = 0;
 		slog("no recorded positions");
 		return; 
 	}
@@ -366,6 +371,7 @@ void player_recall(void* p, void* data) {
 		case RECALL_START: // prepare player and recall_manager for recall
 			//slog("recall stared: %i positions", recall_manager.pathToPlayer->count);
 			recall_manager.pathToPlayer_index = (int)recall_manager.pathToPlayer->count - 1;
+			recall_manager.cooldown_counter = 0;
 
 			// stop current player movement
 			gfc_vector2d_clear(player->velocity);
@@ -481,9 +487,8 @@ void player_recall_reset(void* p, void* data, float time) {
 	gfc_list_foreach(recall_manager.pathToPlayer, free);
 	gfc_list_clear(recall_manager.pathToPlayer);
 
-	recall_manager.next_recording_time = time + 1.0f;
-	recall_manager.next_recall = time + recall_manager.cooldown_time;
-
+	recall_manager.then_cooldown = time;
+	recall_manager.then_track = time + 2.0f;
 	player->grav_flag = 1;
 	player->plat_flag = 1;
 	p_data->state = PLAYER_IDLE;
@@ -501,7 +506,9 @@ void trim_pathToPlayer(GFC_List* list) {
 	free(rp);
 }
 
-// TODO: ADD COLLISION DETECTION
+// TODO: 
+// ADD COLLISION DETECTION
+// USE FRAME-BASED TIMING INSTEAD OF HARD TIME CHECKS WITH SDL
 void player_bash(void* p, void* data) {
 	PlayerData* p_data;
 	Entity* player;

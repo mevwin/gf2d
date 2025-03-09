@@ -3,9 +3,9 @@
 #include "gfc_config.h"
 #include "gf2d_draw.h"
 #include "world.h"
+#include "player_attack.h"
 #include "collisions.h"
 #include "player.h"
-#include "player_attacks.h"
 
 // required entity functions
 void player_think(Entity* self);

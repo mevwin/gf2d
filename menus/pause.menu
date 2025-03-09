@@ -1,0 +1,22 @@
+{
+    "menu":
+    {
+        "bg_sprite": "images/ui/pause_menu/pause_menu.png",
+        "offset": [0, 0],
+        "buttonLayout": 1,
+        "buttonMax": 2
+    },
+    "buttons":
+    [
+        {
+            "cmd": "RESUME",
+            "sprite": "images/ui/pause_menu/resume_button.png",
+            "offset": [450, 203]  
+        },
+        {
+            "cmd": "QUIT",
+            "sprite": "images/ui/pause_menu/quit_button.png",
+            "offset": [450, 377]  
+        }
+    ]
+}

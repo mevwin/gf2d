@@ -153,12 +153,20 @@ void entity_free(Entity* self) {
     memset(self, 0, sizeof(Entity));
 }
 
+void free_all_entities() {
+    int i;
+    for (i = 0; i < ent_manager.entityMax; i++) {
+        if (!ent_manager.entityList[i]._inuse) continue;
+        entity_free(&ent_manager.entityList[i]);
+    }
+}
+
 void update_hurtbox(Entity* self) {
     GFC_Vector2D offset, position;
 
     offset = gfc_vector2d(self->sprite->frame_w, self->sprite->frame_h);
-    offset.x /= 2.0f;
-    offset.y /= 2.0f;
+    offset.x *= 0.5f;
+    offset.y *= 0.5f;
 
     gfc_vector2d_sub(position, self->position, offset);
     self->hurtbox.s.r = gfc_rect(position.x, 
@@ -171,4 +179,12 @@ void update_hurtbox(Entity* self) {
 void update_boundbox(Entity* self) {
     // TODO: change later
     gfc_rect_copy(self->boundbox.s.r, self->hurtbox.s.r);   
+}
+
+Uint32 getEntityMax() {
+    return ent_manager.entityMax;
+}
+
+Entity* getEntityList() {
+    return ent_manager.entityList;
 }

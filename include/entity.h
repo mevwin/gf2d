@@ -45,6 +45,18 @@ typedef struct Entity_S{
     GFC_Shape       boundbox;                   // for collision detection
 }Entity;
 
+typedef struct EntityAtk_S {
+    Uint8		        atk_type;
+    Uint8				active;			// deal damage once, turn off once damage has been dealt
+    GFC_Rect			hitbox;
+    float				damage;
+
+    // frame timing
+    Uint32				startupFrames;
+    Uint32				activeFrames;
+    Uint32				recovFrames;
+}EntityAtk;
+
 /**
  * @brief initialize the entity manager subsystem
  * @param maxEnts how many entities can exist at the same time
@@ -88,8 +100,18 @@ Entity *entity_new();
  */
 void entity_free(Entity* self);
 
+void free_all_entities();
+
 void update_hurtbox(Entity* self);
 
 void update_boundbox(Entity* self);
+
+void entity_damage(Entity* inflictor, Entity* recipient, EntityAtk* atk);
+
+Entity* find_nearest_entity(Entity* source, EntityAtk* atk);
+
+Uint32 getEntityMax();
+
+Entity* getEntityList();
 
 #endif

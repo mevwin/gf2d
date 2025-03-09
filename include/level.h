@@ -76,7 +76,7 @@ void change_level();
 void restart_level();
 
 void level_update();
-void level_close(Level* level);
+void level_curr_close();
 
 Level* get_curr_level();
 Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type);

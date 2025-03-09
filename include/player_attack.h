@@ -1,0 +1,17 @@
+#ifndef __PLAYER_ATTACK_H__
+#define __PLAYER_ATTACK_H__
+
+typedef enum PlayerAtkType_E {
+	PLAYER_ATK_TYPE_NONE,
+	PLAYER_ATK_TYPE_F_BASIC,
+	PLAYER_ATK_TYPE_U_BASIC,
+	PLAYER_ATK_TYPE_D_BASIC,
+	PLAYER_ATK_TYPE_F_SPECIAL,
+	PLAYER_ATK_TYPE_U_SPECIAL,
+	PLAYER_ATK_TYPE_D_SPECIAL
+}PlayerAtkType;
+
+void player_atk_system_init(void* data);
+void player_attack(void* p, void* data);
+
+#endif

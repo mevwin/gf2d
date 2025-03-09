@@ -22,6 +22,7 @@ typedef struct PlayerData_S{
 	// player stats
 	float			currHealth;
 	float			maxHealth;
+	float           dmg_reduction;
 
 	// player ability/upgrade checks
 	Uint8			canRecall;

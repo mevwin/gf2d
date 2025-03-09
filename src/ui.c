@@ -141,7 +141,7 @@ void drawUI(Uint8 w_state) {
                     if (!strcmp(button->cmd, "PLAY"))
                         change_world_state(WORLD_GAMESTART);
                     else if (!strcmp(button->cmd, "QUIT"))
-                        change_world_state(WORLD_GAMECLOSE);
+                        change_world_state(WORLD_CLOSE);
 
                     button->selected = 0;
                 }
@@ -151,10 +151,35 @@ void drawUI(Uint8 w_state) {
 
         case WORLD_INGAME:
 
+
+
             break;
 
         case WORLD_PAUSEMENU:
+            menu = (Menu*) gfc_list_nth(ui_manager.ui_list, 1);
 
+            // draw bg
+            gf2d_sprite_draw_image(menu->bg_sprite, menu->offset);
+
+            // draw buttons
+            menu_check_input(menu);
+            for (i = 0; i < menu->buttonMax; i++) {
+                button = &menu->buttonList[i];
+                if (i == ui_manager.active_button) shift = &ui_manager.active_shift;
+                gf2d_sprite_draw(button->sprite, button->offset, NULL, NULL, NULL, NULL, shift, 0);
+                shift = NULL;
+
+                // check if button has been selected
+                if (button->selected) {
+                    if (!strcmp(button->cmd, "RESUME"))
+                        change_world_state(WORLD_INGAME);
+                    else if (!strcmp(button->cmd, "QUIT"))
+                        change_world_state(WORLD_GAMECLOSE);
+
+                    button->selected = 0;
+                }
+            }
+            
             break;
 
         case WORLD_PLAYERDEAD:

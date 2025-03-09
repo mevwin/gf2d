@@ -10,6 +10,7 @@ void enemy_update(Entity* self);
 void enemy_gravity(Entity* self);
 void enemy_free(Entity* self);
 
+void enemy_die(Entity* self, EnemyData* e_data);
 void enemy_move(Entity* self);
 
 void enemy_spawn(int type, GFC_Vector2D position) {
@@ -61,8 +62,6 @@ void enemy_spawn(int type, GFC_Vector2D position) {
 
 	update_hurtbox(enemy);
 	update_boundbox(enemy);
-
-	world_record_enemy(enemy);
 }
 
 EnemyData* enemy_data_init(SJson* data, EnemyType type) {
@@ -103,7 +102,8 @@ void enemy_update(Entity* self) {
 	e_data = self->data;
 	if (!e_data) return;
 
-
+	if (e_data->currHealth <= 0.0f)
+		enemy_die(self, e_data);
 }
 
 void enemy_gravity(Entity* self) {
@@ -125,7 +125,7 @@ void enemy_gravity(Entity* self) {
 }
 
 void enemy_free(Entity* self) {
-	gf2d_sprite_delete(self->sprite);
+	gf2d_sprite_free(self->sprite);
 
 	if (self->data) free(self->data);
 }
@@ -136,5 +136,11 @@ void enemy_move(Entity* self) {
 	e_data = self->data;
 	if (!e_data) return;
 
+}
 
+void enemy_die(Entity* self, EnemyData* e_data) {
+	if (!self || !e_data) return;
+
+	
+	entity_free(self);
 }

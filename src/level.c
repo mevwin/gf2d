@@ -39,6 +39,7 @@ void level_manager_init(const char* filename){
 		gfc_list_append(level_manager.level_list, path);
 	}
 	level_manager.curr_level_index = 0;
+	level_manager.curr_level = NULL;
 
 	sj_free(level_def);
 	atexit(level_manager_close);
@@ -47,13 +48,14 @@ void level_manager_init(const char* filename){
 void level_manager_close() {
 	int i;
 
-	level_close(level_manager.curr_level);
+	if (level_manager.curr_level) level_curr_close();
 
 	for (i = 0; i < level_manager.level_list->count; i++) {
 		free(gfc_list_nth(level_manager.level_list, i));
 	}
 
 	gfc_list_delete(level_manager.level_list);
+	
 	memset(&level_manager, 0, sizeof(LevelManager));
 }
 
@@ -74,7 +76,7 @@ void level_load(Uint8 index) {
 	level_obj = sj_load(gfc_list_nth(level_manager.level_list, index));
 	if (!level_obj) {
 		slog("level not found");
-		change_world_state(WORLD_GAMECLOSE);
+		change_world_state(WORLD_CLOSE);
 		return;
 	}
 
@@ -281,22 +283,17 @@ void move_platform(Platform* plat) {
 								plat->dimensions.x + plat->dimensions.w);
 }
 
-void level_close(Level* level) {
-	if (!level) {
-		slog("no level to close");
-		return;
-	}
+void level_curr_close() {
+	gfc_list_foreach(level_manager.curr_level->ground_list, free);
+	gfc_list_delete(level_manager.curr_level->ground_list);
 
-	gfc_list_foreach(level->ground_list, free);
-	gfc_list_delete(level->ground_list);
+	gfc_list_foreach(level_manager.curr_level->wall_list, free);
+	gfc_list_delete(level_manager.curr_level->wall_list);
 
-	gfc_list_foreach(level->wall_list, free);
-	gfc_list_delete(level->wall_list);
+	gfc_list_foreach(level_manager.curr_level->platform_list, free);
+	gfc_list_delete(level_manager.curr_level->platform_list);
 
-	gfc_list_foreach(level->platform_list, free);
-	gfc_list_delete(level->platform_list);
-
-	free(level);
+	memset(level_manager.curr_level, 0, sizeof(Level));
 }
 
 /** 

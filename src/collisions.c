@@ -350,18 +350,3 @@ Platform* get_colliding_plat(void* ent) {
 GFC_Edge2D get_colliding_ceiling(void* ent) {
 	return level_find_nearest_ceiling(ent);
 }
-
-void entity_damage(void* in, void* recip, void* atk) {
-	Entity* inflictor, * recipient;
-	
-	inflictor = (Entity*) in;
-	recipient = (Entity*) recip;
-	if (!inflictor || !recipient ) {
-		slog("somethings missing");
-		return;
-	}
-
-
-
-
-}
