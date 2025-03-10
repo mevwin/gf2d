@@ -329,7 +329,7 @@ void window_check_input(Window* window) {
     }
 
     // button selection
-    if (gfc_input_command_pressed("attack")) {
+    if (gfc_input_command_pressed("interact")) {
         active_button = &window->buttonList[ui_manager.active_button];
         active_button->selected = 1;
     }

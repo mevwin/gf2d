@@ -1,7 +1,7 @@
 #ifndef __ITEM_H__
 #define __ITEM_H__
 
-#include "entity.h"
+#include "player.h"
 
 typedef enum ItemType_E {
 	ITEM_NONE,
@@ -10,18 +10,22 @@ typedef enum ItemType_E {
 }ItemType;
 
 typedef enum ItemInteractType {
-	ITEM_INTERACT_PICK_UP,
-	ITEM_INTERACT_ATTRACT,
-	ITEM_INTERACT_STATIONARY
+	ITEM_INTERACT_PICK_UP,		// must press button to pick up
+	ITEM_INTERACT_ATTRACT,		// item goes to player if near it
+	ITEM_INTERACT_STATIONARY	// player needs to go to the item to get it
 }ItemInteractType;
 
 typedef struct ItemData_S {
-	ItemType			type;
 	ItemInteractType	interactType;
-
-	float				effect_value;
+	ItemType			type;
+	union {
+		GFC_TextWord	text;
+		int				num;
+	}effect_value;
 	Uint8				active;
 }ItemData;
+
+void item_spawn(const char* item_name, GFC_Vector2D position);
 
 //IF AN ENEMY HOLDS AN ITEM, IT WILL BE CREATED AFTER THE ENEMY DIES
 

@@ -7,19 +7,19 @@
         "ground_list":
         [
             {
-                "rect": [0, 600, 400, 120],
+                "rect": [0, 600, 1200, 120],
                 "color": [0, 0, 0, 255],
                 "walls": 1,
                 "ceiling": 0
             },
             {
-                "rect": [800, 600, 400, 120],
-                "color": [255, 255, 0, 255],
+                "rect": [1000, 200, 200, 500],
+                "color": [0, 255, 0, 255],
                 "walls": 1,
                 "ceiling": 0
             },
             {
-                "rect": [500, 400, 200, 70],
+                "rect": [500, 200, 200, 70],
                 "color": [0, 255, 0, 255],
                 "walls": 1,
                 "ceiling": 1
@@ -27,16 +27,7 @@
         ],
         "platform_list":
         [
-            {
-                "rect": [300, 300, 150, 50],
-                "sprite": "bruh",
-                "pass_through": 1,
-                "starting_move": 1,
-                "moving": 1,
-                "move_speed": [1.0, 1.0],
-                "#move_bounds" : "[left edge bound, right edge bound, top edge bound, bottom edge bound]",
-                "move_bounds": [300, 900, 300, 500]
-            }
+
         ],
         "enemies":
         {
@@ -64,6 +55,13 @@
                     "position": [900, 400]
                 }
             ]
-        }
+        },
+        "items":
+        [
+            {
+                "item_name": "ability_unlock_wall_jump",
+                "position": [800, 520]
+            }
+        ]
     }
 }

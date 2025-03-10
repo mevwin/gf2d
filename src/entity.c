@@ -161,10 +161,11 @@ void free_all_entities() {
     }
 }
 
-void free_all_enemies() {
+void free_all_level_entities() {
     int i;
     for (i = 0; i < ent_manager.entityMax; i++) {
-        if (!ent_manager.entityList[i]._inuse || ent_manager.entityList[i].type != ENEMY) continue;
+        if (!ent_manager.entityList[i]._inuse ||
+            (ent_manager.entityList[i].type != ENEMY && ent_manager.entityList[i].type != ITEM)) continue;
         entity_free(&ent_manager.entityList[i]);
     }
 }

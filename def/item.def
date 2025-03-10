@@ -1,0 +1,53 @@
+{
+    "items":
+    [
+        {
+            "name": "ability_unlock_double_jump",
+            "type": 1,
+            "interact_type": 0,
+            "grav_flag": 0,
+            "sprite": "sprites/item/double_jump.png",
+            "effect_value": "DOUBLEJUMP"
+        },
+        {
+            "name": "ability_unlock_wall_jump",
+            "type": 1,
+            "interact_type": 0,
+            "grav_flag": 0,
+            "sprite": "sprites/item/wall_jump.png",
+            "effect_value": "WALLJUMP"
+        },
+        {
+            "name": "ability_unlock_dodge",
+            "type": 1,
+            "interact_type": 0,
+            "grav_flag": 0,
+            "sprite": "sprites/item/dodge.png",
+            "effect_value": "DODGE"
+        },
+        {
+            "name": "ability_unlock_recall",
+            "type": 1,
+            "interact_type": 0,
+            "grav_flag": 0,
+            "sprite": "sprites/item/recall.png",
+            "effect_value": "RECALL"
+        },
+        {
+            "name": "ability_unlock_bash",
+            "type": 1,
+            "interact_type": 0,
+            "grav_flag": 0,
+            "sprite": "sprites/item/bash.png",
+            "effect_value": "BASH"
+        },
+        {
+            "name": "health_pickup",
+            "type": 2,
+            "interact_type": 1,
+            "grav_flag": 0,
+            "sprite": "sprites/item/bash.png",
+            "effect_value": 30
+        }
+    ]
+}

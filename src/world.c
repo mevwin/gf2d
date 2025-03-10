@@ -1,13 +1,14 @@
 #include "simple_logger.h"
 #include "gf2d_draw.h"
-#include "player.h"
 #include "world.h"
+#include "player.h"
 #include "level.h"
 #include "ui.h"
 
 typedef struct WorldManager_S {
 	Entity*			player;
 	GFC_List*		enemy_list;
+	//GFC_List*		item_list;
 	Uint8			close_game;
 	WorldState		state;
 }WorldManager;
@@ -23,6 +24,7 @@ void world_init() {
 
 	// initialize level_manager
 	world_manager.enemy_list = gfc_list_new();
+	//world_manager.item_list = gfc_list_new();
 	level_manager_init("config/level_list.cfg");
 	
 	atexit(world_close);
@@ -60,6 +62,7 @@ void world_gamestart() {
 
 void world_close() {
 	gfc_list_delete(world_manager.enemy_list);
+	//gfc_list_delete(world_manager.item_list);
 	memset(&world_manager, 0, sizeof(WorldManager));
 }
 
@@ -87,7 +90,7 @@ void world_update() {
 			break;	
 
 		case WORLD_RESTART_LEVEL:
-			free_all_enemies();
+			free_all_level_entities();
 			level_curr_close();
 			gfc_list_clear(world_manager.enemy_list);
 			restart_level(world_manager.player);
@@ -96,7 +99,7 @@ void world_update() {
 			break;
 
 		case WORLD_LOAD_NEXT_LEVEL:
-			free_all_enemies();
+			free_all_level_entities();
 			level_curr_close();
 			gfc_list_clear(world_manager.enemy_list);
 			load_next_level(world_manager.player);
@@ -132,6 +135,10 @@ Uint8 close_game_check() {
 	return world_manager.close_game;
 }
 
+void* get_player() {
+	return world_manager.player;
+}
+
 void* get_player_data() {
 	return world_manager.player->data;
 }
@@ -139,3 +146,9 @@ void* get_player_data() {
 GFC_List* get_enemy_list() {
 	return world_manager.enemy_list;
 }
+
+/*
+GFC_List* get_item_list() {
+	return world_manager.item_list;
+}
+*/

@@ -3,7 +3,7 @@
 #include "gfc_types.h"
 #include "world.h"
 #include "collisions.h"
-#include "player.h"
+#include "item.h"
 #include "enemy.h"
 
 typedef struct LevelManager_S {
@@ -64,8 +64,8 @@ void level_load(Uint8 index) {
 	Ground* ground;
 	Platform* plat;
 	SJson *level_obj, *level_data, *list, *data, *enemy;
-	GFC_Vector2D e_spawn;
-	int i, enemy_type, random;
+	GFC_Vector2D spawn;
+	int i, type, random;
 
 	level = gfc_allocate_array(sizeof(Level), 1);
 	if (!level) {
@@ -141,16 +141,16 @@ void level_load(Uint8 index) {
 			slog("no enemy found");
 			continue;
 		}
-		sj_object_get_int(data, "type", &enemy_type);
-		sj_object_get_vector2d(data, "spawn_position", &e_spawn);
+		sj_object_get_int(data, "type", &type);
+		sj_object_get_vector2d(data, "spawn_position", &spawn);
 		
 		// check if enemy spawns at random position
-		if (e_spawn.x == -1.0f && e_spawn.y == -1.0f) {
+		if (spawn.x == -1.0f && spawn.y == -1.0f) {
 			data = sj_object_get_value(enemy, "random_spawns");
 			random = gfc_random_int(data->v.array->count);
-			sj_object_get_vector2d(sj_array_nth(data, random), "position", &e_spawn);
+			sj_object_get_vector2d(sj_array_nth(data, random), "position", &spawn);
 		}
-		enemy_spawn(enemy_type, e_spawn);
+		enemy_spawn(type, spawn);
 	}
 
 	// level objective
@@ -171,6 +171,23 @@ void level_load(Uint8 index) {
 			level->goal_counter = list->v.array->count;
 	}
 	
+	// items (that spawn in the level)
+	list = sj_object_get_value(level_data, "items");
+	if (!list) {
+		slog("no item list");
+		sj_free(level_obj);
+		free(level);
+		return;
+	}
+	for (i = 0; i < list->v.array->count; i++) {
+		data = sj_array_get_nth(list, i);
+		if (!data) continue;
+
+		sj_object_get_vector2d(data, "position", &spawn);
+
+		item_spawn(sj_object_get_string(data, "item_name"), spawn);
+	}
+
 
 	level_manager.curr_level = level;
 	sj_free(level_obj);

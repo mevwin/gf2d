@@ -216,10 +216,11 @@ void player_move(void* p) {
 	/* JUMP */
 	if (gfc_input_command_pressed("jump")) {
 		// item upgrade checks
-		if (!p_data->canDoubleJump) p_data->max_jumps = 1;
 		if (!p_data->canWallJump) p_data->wall_jump = 1;
 
 		if (!wall_collision(self, i) && p_data->jump_count < p_data->max_jumps) {
+			if (!p_data->canDoubleJump && p_data->jump_count) return;
+
 			self->velocity.y = p_data->jump_speed;
 
 			p_data->jump_count++;

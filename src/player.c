@@ -21,7 +21,6 @@ void player_data_init(Entity* self, PlayerData* p_data, SJson* data);
 
 void player_die(Entity* self, PlayerData* p_data);
 
-
 Entity* player_spawn(GFC_Vector2D position, SJson* data) {
 	Entity* player;
 	SJson* curr_entry;
@@ -69,7 +68,7 @@ Entity* player_spawn(GFC_Vector2D position, SJson* data) {
 }
 
 void player_free(Entity* self) {
-	gf2d_sprite_delete(self->sprite);
+	gf2d_sprite_free(self->sprite);
 	
 	if (self->data) free(self->data);
 }
@@ -157,7 +156,7 @@ void player_update(Entity* self) {
 	if (self->position.y > RES.y + RES.h) {
 		player_recall_reset(self, p_data, CURRENT_TIME);
 		gfc_vector2d_copy(self->position, p_data->spawn_pos);
-		p_data->currHealth -= 50.0f;
+		//p_data->currHealth -= 50.0f;
 	}
 
 	if (p_data->currHealth <= 0.0f) { 

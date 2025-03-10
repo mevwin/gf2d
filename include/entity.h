@@ -102,7 +102,7 @@ void entity_free(Entity* self);
 
 void free_all_entities();
 
-void free_all_enemies();
+void free_all_level_entities();
 
 void update_hurtbox(Entity* self);
 

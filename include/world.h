@@ -31,7 +31,10 @@ void world_init();
 void world_update();
 Uint8 close_game_check();
 void change_world_state(WorldState new_state);
+void* get_player();
 void* get_player_data();
 GFC_List* get_enemy_list();
+//GFC_List* get_item_list();
+
 
 #endif

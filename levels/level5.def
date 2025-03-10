@@ -3,7 +3,7 @@
     {
         "type": 0,
         "obj": 0,
-        "player_spawn": [200, 500],
+        "player_spawn": [900, 500],
         "ground_list":
         [
             {
@@ -19,13 +19,7 @@
                 "ceiling": 0
             },
             {
-                "rect": [500, 450, 200, 70],
-                "color": [0, 255, 0, 255],
-                "walls": 1,
-                "ceiling": 1
-            },
-            {
-                "rect": [1000, 150, 200, 70],
+                "rect": [500, 400, 200, 70],
                 "color": [0, 255, 0, 255],
                 "walls": 1,
                 "ceiling": 1
@@ -41,7 +35,7 @@
                 "moving": 1,
                 "move_speed": [1.0, 1.0],
                 "#move_bounds" : "[left edge bound, right edge bound, top edge bound, bottom edge bound]",
-                "move_bounds": [50, 400, 300, 500]
+                "move_bounds": [300, 900, 300, 500]
             }
         ],
         "enemies":
@@ -51,13 +45,11 @@
             [
                 {
                     "type": 0,
-                    "spawn_position": [-1, -1],
-                    "item": 0
+                    "spawn_position": [-1, -1]
                 },
                 {
                     "type": 0,
-                    "spawn_position": [1020, 100],
-                    "item": 0
+                    "spawn_position": [-1, -1]
                 }
             ],
             "random_spawns":
@@ -76,8 +68,8 @@
         "items":
         [
             {
-                "item_name": "ability_unlock_double_jump",
-                "position": [70, 275]
+                "item_name": "ability_unlock_wall_jump",
+                "position": [300, 175]
             }
         ]
     }
