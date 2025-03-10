@@ -7,9 +7,9 @@
 
 typedef struct WorldManager_S {
 	Entity*			player;
+	GFC_List*		enemy_list;
 	Uint8			close_game;
 	WorldState		state;
-	float			pause_time;
 }WorldManager;
 
 static WorldManager world_manager = { 0 };
@@ -22,6 +22,7 @@ void world_init() {
 	world_manager.state = WORLD_MAINMENU;
 
 	// initialize level_manager
+	world_manager.enemy_list = gfc_list_new();
 	level_manager_init("config/level_list.cfg");
 	
 	atexit(world_close);
@@ -58,13 +59,11 @@ void world_gamestart() {
 }
 
 void world_close() {
+	gfc_list_delete(world_manager.enemy_list);
 	memset(&world_manager, 0, sizeof(WorldManager));
 }
 
 void world_update() {
-	//const Uint8* keys;
-	//keys = SDL_GetKeyboardState(NULL);
-
 	switch (world_manager.state) {
 		case WORLD_GAMESTART:
 			world_gamestart();
@@ -85,26 +84,31 @@ void world_update() {
 			if (gfc_input_command_released("pause"))
 				world_manager.state = WORLD_PAUSEMENU;
 
+			break;	
+
+		case WORLD_RESTART_LEVEL:
+			free_all_enemies();
+			level_curr_close();
+			gfc_list_clear(world_manager.enemy_list);
+			restart_level(world_manager.player);
+
+			world_manager.state = WORLD_INGAME;
 			break;
 
-		case WORLD_PAUSEMENU:
-			drawUI(world_manager.state);
+		case WORLD_LOAD_NEXT_LEVEL:
+			free_all_enemies();
+			level_curr_close();
+			gfc_list_clear(world_manager.enemy_list);
+			load_next_level(world_manager.player);
 
-			break;		
-
-		case WORLD_PLAYERDEAD:
-
-			break;
-
-		case WORLD_LEVELCOMPLETE:
-			// load next level here
-
+			world_manager.state = WORLD_INGAME;
 
 			break;
 
 		case WORLD_GAMECLOSE:
 			free_all_entities();
 			level_curr_close();
+			gfc_list_clear(world_manager.enemy_list);
 			
 			world_manager.state = WORLD_MAINMENU;
 
@@ -115,19 +119,10 @@ void world_update() {
 
 			break;
 
-		default: //WORLD_MAINMENU
+		default: //WORLD_MAINMENU, WORLD_PAUSEMENU, WORLD_PLAYERDEAD, WORLD_LEVELCOMPLETE, WORLD_GAME_COMPLETE
 			drawUI(world_manager.state); // draw menu and check input	
 	}
-
-	//if (keys[SDL_SCANCODE_ESCAPE]) world_manager.close_game = 1; // exit condition
-	//gf2d_draw_rect(RES, GFC_COLOR_RED);
 }
-
-/*
-WorldState getWorldState() {
-	return world_manager.state;
-}
-*/
 
 void change_world_state(WorldState new_state) {
 	world_manager.state = new_state;
@@ -135,4 +130,12 @@ void change_world_state(WorldState new_state) {
 
 Uint8 close_game_check() {
 	return world_manager.close_game;
+}
+
+void* get_player_data() {
+	return world_manager.player->data;
+}
+
+GFC_List* get_enemy_list() {
+	return world_manager.enemy_list;
 }

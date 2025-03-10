@@ -1,0 +1,20 @@
+{
+    "window":
+    {
+        "bg_sprite": "no sprite",
+        "offset": [0, 0],
+        "buttonMax": 0,
+        "barMax": 2
+    },
+    "bars":
+    [
+        {
+            "sprite": "images/ui/player_hud/player_healthbar.png",
+            "offset": [25, 19]
+        },
+        {
+            "sprite": "images/ui/player_hud/enemy_healthbar.png",
+            "offset": [0, 0]
+        }
+    ]
+}

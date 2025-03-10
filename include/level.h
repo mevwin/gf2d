@@ -8,6 +8,12 @@ typedef enum LevelType_E {
 	LEVEL_TYPE_REGULAR
 }LevelType;
 
+typedef enum LevelObjective_E {
+	LEVEL_OBJ_KILL_ALL_ENEMIES,
+	LEVEL_OBJ_SURVIVE,
+	LEVEL_OBJ_COLLECT
+}LevelObjective;
+
 typedef enum WallType_E {
 	WALL_LEFT,
 	WALL_RIGHT
@@ -52,28 +58,24 @@ typedef struct Platform_S {
 
 typedef struct Level_S {
 	//LevelType		level_type;
-
-	// level contents
-	//GFC_List*		enemy_list;
+	LevelObjective	obj;
+	Uint32			goal;
+	Uint32			goal_counter;
 
 	// idk yet
 	//GFC_List*		rooms;
 	//Uint8			room_num;
 
-	// positioning
-	//Ground*			curr_ground;
 	GFC_Vector2D	player_spawn;
 	GFC_List*		ground_list;
 	GFC_List*		platform_list;
 	GFC_List*		wall_list;
-	//GFC_List*		enemy_spawns;
-	//GFC_List*		item_spawns;
 }Level;
 
 void level_manager_init(const char* filename);
 void level_load(Uint8 index);
-void change_level();
-void restart_level();
+void load_next_level(void* p);
+void restart_level(void* p);
 
 void level_update();
 void level_curr_close();

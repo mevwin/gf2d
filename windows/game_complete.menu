@@ -1,0 +1,18 @@
+{
+    "window":
+    {
+        "bg_sprite": "images/ui/game_complete/game_complete.png",
+        "offset": [0, 0],
+        "buttonMax": 1,
+        "buttonLayout": 1,
+        "barMax": 0
+    },
+    "buttons":
+    [
+        {
+            "cmd": "QUIT",
+            "sprite": "images/ui/game_complete/quit_button.png",
+            "offset": [450, 290]  
+        }
+    ]
+}

@@ -161,6 +161,14 @@ void free_all_entities() {
     }
 }
 
+void free_all_enemies() {
+    int i;
+    for (i = 0; i < ent_manager.entityMax; i++) {
+        if (!ent_manager.entityList[i]._inuse || ent_manager.entityList[i].type != ENEMY) continue;
+        entity_free(&ent_manager.entityList[i]);
+    }
+}
+
 void update_hurtbox(Entity* self) {
     GFC_Vector2D offset, position;
 

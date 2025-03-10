@@ -1,0 +1,23 @@
+{
+    "window":
+    {
+        "bg_sprite": "images/ui/level_complete/level_complete.png",
+        "offset": [0, 0],
+        "buttonMax": 2,
+        "buttonLayout": 1,
+        "barMax": 0
+    },
+    "buttons":
+    [
+        {
+            "cmd": "NEXT",
+            "sprite": "images/ui/level_complete/next_button.png",
+            "offset": [450, 290]  
+        },
+        {
+            "cmd": "QUIT",
+            "sprite": "images/ui/level_complete/quit_button.png",
+            "offset": [450, 430]  
+        }
+    ]
+}

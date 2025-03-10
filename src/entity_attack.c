@@ -47,7 +47,7 @@ void entity_damage(Entity* inflictor, Entity* recipient, EntityAtk* atk) {
             if (!p_data || !e_data) return;
 
             e_data->currHealth -= atk->damage;
-            slog("enemy health: %f", e_data->currHealth);
+            //slog("enemy health: %f", e_data->currHealth);
 
             break;
 
@@ -86,7 +86,7 @@ Entity* find_nearest_entity(Entity* source, EntityAtk* atk) {
     entityList = getEntityList();
     for (i = 0; i < entityMax; i++) {
         ent = &entityList[i];
-        if (!ent->_inuse || source == ent) continue;
+        if (!ent->_inuse || source == ent || !ent->canBeDamaged) continue;
         
         if (gfc_rect_overlap(ent->hurtbox.s.r, atk->hitbox))
             return ent;

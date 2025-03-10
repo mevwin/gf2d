@@ -15,6 +15,7 @@ void enemy_move(Entity* self);
 
 void enemy_spawn(int type, GFC_Vector2D position) {
 	SJson* file, *enemy_type, *init_data;
+	GFC_List* enemy_list;
 	Entity* enemy;
 
 	enemy = entity_new();
@@ -62,6 +63,9 @@ void enemy_spawn(int type, GFC_Vector2D position) {
 
 	update_hurtbox(enemy);
 	update_boundbox(enemy);
+
+	enemy_list = get_enemy_list();
+	gfc_list_append(enemy_list, enemy);
 }
 
 EnemyData* enemy_data_init(SJson* data, EnemyType type) {
@@ -125,6 +129,11 @@ void enemy_gravity(Entity* self) {
 }
 
 void enemy_free(Entity* self) {
+	GFC_List* enemy_list;
+
+	enemy_list = get_enemy_list();
+	gfc_list_delete_data(enemy_list, self);
+
 	gf2d_sprite_free(self->sprite);
 
 	if (self->data) free(self->data);

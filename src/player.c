@@ -16,13 +16,14 @@ void player_free(Entity* self);
 /**
 * @brief initialize PlayerData
 * @param data: json data to initialize PlayerData
-* @note SHOULD ONLY BE USED ONCE
 */
-PlayerData* player_data_init(Entity* self, SJson* data);
+void player_data_init(Entity* self, PlayerData* p_data, SJson* data);
 
-static Entity* player;
+void player_die(Entity* self, PlayerData* p_data);
+
 
 Entity* player_spawn(GFC_Vector2D position, SJson* data) {
+	Entity* player;
 	SJson* curr_entry;
 
 	player = entity_new();
@@ -55,7 +56,8 @@ Entity* player_spawn(GFC_Vector2D position, SJson* data) {
 	update_hurtbox(player);
 	update_boundbox(player);
 
-	player->data = player_data_init(player, sj_object_get_value(data, "player_data"));
+	player->data = gfc_allocate_array(sizeof(PlayerData), 1);
+	player_data_init(player, player->data, sj_object_get_value(data, "player_data"));
 	if (!player->data) {
 		slog("failed to initialize player data");
 		return NULL;
@@ -72,12 +74,16 @@ void player_free(Entity* self) {
 	if (self->data) free(self->data);
 }
 
-PlayerData* player_data_init(Entity* self, SJson* data) {
-	PlayerData* p_data;
-	SJson *ability_checks;
+void player_data_init(Entity* self, PlayerData* p_data, SJson* data) {
+	SJson *data_init, *def, *ability_checks;
 
-	p_data = gfc_allocate_array(sizeof(PlayerData), 1);
-	if (!p_data) return NULL;
+	def = NULL;
+	if (!data) { 
+		def = sj_load("def/player_data_init.def"); 
+		data_init = sj_object_get_value(def, "player_data");
+	}
+	else
+		data_init = data;
 
 	// default values
 	gfc_vector2d_copy(p_data->spawn_pos, self->position);
@@ -87,11 +93,11 @@ PlayerData* player_data_init(Entity* self, SJson* data) {
 	p_data->jump_count = 0;
 
 	// player stats
-	sj_object_get_float(data, "maxHealth", &p_data->maxHealth);
+	sj_object_get_float(data_init, "maxHealth", &p_data->maxHealth);
 	p_data->currHealth = p_data->maxHealth;
 
 	// ability checks
-	ability_checks = sj_object_get_value(data, "ability_checks");
+	ability_checks = sj_object_get_value(data_init, "ability_checks");
 	sj_object_get_uint8(ability_checks, "canRecall", &p_data->canRecall);
 	sj_object_get_uint8(ability_checks, "canDoubleJump", &p_data->canDoubleJump);
 	sj_object_get_uint8(ability_checks, "canBash", &p_data->canBash);
@@ -102,21 +108,22 @@ PlayerData* player_data_init(Entity* self, SJson* data) {
 	if (p_data->canBash) player_bash_init();
 
 	// movement values
-	sj_object_get_uint8(data, "max_jumps", &p_data->max_jumps);
-	sj_object_get_uint8(data, "max_dodge_charges", &p_data->max_dodge_charges);
+	sj_object_get_uint8(data_init, "max_jumps", &p_data->max_jumps);
+	sj_object_get_uint8(data_init, "max_dodge_charges", &p_data->max_dodge_charges);
 	p_data->dodge_charges = p_data->max_dodge_charges;
-	sj_object_get_vector2d(data, "dodge_vel", &p_data->dodge_vel);
-	sj_object_get_float(data, "dodge_vel_reduc", &p_data->dodge_vel_reduc);
-	sj_object_get_float(data, "jump_speed", &p_data->jump_speed);
-	sj_object_get_vector3d(data, "friction", &p_data->friction);
+	sj_object_get_vector2d(data_init, "dodge_vel", &p_data->dodge_vel);
+	sj_object_get_float(data_init, "dodge_vel_reduc", &p_data->dodge_vel_reduc);
+	sj_object_get_float(data_init, "jump_speed", &p_data->jump_speed);
+	sj_object_get_vector3d(data_init, "friction", &p_data->friction);
 
-	return p_data;
+	if (!data) sj_free(def);
 }
 
 void player_think(Entity* self) {
 	PlayerData* p_data;
 
 	p_data = self->data;
+	if (!p_data || p_data->state == PLAYER_DEAD) return;
 
 	player_move(self);
 	player_attack(self, p_data);
@@ -127,7 +134,7 @@ void player_update(Entity* self) {
 	//float ground_level;
 
 	p_data = self->data;
-	if (!p_data) return;
+	if (!p_data || p_data->state == PLAYER_DEAD) return;
 
 	if (!p_data->isAttacking) {
 		switch (p_data->moveTypeX) {
@@ -150,6 +157,12 @@ void player_update(Entity* self) {
 	if (self->position.y > RES.y + RES.h) {
 		player_recall_reset(self, p_data, CURRENT_TIME);
 		gfc_vector2d_copy(self->position, p_data->spawn_pos);
+		p_data->currHealth -= 50.0f;
+	}
+
+	if (p_data->currHealth <= 0.0f) { 
+		player_die(self, p_data); 
+		change_world_state(WORLD_PLAYERDEAD);
 	}
 
 	// 
@@ -231,6 +244,22 @@ void player_gravity(Entity* self) {
 	}
 }
 
-GFC_Vector2D* get_player_pos() {
-	return &player->position;
+void player_die(Entity* self, PlayerData *p_data) {
+	if (!self || !p_data) return;
+
+	p_data->state = PLAYER_DEAD;
+	self->canBeDamaged = 0;
+	self->grav_flag = 0;
+	self->plat_flag = 0;
+}
+
+void player_respawn(Entity* self, PlayerData *p_data) {
+	if (!self || !p_data) return;
+
+	player_data_init(self, p_data, NULL);
+	gfc_vector2d_clear(self->velocity);
+	gfc_vector2d_clear(self->dir);
+	self->canBeDamaged = 1;
+	self->grav_flag = 1;
+	self->plat_flag = 1;
 }

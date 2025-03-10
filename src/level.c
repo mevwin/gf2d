@@ -9,7 +9,7 @@
 typedef struct LevelManager_S {
 	Level*			curr_level;
 	GFC_List*		level_list; // a list of filepaths for levels
-	Uint8			curr_level_index;
+	Uint32			curr_level_index;
 }LevelManager;
 
 //NOTE: ONLY ONE LEVEL LOADED AT A TIME
@@ -152,6 +152,25 @@ void level_load(Uint8 index) {
 		}
 		enemy_spawn(enemy_type, e_spawn);
 	}
+
+	// level objective
+	sj_object_get_uint8(level_data, "obj", &i);
+	level->obj = (LevelObjective)i;
+	switch (level->obj) {
+		case LEVEL_OBJ_SURVIVE:
+
+			break;
+
+		case LEVEL_OBJ_COLLECT:
+
+			break;
+
+		default: //LEVEL_OBJ_KILL_ALL_ENEMIES
+			list = sj_object_get_value(sj_object_get_value(level_data, "enemies"), "list");
+			level->goal = 0;
+			level->goal_counter = list->v.array->count;
+	}
+	
 
 	level_manager.curr_level = level;
 	sj_free(level_obj);
@@ -331,6 +350,7 @@ void draw_ground_to_surface(GFC_List* ground_list){
 void level_update() {
 	int i;
 	Ground* ground;
+	GFC_List* enemy_list;
 
 	// draw ground
 	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
@@ -342,6 +362,64 @@ void level_update() {
 
 	// draw platforms
 	update_platforms();
+
+	// check if level goal has been reached
+	switch (level_manager.curr_level->obj) {
+		case LEVEL_OBJ_SURVIVE:
+
+				break;
+
+		case LEVEL_OBJ_COLLECT:
+
+			break;
+
+		default: //LEVEL_OBJ_KILL_ALL_ENEMIES
+			enemy_list = get_enemy_list();
+			level_manager.curr_level->goal_counter = enemy_list->count;
+	}
+	if (level_manager.curr_level->goal == level_manager.curr_level->goal_counter) {
+		level_manager.curr_level_index++;
+		if (level_manager.curr_level_index == level_manager.level_list->count)
+			change_world_state(WORLD_GAME_COMPLETE);
+		else
+			change_world_state(WORLD_LEVELCOMPLETE);
+	}
+}
+
+void load_next_level(void* p){
+	Entity* player;
+	PlayerData* p_data;
+
+	player = (Entity*) p;
+	if (!player) {
+		slog("player is null");
+		change_world_state(WORLD_CLOSE);
+		return;
+	}
+	p_data = (PlayerData*)player->data;
+
+	level_load(level_manager.curr_level_index);
+	gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
+	gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
+}
+
+void restart_level(void* p) {
+	Entity* player;
+	PlayerData* p_data;
+
+	player = (Entity*)p;
+	if (!player) {
+		slog("player is null");
+		change_world_state(WORLD_CLOSE);
+		return;
+	}
+	p_data = (PlayerData*)player->data;
+
+	level_load(level_manager.curr_level_index);
+	player_respawn(player, player->data);
+	gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
+	gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
+	
 }
 
 Level* get_curr_level() {

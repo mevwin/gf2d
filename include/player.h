@@ -13,7 +13,8 @@ typedef enum PlayerState_E{
 	PLAYER_DODGE,			// currently dodging
 	PLAYER_RECALL,
 	PLAYER_BASH,
-	PLAYER_KNOCKBACK			// TODO: fix later
+	PLAYER_KNOCKBACK,			// TODO: fix later
+	PLAYER_DEAD
 }PlayerState;
 
 typedef struct PlayerData_S{
@@ -63,6 +64,8 @@ typedef struct PlayerData_S{
 * @note: SPAWN ONLY ONE PLAYER
 */
 Entity* player_spawn(GFC_Vector2D position, SJson* data);
+
+void player_respawn(Entity* self, PlayerData* p_data);
 
 /**
 * @brief pointer to player's position

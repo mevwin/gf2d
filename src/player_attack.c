@@ -115,7 +115,7 @@ void player_attack(void* p, void* data) {
 			if (time - atk_manager.then > FRAME_DUR) {
 				atk_manager.frame++;
 				atk_manager.then = time;
-				slog("startup: %i", atk_manager.frame);
+				//slog("startup: %i", atk_manager.frame);
 			}
 		
 			if (atk_manager.frame == atk_manager.curr_atk->startupFrames) {
