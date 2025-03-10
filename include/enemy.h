@@ -17,6 +17,8 @@ typedef struct EnemyData_S{
     float			currHealth;
 	float			maxHealth;
     float           dmg_reduction;
+
+    Uint8           item;
 }EnemyData;
 
 void enemy_spawn(int type, GFC_Vector2D position);

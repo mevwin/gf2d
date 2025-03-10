@@ -45,11 +45,13 @@
             [
                 {
                     "type": 0,
-                    "spawn_position": [-1, -1]
+                    "spawn_position": [-1, -1],
+                    "item": 0
                 },
                 {
                     "type": 0,
-                    "spawn_position": [-1, -1]
+                    "spawn_position": [-1, -1],
+                    "item": 0
                 }
             ],
             "random_spawns":
