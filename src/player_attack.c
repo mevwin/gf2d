@@ -231,9 +231,7 @@ void player_attack(void* p, void* data) {
 
 				atk_manager.curr_atk->active = 1;
 
-				// reset player values
-				if (!atk_manager.aerial) gfc_vector2d_clear(player->velocity);
-
+				// reset player 
 				p_data->canMove = 1;
 				p_data->isAttacking = 0;
 			}
@@ -246,34 +244,28 @@ void player_attack(void* p, void* data) {
 				if (gfc_input_command_down("moveup")) {
 					//slog("UP_TILT");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_U_BASIC;
-					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
 				}
 				else if (gfc_input_command_down("movedown")) {
 					//slog("DOWN_TILT");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_D_BASIC;
-					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
 				}
 				else { // forward by default
 					//slog("F_TILT");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_F_BASIC;
-					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
 				}
 			}
 			else if (gfc_input_command_pressed("special")) {
 				if (gfc_input_command_down("moveup")) {
 					//slog("UP_SPECIAL");
-					atk_index = (Uint8) PLAYER_ATK_TYPE_U_SPECIAL;
-					
+					atk_index = (Uint8) PLAYER_ATK_TYPE_U_SPECIAL;	
 				}
 				else if (gfc_input_command_down("movedown")) {
 					//slog("DOWN_SPECIAL");
 					atk_index = (Uint8) PLAYER_ATK_TYPE_D_SPECIAL;
-					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
 				}
 				else { // forward by default
 					//slog("FORWARD_SPECIAL");
-					atk_index = (Uint8) PLAYER_ATK_TYPE_F_SPECIAL;
-					atk_manager.aerial = !ground_collision(player) ? 1 : 0;
+					atk_index = (Uint8)PLAYER_ATK_TYPE_F_SPECIAL;
 				}
 			}
 			
@@ -284,6 +276,8 @@ void player_attack(void* p, void* data) {
 					return;
 				}
 				atk_manager.then = time;
+				atk_manager.aerial = !ground_collision(player);
+				//slog("%i", atk_manager.aerial);
 
 				// change state
 				atk_manager.atk_state = PLAYER_ATK_STARTUP;
@@ -328,7 +322,10 @@ void player_attack(void* p, void* data) {
 						break;
 
 					default:
-						if (!atk_manager.aerial) p_data->canMove = 0;
+						if (!atk_manager.aerial) {
+							gfc_vector2d_clear(player->velocity);
+							p_data->canMove = 0;
+						}
 				}
 			}
 	}

@@ -12,7 +12,9 @@ void enemy_free(Entity* self);
 
 void enemy_die(Entity* self, EnemyData* e_data);
 void enemy_move(Entity* self);
+void enemy_attack(Entity* self);
 
+// TODO: add reset of the enemy types
 void enemy_spawn(int type, GFC_Vector2D position, SJson* sprouter_spawns) {
 	SJson* file, *enemy_type, *init_data;
 	EnemyData* e_data;

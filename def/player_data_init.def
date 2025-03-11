@@ -32,7 +32,7 @@
     [
         {
             "#name": "F_ATK",
-            "hitbox": [100, 150],
+            "hitbox": [100, 70],
             "damage": 8,
             "direction": [0, 0],
             "move_mag": 0,
@@ -62,7 +62,7 @@
         },
         {
             "#name": "F_SPE",
-            "hitbox": [150, 100],
+            "hitbox": [100, 50],
             "damage": 10,
             "direction": [1, 0],
             "move_mag": 3,
@@ -72,13 +72,13 @@
         },
         {
             "#name": "UP_SPE",
-            "hitbox": [150, 100],
+            "hitbox": [30, 50],
             "damage": 10,
             "direction": [0, -1],
-            "move_mag": 3,
+            "move_mag": 2,
             "startupFrames": 6,
             "activeFrames": 1,
-            "recovFrames": 20
+            "recovFrames": 12
         },
         {
             "#name": "DOWN_SPE",
