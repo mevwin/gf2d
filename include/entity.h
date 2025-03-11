@@ -49,6 +49,9 @@ typedef struct EntityAtk_S {
     Uint8		        atk_type;
     Uint8				active;			// deal damage once, turn off once damage has been dealt
     GFC_Rect			hitbox;
+    GFC_Vector2D        direction;
+    GFC_Vector2D        velocity;
+    float               move_mag;
     float				damage;
 
     // frame timing

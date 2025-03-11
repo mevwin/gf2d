@@ -13,10 +13,12 @@ void enemy_free(Entity* self);
 void enemy_die(Entity* self, EnemyData* e_data);
 void enemy_move(Entity* self);
 
-void enemy_spawn(int type, GFC_Vector2D position) {
+void enemy_spawn(int type, GFC_Vector2D position, SJson* sprouter_spawns) {
 	SJson* file, *enemy_type, *init_data;
+	EnemyData* e_data;
 	GFC_List* enemy_list;
 	Entity* enemy;
+	int i;
 
 	enemy = entity_new();
 	if (!enemy) {
@@ -53,13 +55,30 @@ void enemy_spawn(int type, GFC_Vector2D position) {
 	enemy->think = enemy_think;
 	enemy->update = enemy_update;
 	enemy->grav = enemy_gravity;
-	enemy->grav_flag = 1;
 	enemy->free = enemy_free;
 
 	enemy->scale = gfc_vector2d(1, 1);
 	enemy->dir = gfc_vector2d(0, 0);
 
 	enemy->data = enemy_data_init(sj_object_get_value(enemy_type, "enemy_data"), type);
+	e_data = enemy->data;
+	if (e_data->type == SPROUTER) {
+		enemy->grav_flag = 0;
+
+		if (sprouter_spawns) {
+			e_data->sprouter_spawns = gfc_allocate_array(sizeof(GFC_Vector2D), sprouter_spawns->v.array->count);
+			for (i = 0; i < sprouter_spawns->v.array->count; i++) {
+				sj_object_get_vector2d(sj_array_nth(sprouter_spawns, i), "position", &e_data->sprouter_spawns[i]);
+			}
+			e_data->sprouter_spawns_count = sprouter_spawns->v.array->count;
+		}
+
+		e_data->sprouter_spawn_index = 0;
+		e_data->sprouter_idle_counter = 0;
+		e_data->then = CURRENT_TIME;
+	}
+	else
+		enemy->grav_flag = 1;
 
 	update_hurtbox(enemy);
 	update_boundbox(enemy);
@@ -83,6 +102,10 @@ EnemyData* enemy_data_init(SJson* data, EnemyType type) {
 	}
 
 	e_data->type = type;
+	if (e_data->type == SPROUTER) {
+		sj_object_get_uint32(data, "sprouter_idle_frames", &e_data->sprouter_idle_frames);
+	}
+
 	sj_object_get_float(data, "maxHealth", &e_data->maxHealth);
 	e_data->currHealth = e_data->maxHealth;
 
@@ -98,6 +121,7 @@ void enemy_think(Entity* self) {
 	//if (self->velocity.y == 0)
 		//self->velocity.y = 9.0f;
 
+	enemy_move(self);
 }
 
 void enemy_update(Entity* self) {
@@ -130,21 +154,57 @@ void enemy_gravity(Entity* self) {
 
 void enemy_free(Entity* self) {
 	GFC_List* enemy_list;
+	EnemyData* e_data;
 
 	enemy_list = get_enemy_list();
 	gfc_list_delete_data(enemy_list, self);
 
 	gf2d_sprite_free(self->sprite);
 
-	if (self->data) free(self->data);
+	if (self->data) { 
+		e_data = self->data;
+		if (e_data->type == SPROUTER && e_data->sprouter_spawns)
+			free(e_data->sprouter_spawns);
+
+		free(e_data);
+	}
 }
 
 void enemy_move(Entity* self) {
 	EnemyData* e_data;
+	float time;
 
 	e_data = self->data;
 	if (!e_data) return;
 
+	time = CURRENT_TIME;
+	switch (e_data->type) {
+		case SPROUTER:
+			if (!e_data->sprouter_spawns_count) return;
+
+			if (time - e_data->then > FRAME_DUR && e_data->sprouter_idle_counter < e_data->sprouter_idle_frames) {
+				e_data->sprouter_idle_counter++;
+				e_data->then = time;
+			}
+
+			//slog("%i", e_data->sprouter_idle_counter);
+
+			if (e_data->sprouter_idle_counter == e_data->sprouter_idle_frames) {
+				e_data->sprouter_idle_counter = 0;
+
+				
+				if (e_data->sprouter_spawn_index == e_data->sprouter_spawns_count)
+					e_data->sprouter_spawn_index = 0;
+
+				gfc_vector2d_copy(self->position, e_data->sprouter_spawns[e_data->sprouter_spawn_index]);
+				e_data->sprouter_spawn_index++;
+			}
+			
+			break;
+
+		default:
+			;
+	}
 }
 
 void enemy_die(Entity* self, EnemyData* e_data) {

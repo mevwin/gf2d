@@ -13,5 +13,6 @@ typedef enum PlayerAtkType_E {
 
 void player_atk_system_init(void* data);
 void player_attack(void* p, void* data);
+void player_atk_system_reset();
 
 #endif

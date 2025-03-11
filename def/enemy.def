@@ -52,6 +52,33 @@
                     "recovFrames": 20
                 }
             ]
+        },
+        {
+            "#name": "SPROUTER",
+            "entity_data":
+            {
+                "#max_velocity": "[horiz_speed, fall_speed]",
+                "max_velocity": [3.0, 13.0],
+                "#accel": "[horiz_accel, fast fall accel]",
+                "accel": [0.1, 3.0],
+                "sprite": "sprites/enemy/coke.png"
+            },
+            "enemy_data":
+            {
+                "maxHealth": 32.0,
+                "sprouter_idle_frames": 90
+            },
+            "enemy_attacks":
+            [
+                {
+                    "#name": "F_ATK",
+                    "hitbox": [100, 150],
+                    "damage": 8,
+                    "startupFrames": 6,
+                    "activeFrames": 2,
+                    "recovFrames": 20
+                }
+            ]
         }
     ]
 }

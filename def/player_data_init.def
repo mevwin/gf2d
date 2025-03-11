@@ -13,7 +13,7 @@
         "ability_checks":
         {
             "canRecall": 0,
-            "canDoubleJump": 1,
+            "canDoubleJump": 0,
             "canBash": 0,
             "canWallJump": 0,
             "canDodge": 0
@@ -34,6 +34,8 @@
             "#name": "F_ATK",
             "hitbox": [100, 150],
             "damage": 8,
+            "direction": [0, 0],
+            "move_mag": 0,
             "startupFrames": 6,
             "activeFrames": 2,
             "recovFrames": 20
@@ -42,6 +44,8 @@
             "#name": "U_ATK",
             "hitbox": [80, 125],
             "damage": 8,
+            "direction": [0, 0],
+            "move_mag": 0,
             "startupFrames": 5,
             "activeFrames": 4,
             "recovFrames": 20
@@ -50,9 +54,41 @@
             "#name": "D_ATK",
             "hitbox": [140, 70],
             "damage": 8,
+            "direction": [0, 0],
+            "move_mag": 0,
             "startupFrames": 9,
             "activeFrames": 4,
             "recovFrames": 20
+        },
+        {
+            "#name": "F_SPE",
+            "hitbox": [150, 100],
+            "damage": 10,
+            "direction": [1, 0],
+            "move_mag": 3,
+            "startupFrames": 16,
+            "activeFrames": 1,
+            "recovFrames": 20
+        },
+        {
+            "#name": "UP_SPE",
+            "hitbox": [150, 100],
+            "damage": 10,
+            "direction": [0, -1],
+            "move_mag": 3,
+            "startupFrames": 6,
+            "activeFrames": 1,
+            "recovFrames": 20
+        },
+        {
+            "#name": "DOWN_SPE",
+            "hitbox": [250, 90],
+            "damage": 20,
+            "direction": [0, 0],
+            "move_mag": 0,
+            "startupFrames": 14,
+            "activeFrames": 3,
+            "recovFrames": 44
         }
     ]
 }

@@ -115,6 +115,8 @@ void player_data_init(Entity* self, PlayerData* p_data, SJson* data) {
 	sj_object_get_float(data_init, "jump_speed", &p_data->jump_speed);
 	sj_object_get_vector3d(data_init, "friction", &p_data->friction);
 
+	p_data->canMove = 1;
+
 	if (!data) sj_free(def);
 }
 
@@ -259,6 +261,8 @@ void player_respawn(Entity* self, PlayerData *p_data) {
 	gfc_vector2d_clear(self->velocity);
 	gfc_vector2d_clear(self->dir);
 	self->canBeDamaged = 1;
+	p_data->isAttacking = 0;
 	self->grav_flag = 1;
 	self->plat_flag = 1;
+	p_data->canMove = 1;
 }

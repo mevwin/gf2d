@@ -2,6 +2,7 @@
 #include "gf2d_draw.h"
 #include "gfc_types.h"
 #include "world.h"
+#include "player_attack.h"
 #include "collisions.h"
 #include "item.h"
 #include "enemy.h"
@@ -63,7 +64,7 @@ void level_load(Uint8 index) {
 	Level* level;
 	Ground* ground;
 	Platform* plat;
-	SJson *level_obj, *level_data, *list, *data, *enemy;
+	SJson *level_obj, *level_data, *list, *data, *enemy, *sprouter_spawns;
 	GFC_Vector2D spawn;
 	int i, type, random;
 
@@ -150,7 +151,12 @@ void level_load(Uint8 index) {
 			random = gfc_random_int(data->v.array->count);
 			sj_object_get_vector2d(sj_array_nth(data, random), "position", &spawn);
 		}
-		enemy_spawn(type, spawn);
+		if (type == SPROUTER)
+			sprouter_spawns = sj_object_get_value(enemy, "sprouter_spawns");
+		else 
+			sprouter_spawns = NULL;
+
+		enemy_spawn(type, spawn, sprouter_spawns);
 	}
 
 	// level objective
@@ -291,6 +297,7 @@ void update_platforms() {
 	}
 }
 
+// TODO: CHANGE BEHAVIOR LATER
 void move_platform(Platform* plat) {
 	if (!plat) return;
 	
@@ -309,9 +316,19 @@ void move_platform(Platform* plat) {
 
 			break;
 
-		default:
-			// do nothing
-			;
+		case PLATFORM_MOVE_UP:
+			plat->dimensions.y -= plat->move_speed.y;
+			if (plat->dimensions.y <= plat->move_bounds.z)
+				plat->moveType = PLATFORM_MOVE_DOWN;
+
+			break;
+
+		case PLATFORM_MOVE_DOWN:
+			plat->dimensions.y += plat->move_speed.y;
+			if (plat->dimensions.y + plat->dimensions.h >= plat->move_bounds.w)
+				plat->moveType = PLATFORM_MOVE_UP;
+
+			break;
 	}
 
 	// update region
@@ -416,6 +433,11 @@ void load_next_level(void* p){
 	p_data = (PlayerData*)player->data;
 
 	level_load(level_manager.curr_level_index);
+
+	//reset player stuff
+	player_atk_system_reset();
+	p_data->canMove = 1;
+	p_data->isAttacking = 0;
 	gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
 	gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
 }
@@ -433,6 +455,9 @@ void restart_level(void* p) {
 	p_data = (PlayerData*)player->data;
 
 	level_load(level_manager.curr_level_index);
+
+	//reset player stuff
+	player_atk_system_reset();
 	player_respawn(player, player->data);
 	gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
 	gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);

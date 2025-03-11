@@ -175,7 +175,7 @@ void item_activate(Entity* self, ItemType type) {
 				if (!gfc_word_cmp(i_data->effect_value.text, "DOUBLEJUMP")) {
 					slog("unlocked double jump");
 					p_data->canDoubleJump = 1;
-					slog("%i", p_data->canDoubleJump);
+					//slog("%i", p_data->canDoubleJump);
 				}
 				else if (!gfc_word_cmp(i_data->effect_value.text, "WALLJUMP")) {
 					slog("unlocked wall jump");
@@ -187,10 +187,12 @@ void item_activate(Entity* self, ItemType type) {
 				}
 				else if (!gfc_word_cmp(i_data->effect_value.text, "RECALL")) {
 					slog("unlocked recall");
+					player_recall_init();
 					p_data->canRecall = 1;
 				}
 				else if (!gfc_word_cmp(i_data->effect_value.text, "BASH")) {
-					slog("unlocked recall");
+					slog("unlocked bash");
+					player_bash_init();
 					p_data->canBash = 1;
 				}
 

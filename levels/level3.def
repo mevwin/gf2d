@@ -19,21 +19,21 @@
                 "ceiling": 0
             },
             {
-                "rect": [500, 400, 200, 70],
+                "rect": [1000, 200, 200, 500],
                 "color": [0, 255, 0, 255],
                 "walls": 1,
-                "ceiling": 1
+                "ceiling": 0
             }
         ],
         "platform_list":
         [
             {
-                "rect": [300, 300, 150, 50],
+                "rect": [450, 300, 150, 30],
                 "sprite": "bruh",
                 "pass_through": 1,
                 "starting_move": 1,
                 "moving": 1,
-                "move_speed": [1.0, 1.0],
+                "move_speed": [2.5, 1.0],
                 "#move_bounds" : "[left edge bound, right edge bound, top edge bound, bottom edge bound]",
                 "move_bounds": [300, 900, 300, 500]
             }
@@ -44,12 +44,8 @@
             "list":
             [
                 {
-                    "type": 0,
-                    "spawn_position": [-1, -1]
-                },
-                {
-                    "type": 0,
-                    "spawn_position": [-1, -1]
+                    "type": 2,
+                    "spawn_position": [850, 600]
                 }
             ],
             "random_spawns":
@@ -58,17 +54,23 @@
                     "position": [220, 250]
                 },
                 {
-                    "position": [580, 280]
+                    "position": [900, 400]
+                }
+            ],
+            "sprouter_spawns":
+            [
+                {
+                    "position": [220, 600]
                 },
                 {
-                    "position": [900, 400]
+                    "position": [850, 600]
                 }
             ]
         },
         "items":
         [
             {
-                "item_name": "ability_unlock_wall_jump",
+                "item_name": "ability_unlock_recall",
                 "position": [300, 175]
             }
         ]

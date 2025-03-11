@@ -3,23 +3,23 @@
     {
         "type": 0,
         "obj": 0,
-        "player_spawn": [900, 500],
+        "player_spawn": [50, 550],
         "ground_list":
         [
             {
-                "rect": [0, 600, 400, 120],
+                "rect": [0, 600, 300, 120],
                 "color": [0, 0, 0, 255],
                 "walls": 1,
                 "ceiling": 0
             },
             {
-                "rect": [800, 600, 400, 120],
+                "rect": [900, 600, 300, 120],
                 "color": [255, 255, 0, 255],
                 "walls": 1,
                 "ceiling": 0
             },
             {
-                "rect": [500, 400, 200, 70],
+                "rect": [400, 0, 400, 420],
                 "color": [0, 255, 0, 255],
                 "walls": 1,
                 "ceiling": 1
@@ -27,16 +27,7 @@
         ],
         "platform_list":
         [
-            {
-                "rect": [300, 300, 150, 50],
-                "sprite": "bruh",
-                "pass_through": 1,
-                "starting_move": 1,
-                "moving": 1,
-                "move_speed": [1.0, 1.0],
-                "#move_bounds" : "[left edge bound, right edge bound, top edge bound, bottom edge bound]",
-                "move_bounds": [300, 900, 300, 500]
-            }
+
         ],
         "enemies":
         {
@@ -45,11 +36,7 @@
             [
                 {
                     "type": 0,
-                    "spawn_position": [-1, -1]
-                },
-                {
-                    "type": 0,
-                    "spawn_position": [-1, -1]
+                    "spawn_position": [970, 550]
                 }
             ],
             "random_spawns":
@@ -68,8 +55,8 @@
         "items":
         [
             {
-                "item_name": "ability_unlock_wall_jump",
-                "position": [300, 175]
+                "item_name": "ability_unlock_move_dodge",
+                "position": [300, 150]
             }
         ]
     }

@@ -81,7 +81,7 @@ void player_recall_init() {
 	time = CURRENT_TIME;
 	recall_manager.cooldown_frames = 360;
 	recall_manager.frames_to_record = 12;
-	recall_manager.cooldown_counter = 0;
+	recall_manager.cooldown_counter = 359;
 	recall_manager.state = RECALL_NONE;
 	recall_manager.max_positions = 10;
 	recall_manager.pathToPlayer = gfc_list_new_size(recall_manager.max_positions);
@@ -121,7 +121,7 @@ void player_move(void* p) {
 	if (!self) return;
 
 	p_data = self->data;
-	if (!p_data || p_data->state == PLAYER_RECALL || p_data->state == PLAYER_BASH) return;
+	if (!p_data || p_data->state == PLAYER_RECALL || p_data->state == PLAYER_BASH || !p_data->canMove) return;
 
 	/* BASE HORIZONTAL MOVEMENT */
 	// to help maintain momentum in the air
@@ -215,10 +215,17 @@ void player_move(void* p) {
 	/* BASE VERTICAL MOVEMENT (NOTE: VERTICAL MEANS NEGATIVE Y)*/
 	/* JUMP */
 	if (gfc_input_command_pressed("jump")) {
-		// item upgrade checks
-		if (!p_data->canWallJump) p_data->wall_jump = 1;
+		if (p_data->canWallJump && wall_collision(self, i) && !p_data->wall_jump && p_data->moveTypeY != PMOVE_NONE_Y) { // wall_jump
+			p_data->wall_jump = 1;
+			self->velocity.y = p_data->jump_speed;
+			self->velocity.x = self->max_velocity.x;
+			p_data->moveTypeX = i ? PMOVE_RIGHT : PMOVE_LEFT; // if wall jumping from right, go left (and vice versa)
+			p_data->moveTypeY = PMOVE_RISING;
 
-		if (!wall_collision(self, i) && p_data->jump_count < p_data->max_jumps) {
+			if (!self->plat_flag)
+				self->plat_flag = 1;
+		}
+		else if (p_data->jump_count < p_data->max_jumps) {
 			if (!p_data->canDoubleJump && p_data->jump_count) return;
 
 			self->velocity.y = p_data->jump_speed;
@@ -229,16 +236,7 @@ void player_move(void* p) {
 			if (!self->plat_flag)
 				self->plat_flag = 1;
 		}
-		else if (wall_collision(self, i) && !p_data->wall_jump && p_data->moveTypeY != PMOVE_NONE_Y) { // wall_jump
-			p_data->wall_jump = 1;
-			self->velocity.y = p_data->jump_speed;
-			self->velocity.x = self->max_velocity.x;
-			p_data->moveTypeX = i ? PMOVE_RIGHT : PMOVE_LEFT; // if wall jumping from right, go left (and vice versa)
-			p_data->moveTypeY = PMOVE_RISING;
 
-			if (!self->plat_flag)
-				self->plat_flag = 1;
-		}
 	}
 
 	/* FAST FALLING */
@@ -331,13 +329,15 @@ void track_player(void* p, void* data) {
 
 	player = (Entity*)p;
 	p_data = (PlayerData*)data;
-	if (!player || !p_data || recall_manager.state != RECALL_NONE) return;
+	if (!player || !p_data || recall_manager.state != RECALL_NONE || !p_data->canMove) return;
 	
 	time = CURRENT_TIME;
 
 	// increment cooldown counter frames
-	if (time - recall_manager.then_cooldown > FRAME_DUR && recall_manager.cooldown_counter <= recall_manager.cooldown_frames)
+	if (time - recall_manager.then_cooldown > FRAME_DUR && recall_manager.cooldown_counter <= recall_manager.cooldown_frames) {
 		recall_manager.cooldown_counter++;
+		recall_manager.then_cooldown = time;
+	}
 
 	if (time - recall_manager.then_track > (FRAME_DUR * recall_manager.frames_to_record)) {
 		if (recall_manager.pathToPlayer->count > recall_manager.max_positions) 
@@ -358,7 +358,7 @@ void player_recall(void* p, void* data) {
 
 	player = (Entity*)p;
 	p_data = (PlayerData*)data;
-	if (!player || !p_data) return;
+	if (!player || !p_data  || !p_data->canMove) return;
 	
 	time = CURRENT_TIME;
 	if (!recall_manager.pathToPlayer->count) { 
@@ -403,10 +403,15 @@ void player_recall(void* p, void* data) {
 		case RECALL_REWIND: // move player to next point	
 			//slog("%i", recall_manager.pathToPlayer_index);
 			gfc_vector2d_add(player->position, player->position, recall_manager.recall_dir);
+			if (gfc_input_command_pressed("jump")) {
+				recall_manager.state = RECALL_FINISH;
+				break;
+			}
 
 			recall_manager.rewind_velocity_mag += recall_manager.rewind_accel_mag;
 			if (recall_manager.rewind_velocity_mag > recall_manager.rewind_max_vel_mag)
 				recall_manager.rewind_velocity_mag = recall_manager.rewind_max_vel_mag;
+
 			recall_manager.state = RECALL_STOP;
 
 			break;
@@ -489,7 +494,7 @@ void player_recall_reset(void* p, void* data, float time) {
 	gfc_list_clear(recall_manager.pathToPlayer);
 
 	recall_manager.then_cooldown = time;
-	recall_manager.then_track = time + 2.0f;
+	recall_manager.then_track = time + 1.5f;
 	player->grav_flag = 1;
 	player->plat_flag = 1;
 	p_data->state = PLAYER_IDLE;
@@ -518,7 +523,7 @@ void player_bash(void* p, void* data) {
 
 	player = (Entity*)p;
 	p_data = (PlayerData*)data;
-	if (!player || !p_data) return;
+	if (!player || !p_data || !p_data->canMove) return;
 
 	switch (bash_manager.state) {
 		case BASH_START:

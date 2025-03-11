@@ -18,7 +18,7 @@
             "effect_value": "WALLJUMP"
         },
         {
-            "name": "ability_unlock_dodge",
+            "name": "ability_unlock_move_dodge",
             "type": 1,
             "interact_type": 0,
             "grav_flag": 0,

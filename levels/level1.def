@@ -34,7 +34,7 @@
         "platform_list":
         [
             {
-                "rect": [300, 300, 150, 50],
+                "rect": [300, 300, 150, 20],
                 "sprite": "bruh",
                 "pass_through": 1,
                 "starting_move": 1,

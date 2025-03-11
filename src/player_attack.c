@@ -10,6 +10,7 @@ typedef enum PlayerAtkState_E {
 	PLAYER_ATK_NONE,
 	PLAYER_ATK_STARTUP,
 	PLAYER_ATK_ACTIVE,
+	PLAYER_ATK_PROJECTILE,
 	PLAYER_ATK_RECOVERY
 }PlayerAtkState;
 
@@ -51,6 +52,13 @@ void player_atk_system_init(void* data) {
 	atexit(player_atk_system_close);
 }
 
+void player_atk_system_reset() {
+	atk_manager.frame = 0;
+	atk_manager.atk_state = PLAYER_ATK_NONE;
+	atk_manager.aerial = 0;
+	atk_manager.then = 0;
+}
+
 void player_atk_system_close() {
 	gfc_list_foreach(atk_manager.atk_list, free);
 	gfc_list_delete(atk_manager.atk_list);
@@ -76,6 +84,10 @@ void create_player_atk(SJson* atk_data, Uint8 index) {
 
 	sj_object_get_float(atk_data, "damage", &atk->damage);
 
+	sj_object_get_vector2d(atk_data, "direction", &atk->direction);
+
+	sj_object_get_float(atk_data, "damage", &atk->move_mag);
+
 	sj_object_get_uint32(atk_data, "startupFrames", &atk->startupFrames);
 
 	sj_object_get_uint32(atk_data, "activeFrames", &atk->activeFrames);
@@ -91,8 +103,8 @@ void create_player_atk(SJson* atk_data, Uint8 index) {
 
 /**
 * TODO:
-* - add collision detection/damage to damageable entities
 * - add changes between aerial attacks
+* - make projectiles an entity
 */
 void player_attack(void* p, void* data) {
 	Entity* player;
@@ -110,6 +122,33 @@ void player_attack(void* p, void* data) {
 
 	time = CURRENT_TIME;
 
+	/* display hitbox */
+	// first shift rect coords based on player coords and type of move
+	if (atk_manager.atk_state != PLAYER_ATK_NONE) {
+		switch (atk_manager.curr_atk->atk_type) {
+			case PLAYER_ATK_TYPE_F_BASIC:
+				atk_manager.curr_atk->hitbox.x = player->position.x;
+				atk_manager.curr_atk->hitbox.x += player->dir.x == 0 ? (player->hurtbox.s.r.w * 0.5f) :
+					-(player->hurtbox.s.r.w * 0.5f + atk_manager.curr_atk->hitbox.w);
+
+				atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f);
+
+				break;
+
+			case PLAYER_ATK_TYPE_U_BASIC:
+				atk_manager.curr_atk->hitbox.x = player->position.x - (atk_manager.curr_atk->hitbox.w * 0.5f);
+				atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f) - (atk_manager.curr_atk->hitbox.h);
+
+				break;
+
+			case PLAYER_ATK_TYPE_D_BASIC:
+				atk_manager.curr_atk->hitbox.x = player->position.x - (atk_manager.curr_atk->hitbox.w * 0.5f);
+				atk_manager.curr_atk->hitbox.y = player->position.y + (player->hurtbox.s.r.h * 0.5f);
+
+				break;
+		}
+	}
+
 	switch (atk_manager.atk_state) {
 		case PLAYER_ATK_STARTUP: // simply delaying until active
 			if (time - atk_manager.then > FRAME_DUR) {
@@ -118,43 +157,21 @@ void player_attack(void* p, void* data) {
 				//slog("startup: %i", atk_manager.frame);
 			}
 		
+			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(0, 0, 255, 120));
+
 			if (atk_manager.frame == atk_manager.curr_atk->startupFrames) {
 				p_data->isAttacking = 1;
-				atk_manager.atk_state = PLAYER_ATK_ACTIVE;
+
+				if (atk_manager.curr_atk->atk_type == PLAYER_ATK_TYPE_U_SPECIAL ||
+					atk_manager.curr_atk->atk_type == PLAYER_ATK_TYPE_F_SPECIAL)
+					atk_manager.atk_state = PLAYER_ATK_PROJECTILE;
+				else 
+					atk_manager.atk_state = PLAYER_ATK_ACTIVE;
 			}
 
 			break;
 
 		case PLAYER_ATK_ACTIVE:
-			/* display hitbox */
-			// first shift rect coords based on player coords and type of move
-			switch (atk_manager.curr_atk->atk_type) {
-				case PLAYER_ATK_TYPE_F_BASIC:
-					atk_manager.curr_atk->hitbox.x = player->position.x;
-					atk_manager.curr_atk->hitbox.x += player->dir.x == 0 ? (player->hurtbox.s.r.w * 0.5f) : 
-													-(player->hurtbox.s.r.w * 0.5f + atk_manager.curr_atk->hitbox.w);
-					
-					atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f);
-
-					break;
-
-				case PLAYER_ATK_TYPE_U_BASIC:
-					atk_manager.curr_atk->hitbox.x = player->position.x - (atk_manager.curr_atk->hitbox.w * 0.5f);
-					atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f) - (atk_manager.curr_atk->hitbox.h);
-
-					//gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, GFC_COLOR_RED);
-
-					break;
-	
-				case PLAYER_ATK_TYPE_D_BASIC:
-					atk_manager.curr_atk->hitbox.x = player->position.x - (atk_manager.curr_atk->hitbox.w * 0.5f);
-					atk_manager.curr_atk->hitbox.y = player->position.y + (player->hurtbox.s.r.h * 0.5f);
-
-					//gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, GFC_COLOR_RED);
-
-					break;
-			}
-
 			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(255, 0, 0,120));
 
 			if (atk_manager.curr_atk->active)
@@ -172,6 +189,33 @@ void player_attack(void* p, void* data) {
 
 			break;
 
+		case PLAYER_ATK_PROJECTILE:
+			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(255, 0, 255, 120));
+
+			if (atk_manager.curr_atk->active)
+				entity_damage(player, find_nearest_entity(player, atk_manager.curr_atk), atk_manager.curr_atk);
+
+			atk_manager.curr_atk->hitbox.x += atk_manager.curr_atk->velocity.x;
+			atk_manager.curr_atk->hitbox.y += atk_manager.curr_atk->velocity.y;
+
+			if (time - atk_manager.then > FRAME_DUR) {
+				atk_manager.frame++;
+				atk_manager.then = time;
+				//slog("active: %i", atk_manager.frame);
+			}
+
+			if (atk_manager.frame == atk_manager.curr_atk->recovFrames) {
+				// reset manager values
+				player_atk_system_reset();
+
+				atk_manager.curr_atk->active = 1;
+
+				// reset player values
+				p_data->isAttacking = 0;
+			}
+
+			break;
+
 		case PLAYER_ATK_RECOVERY:
 			if (time - atk_manager.then > FRAME_DUR) {
 				atk_manager.frame++;
@@ -179,20 +223,24 @@ void player_attack(void* p, void* data) {
 				//slog("recovery: %i", atk_manager.frame);
 			}
 
+			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(0, 255, 0, 120));
+
 			if (atk_manager.frame == atk_manager.curr_atk->recovFrames) {
 				// reset manager values
-				atk_manager.frame = 0;
-				atk_manager.then = 0;
+				player_atk_system_reset();
 
 				atk_manager.curr_atk->active = 1;
 
-				atk_manager.atk_state = PLAYER_ATK_NONE;
+				// reset player values
+				if (!atk_manager.aerial) gfc_vector2d_clear(player->velocity);
+
+				p_data->canMove = 1;
 				p_data->isAttacking = 0;
 			}
 
 			break;
 
-		default: //PLAYER_ATK_NONE GOAL: check player player input
+		default: //PLAYER_ATK_NONE | GOAL: check player input
 			atk_index = PLAYER_ATK_TYPE_NONE;
 			if (gfc_input_command_pressed("attack")) {
 				if (gfc_input_command_down("moveup")) {
@@ -232,13 +280,56 @@ void player_attack(void* p, void* data) {
 			if (atk_index) { // if attack has been set
 				atk_manager.curr_atk = (EntityAtk*) gfc_list_nth(atk_manager.atk_list, atk_index - 1);
 				if (!atk_manager.curr_atk) {
-					//slog("no atk found at this index or atk is null");
+					slog("no atk found at this index or atk is null");
 					return;
 				}
 				atk_manager.then = time;
 
 				// change state
 				atk_manager.atk_state = PLAYER_ATK_STARTUP;
+
+				switch (atk_manager.curr_atk->atk_type) {
+					case PLAYER_ATK_TYPE_D_SPECIAL:
+						// only down special on the ground
+						if (atk_manager.aerial) {
+							atk_manager.atk_state = PLAYER_ATK_NONE;
+							return;
+						}
+
+						// shift special move hitbox
+						atk_manager.curr_atk->hitbox.x = player->position.x - (atk_manager.curr_atk->hitbox.w * 0.5f);
+						atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f);
+
+						p_data->canMove = 0;
+						break;
+
+					case PLAYER_ATK_TYPE_F_SPECIAL: 
+						// shift special move hitbox
+						atk_manager.curr_atk->hitbox.x = player->position.x;
+						atk_manager.curr_atk->hitbox.x += player->dir.x == 0 ? (player->hurtbox.s.r.w * 0.5f) :
+							-(player->hurtbox.s.r.w * 0.5f + atk_manager.curr_atk->hitbox.w);
+
+						atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f);
+
+						// initialize movement
+						gfc_vector2d_copy(atk_manager.curr_atk->velocity, atk_manager.curr_atk->direction);
+						gfc_vector2d_set_magnitude(&atk_manager.curr_atk->velocity, atk_manager.curr_atk->move_mag);
+						atk_manager.curr_atk->velocity.x *= player->dir.x == 0 ? 1 : -1;
+						break;
+
+					case PLAYER_ATK_TYPE_U_SPECIAL: 
+						// shift special move hitbox
+						atk_manager.curr_atk->hitbox.x = player->position.x - (atk_manager.curr_atk->hitbox.w * 0.5f);
+						atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f) - (atk_manager.curr_atk->hitbox.h);
+
+						// initialize movement
+						gfc_vector2d_copy(atk_manager.curr_atk->velocity, atk_manager.curr_atk->direction);
+						gfc_vector2d_set_magnitude(&atk_manager.curr_atk->velocity, atk_manager.curr_atk->move_mag);
+						break;
+
+					default:
+						if (!atk_manager.aerial) p_data->canMove = 0;
+				}
 			}
 	}
 }
