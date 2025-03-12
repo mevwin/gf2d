@@ -45,7 +45,7 @@
             [
                 {
                     "type": 2,
-                    "spawn_position": [850, 600]
+                    "spawn_position": [220, 600]
                 }
             ],
             "random_spawns":

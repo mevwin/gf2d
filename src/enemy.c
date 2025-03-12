@@ -1,6 +1,8 @@
 #include "simple_logger.h"
+#include "gf2d_draw.h"
 #include "world.h"
 #include "collisions.h"
+#include "player.h"
 #include "enemy.h"
 
 EnemyData* enemy_data_init(SJson* data, EnemyType type);
@@ -14,7 +16,6 @@ void enemy_die(Entity* self, EnemyData* e_data);
 void enemy_move(Entity* self);
 void enemy_attack(Entity* self);
 
-// TODO: add reset of the enemy types
 void enemy_spawn(int type, GFC_Vector2D position, SJson* sprouter_spawns) {
 	SJson* file, *enemy_type, *init_data;
 	EnemyData* e_data;
@@ -79,6 +80,8 @@ void enemy_spawn(int type, GFC_Vector2D position, SJson* sprouter_spawns) {
 		e_data->sprouter_idle_counter = 0;
 		e_data->then = CURRENT_TIME;
 	}
+	else if (e_data->type == CHASER)
+		enemy->grav_flag = 0;
 	else
 		enemy->grav_flag = 1;
 
@@ -124,6 +127,7 @@ void enemy_think(Entity* self) {
 		//self->velocity.y = 9.0f;
 
 	enemy_move(self);
+	enemy_attack(self);
 }
 
 void enemy_update(Entity* self) {
@@ -174,6 +178,7 @@ void enemy_free(Entity* self) {
 
 void enemy_move(Entity* self) {
 	EnemyData* e_data;
+	GFC_Vector2D player_pos, chaser_dir;
 	float time;
 
 	e_data = self->data;
@@ -202,6 +207,67 @@ void enemy_move(Entity* self) {
 				e_data->sprouter_spawn_index++;
 			}
 			
+			break;
+
+		case CHASER:
+			gfc_vector2d_copy(player_pos, get_player_pos());
+
+			gfc_vector2d_sub(chaser_dir, player_pos, self->position);
+			gfc_vector2d_set_magnitude(&chaser_dir, gfc_vector2d_magnitude(self->max_velocity));
+			gfc_vector2d_add(self->position, self->position, chaser_dir);
+
+			break;
+
+		default:
+			;
+	}
+}
+
+void enemy_attack(Entity* self) {
+	EnemyData* e_data;
+	PlayerData* p_data;
+	Entity* player;
+	GFC_Rect sprouter_hbox;
+	float time;
+
+	e_data = self->data;
+	if (!e_data) return;
+
+	player = (Entity*) get_player();
+	if (!player) return;
+
+	p_data = (PlayerData*)player->data;
+	if (!p_data) return;
+
+	time = CURRENT_TIME;
+
+	switch (e_data->type) {
+		case SPROUTER:
+			sprouter_hbox = gfc_rect(self->position.x - 125.0f,
+									self->position.y - 50.0f,
+									250.0f,
+									100.0f);
+
+			gf2d_draw_rect_filled(sprouter_hbox, gfc_color8(0, 120, 120, 120));
+
+			if (player->canBeDamaged && gfc_rect_overlap(sprouter_hbox, player->hurtbox.s.r)) {
+				//slog("hurting player");
+				p_data->currHealth -= 0.1f;
+			}
+
+			break;
+
+		case CHASER:
+			if (gfc_rect_overlap(self->hurtbox.s.r, player->hurtbox.s.r)) {
+				//slog("hurting player");
+				p_data->currHealth -= 0.05f;
+			}
+			//gfc_vector2d_copy(player_pos, get_player_pos());
+
+			//gfc_vector2d_sub(chaser_dir, player_pos, self->position);
+			//gfc_vector2d_set_magnitude(&chaser_dir, gfc_vector2d_magnitude(self->max_velocity));
+			//gfc_vector2d_add(self->position, self->position, chaser_dir);
+
 			break;
 
 		default:

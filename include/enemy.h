@@ -7,7 +7,7 @@ typedef enum EnemyType_E{
     BRUISER,
     SLASHER,
     SPROUTER,
-    CHASERS
+    CHASER
 }EnemyType;
 
 //typedef struct EnemyAtk_S {

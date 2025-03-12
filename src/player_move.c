@@ -248,6 +248,11 @@ void player_move(void* p) {
 	}
 	*/
 
+	// FLOAT ABILITY
+	if (p_data->moveTypeY == PMOVE_FALLING && gfc_input_command_held("moveup")) {
+		self->velocity.y = -0.5f;
+	}
+
 	/* MOVE THROUGH PLATFORM */
 	if (p_data->moveTypeY == PMOVE_FASTFALLING || 
 		(platform_collision(self) && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown")))
@@ -378,6 +383,7 @@ void player_recall(void* p, void* data) {
 			gfc_vector2d_clear(player->velocity);
 			player->grav_flag = 0;
 			player->plat_flag = 0;
+			player->canBeDamaged = 0;
 
 			// initialize rewind values
 			//recall_manager.total_distance = calc_total_recall_distance(player->position);
@@ -497,6 +503,7 @@ void player_recall_reset(void* p, void* data, float time) {
 	recall_manager.then_track = time + 1.5f;
 	player->grav_flag = 1;
 	player->plat_flag = 1;
+	player->canBeDamaged = 1;
 	p_data->state = PLAYER_IDLE;
 
 	recall_manager.state = RECALL_NONE;

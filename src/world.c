@@ -147,6 +147,10 @@ GFC_List* get_enemy_list() {
 	return world_manager.enemy_list;
 }
 
+GFC_Vector2D get_player_pos() {
+	return world_manager.player->position;
+}
+
 /*
 GFC_List* get_item_list() {
 	return world_manager.item_list;

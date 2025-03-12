@@ -31,10 +31,16 @@ void world_init();
 void world_update();
 Uint8 close_game_check();
 void change_world_state(WorldState new_state);
+GFC_List* get_enemy_list();
+
 void* get_player();
 void* get_player_data();
-GFC_List* get_enemy_list();
 //GFC_List* get_item_list();
+/**
+* @brief pointer to player's position
+* @note used for circumstances where player position is needed w/o needing the player entity
+*/
+GFC_Vector2D get_player_pos();
 
 
 #endif

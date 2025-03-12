@@ -12,11 +12,11 @@
         "maxHealth": 100.0,
         "ability_checks":
         {
-            "canRecall": 0,
-            "canDoubleJump": 0,
-            "canBash": 0,
-            "canWallJump": 0,
-            "canDodge": 0
+            "canRecall": 1,
+            "canDoubleJump": 1,
+            "canBash": 1,
+            "canWallJump": 1,
+            "canDodge": 1
         },
         "max_jumps": 2,
         "max_dodge_charges": 2,

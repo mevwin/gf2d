@@ -68,10 +68,4 @@ Entity* player_spawn(GFC_Vector2D position, SJson* data);
 
 void player_respawn(Entity* self, PlayerData* p_data);
 
-/**
-* @brief pointer to player's position
-* @note used for circumstances where player position is needed w/o needing the player entity
-*/
-GFC_Vector2D* get_player_pos();
-
 #endif

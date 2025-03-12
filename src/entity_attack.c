@@ -20,7 +20,7 @@ void entity_damage(Entity* inflictor, Entity* recipient, EntityAtk* atk) {
     EnemyData* e_data;
     // insert other data structs here
 
-    if (!inflictor || !recipient || !atk) {
+    if (!inflictor || !recipient) {
         //slog("somethings missing");
         return;
     }
