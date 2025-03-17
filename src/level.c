@@ -411,12 +411,31 @@ void level_update() {
 			enemy_list = get_enemy_list();
 			level_manager.curr_level->goal_counter = enemy_list->count;
 	}
+	/*
 	if (level_manager.curr_level->goal == level_manager.curr_level->goal_counter) {
 		level_manager.curr_level_index++;
 		if (level_manager.curr_level_index == level_manager.level_list->count)
 			change_world_state(WORLD_GAME_COMPLETE);
 		else
 			change_world_state(WORLD_LEVELCOMPLETE);
+	}
+	*/
+}
+
+void level_camera_update(GFC_Vector2D move_speed) {
+	Ground* ground;
+	int i;
+
+	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
+		ground = (Ground*)gfc_list_nth(level_manager.curr_level->ground_list, i);
+		if (!ground) continue;
+
+		ground->dimensions.x += move_speed.x;
+		//ground->dimensions.y += move_speed.y;
+
+		// update region
+		ground->region = gfc_vector2d(ground->dimensions.x,
+										ground->dimensions.x + ground->dimensions.w);
 	}
 }
 

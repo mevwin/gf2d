@@ -78,6 +78,7 @@ void load_next_level(void* p);
 void restart_level(void* p);
 
 void level_update();
+void level_camera_update(GFC_Vector2D move_speed);
 void level_curr_close();
 
 Level* get_curr_level();

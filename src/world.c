@@ -1,6 +1,7 @@
 #include "simple_logger.h"
 #include "gf2d_draw.h"
 #include "world.h"
+#include "camera.h"
 #include "player.h"
 #include "level.h"
 #include "ui.h"
@@ -70,6 +71,7 @@ void world_update() {
 	switch (world_manager.state) {
 		case WORLD_GAMESTART:
 			world_gamestart();
+			camera_init();
 			world_manager.state = WORLD_INGAME;
 
 			break;
@@ -82,6 +84,7 @@ void world_update() {
 			entity_update_all();
 			entity_draw_all();
 
+			camera_update(world_manager.player);
 			drawUI(world_manager.state);
 
 			if (gfc_input_command_released("pause"))

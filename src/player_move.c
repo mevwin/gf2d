@@ -46,6 +46,8 @@ typedef struct BashManager_S {
 static RecallManager recall_manager = { 0 };
 static BashManager bash_manager = { 0 };
 
+void player_move_check_input(Entity* player);
+
 // recall functions
 /**
 * @brief close recall manager
@@ -114,81 +116,169 @@ void player_bash_close() {
 // TODO: FIX THIS SHIT BY ADDING A DEDICATED MANAGER
 void player_move(void* p) {
 	PlayerData* p_data;
-	Entity* self;
-	Uint8 i;
+	Entity* player;
+	Uint8 wall_type;
 
-	self = (Entity*) p;
-	if (!self) return;
+	player = (Entity*) p;
+	if (!player) return;
 
-	p_data = self->data;
+	p_data = player->data;
 	if (!p_data || p_data->state == PLAYER_RECALL || p_data->state == PLAYER_BASH || !p_data->canMove) return;
+
+	player_move_check_input(player);
+
+	// 0 == left wall, 1 == right wall
+	wall_type = player->dir.x == 0 ? 0 : 1;
+
+	/* big ass state check to actually apply the movement */
+	switch (p_data->state) {
+		case PLAYER_MOVING:
+			if ((wall_collision(player, wall_type) && !p_data->wall_jump) || entity_keep_in_bounds(player, wall_type)) {
+				player->velocity.x = 0;
+				p_data->state = PLAYER_IDLE;
+				return;
+			}
+
+			if (player->velocity.x > player->max_velocity.x)
+				player->velocity.x -= p_data->friction.z;
+
+			player->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
+									player->velocity.x : -player->velocity.x;
+
+			break;
+
+		case PLAYER_SLOWDOWN:
+			if (wall_collision(player, wall_type) || entity_keep_in_bounds(player, wall_type)) {
+				player->velocity.x = 0;
+				p_data->state = PLAYER_IDLE;
+				return;
+			}
+
+			// sliding effect
+			player->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
+				player->velocity.x : -player->velocity.x;
+
+			// if on ground, apply friction
+			if ((ground_collision(player) || platform_collision(player)) && player->velocity.x > 0) {
+				player->velocity.x -= p_data->turnaround ? p_data->friction.x : p_data->friction.y;
+
+				if (player->velocity.x < 0) {
+					player->velocity.x = 0;
+					p_data->moveTypeX = PMOVE_NONE_X;
+					p_data->state = PLAYER_IDLE;
+				}
+			}
+			else { // if in air and turning around, slow down
+				player->velocity.x -= p_data->friction.x;
+
+				if (player->velocity.x < 0) {
+					p_data->moveTypeX = p_data->moveTypeX != PMOVE_RIGHT ? PMOVE_RIGHT : PMOVE_LEFT;
+					p_data->turnaround = 1;
+					player->velocity.x = 0;
+				}
+			}
+
+			break;
+
+		case PLAYER_DODGE:
+			if (entity_keep_in_bounds(player, wall_type) || wall_collision(player, wall_type)) {
+				player->velocity.x = 0;
+				p_data->state = PLAYER_IDLE;
+				return;
+			}
+
+			player->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
+				player->velocity.x : -player->velocity.x;
+
+			player->velocity.x -= p_data->dodge_vel_reduc;
+
+			// dodge jump momentum carrying
+			if (!ground_collision(player) && !platform_collision(player) && gfc_input_command_pressed("jump"))
+				p_data->state = PLAYER_MOVING;
+			else if (player->velocity.x < 0.4f * p_data->dodge_vel.y) {
+				player->velocity.x = 0.4f * p_data->dodge_vel.y;
+				p_data->state = PLAYER_SLOWDOWN;
+			}
+
+			break;
+	}
+}
+
+void player_move_check_input(Entity* player) {
+	PlayerData* p_data;
+	Uint8 wall_type;
+
+	p_data = player->data;
+	if (!p_data) return;
 
 	/* BASE HORIZONTAL MOVEMENT */
 	// to help maintain momentum in the air
 	if (!gfc_input_command_down("moveright") && !gfc_input_command_down("moveleft")
-		&& self->velocity.x > 0 && !ground_collision(self) && !platform_collision(self) && p_data->state != PLAYER_DODGE)
+		&& player->velocity.x > 0 && !ground_collision(player) && !platform_collision(player) && p_data->state != PLAYER_DODGE)
 		p_data->state = PLAYER_MOVING;
 
+	/*
 	if ((gfc_input_command_released("moveleft") || gfc_input_command_released("moveright"))
-		&& self->velocity.x > 0 && p_data->state != PLAYER_DODGE)
+		&& player->velocity.x > 0 && p_data->state != PLAYER_DODGE)
 		p_data->state = PLAYER_SLOWDOWN;
+	*/
 
 	// input checks
 	if ((gfc_input_command_down("moveleft") || gfc_input_command_pressed("moveleft"))
 		&& !gfc_input_command_pressed("moveright") && p_data->state != PLAYER_DODGE && !p_data->wall_jump) {
 		p_data->state = PLAYER_MOVING;
 
-		if (p_data->moveTypeX == PMOVE_RIGHT && self->velocity.x > 0) {
+		if (p_data->moveTypeX == PMOVE_RIGHT && player->velocity.x > 0) {
 			p_data->state = PLAYER_SLOWDOWN;
-			if (ground_collision(self) || platform_collision(self))
+			if (ground_collision(player) || platform_collision(player))
 				p_data->turnaround = 1;
 		}
 		else
 			p_data->moveTypeX = PMOVE_LEFT;
 
-		if (self->velocity.x <= self->max_velocity.x) // ground
-			self->velocity.x += self->accel.x;
-		else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
-			self->velocity.x += self->accel.x * 2.0f;
+		if (player->velocity.x <= player->max_velocity.x) // ground
+			player->velocity.x += player->accel.x;
+		else if (p_data->turnaround && player->velocity.x <= player->max_velocity.x) // air
+			player->velocity.x += player->accel.x * 2.0f;
 	}
 	else if ((gfc_input_command_down("moveright") || gfc_input_command_pressed("moveright"))
 		&& !gfc_input_command_pressed("moveleft") && p_data->state != PLAYER_DODGE && !p_data->wall_jump) {
 		p_data->state = PLAYER_MOVING;
 
-		if (p_data->moveTypeX == PMOVE_LEFT && self->velocity.x > 0) {
+		if (p_data->moveTypeX == PMOVE_LEFT && player->velocity.x > 0) {
 			p_data->state = PLAYER_SLOWDOWN;
-			if (ground_collision(self) || platform_collision(self))
+			if (ground_collision(player) || platform_collision(player))
 				p_data->turnaround = 1;
 		}
 		else
 			p_data->moveTypeX = PMOVE_RIGHT;
 
-		if (self->velocity.x <= self->max_velocity.x) // ground
-			self->velocity.x += self->accel.x;
-		else if (p_data->turnaround && self->velocity.x <= self->max_velocity.x) // air
-			self->velocity.x += self->accel.x * 2.0f;
+		if (player->velocity.x <= player->max_velocity.x) // ground
+			player->velocity.x += player->accel.x;
+		else if (p_data->turnaround && player->velocity.x <= player->max_velocity.x) // air
+			player->velocity.x += player->accel.x * 2.0f;
 	}
 
 	/* DODGE */
 	if (p_data->canDodge && gfc_input_command_pressed("dodge") && p_data->state != PLAYER_DODGE && p_data->dodge_charges > 0) {
-		if (gfc_input_command_pressed("moveright") || self->dir.x == 0)
+		if (gfc_input_command_pressed("moveright") || player->dir.x == 0)
 			p_data->moveTypeX = PMOVE_RIGHT;
-		else if (gfc_input_command_pressed("moveleft") || self->dir.x == 1)
+		else if (gfc_input_command_pressed("moveleft") || player->dir.x == 1)
 			p_data->moveTypeX = PMOVE_LEFT;
 
 		p_data->state = PLAYER_DODGE;
 		p_data->moveTypeY = PMOVE_NONE_Y;
 
-		self->velocity.x = p_data->dodge_vel.x;
-		if (!ground_collision(self) && !platform_collision(self)) {
+		player->velocity.x = p_data->dodge_vel.x;
+		if (!ground_collision(player) && !platform_collision(player)) {
 			p_data->dodge_charges--;
-			self->velocity.x = p_data->dodge_vel.y;
+			player->velocity.x = p_data->dodge_vel.y;
 		}
-		self->velocity.y = 0;
+		player->velocity.y = 0;
 	}
 
 	/* RECALL */
-	if (p_data->canRecall && gfc_input_command_pressed("recall")){
+	if (p_data->canRecall && gfc_input_command_pressed("recall")) {
 		if (recall_manager.cooldown_counter > recall_manager.cooldown_frames) {
 			recall_manager.state = RECALL_START;
 			p_data->state = PLAYER_RECALL;
@@ -199,42 +289,42 @@ void player_move(void* p) {
 	}
 
 	/* BASH */
-	if (p_data->canBash && !ground_collision(self) && p_data->state != PLAYER_BASH && gfc_input_command_pressed("bash")) {
+	if (p_data->canBash && !ground_collision(player) && p_data->state != PLAYER_BASH && gfc_input_command_pressed("bash")) {
 		//if (CURRENT_TIME >= bash_manager.next_bash) { // if next to a bash-able object
-			bash_manager.state = BASH_START;
-			p_data->state = PLAYER_BASH;
-			return;
+		bash_manager.state = BASH_START;
+		p_data->state = PLAYER_BASH;
+		return;
 		//}
 		//else
 			//slog("waiting");
 	}
 
 	// 0 == left wall, 1 == right wall
-	i = self->dir.x == 0 ? 0 : 1;
+	wall_type = player->dir.x == 0 ? 0 : 1;
 
 	/* BASE VERTICAL MOVEMENT (NOTE: VERTICAL MEANS NEGATIVE Y)*/
 	/* JUMP */
 	if (gfc_input_command_pressed("jump")) {
-		if (p_data->canWallJump && wall_collision(self, i) && !p_data->wall_jump && p_data->moveTypeY != PMOVE_NONE_Y) { // wall_jump
+		if (p_data->canWallJump && wall_collision(player, wall_type) && !p_data->wall_jump && p_data->moveTypeY != PMOVE_NONE_Y) { // wall_jump
 			p_data->wall_jump = 1;
-			self->velocity.y = p_data->jump_speed;
-			self->velocity.x = self->max_velocity.x;
-			p_data->moveTypeX = i ? PMOVE_RIGHT : PMOVE_LEFT; // if wall jumping from right, go left (and vice versa)
+			player->velocity.y = p_data->jump_speed;
+			player->velocity.x = player->max_velocity.x;
+			p_data->moveTypeX = wall_type ? PMOVE_RIGHT : PMOVE_LEFT; // if wall jumping from right, go left (and vice versa)
 			p_data->moveTypeY = PMOVE_RISING;
 
-			if (!self->plat_flag)
-				self->plat_flag = 1;
+			if (!player->plat_flag)
+				player->plat_flag = 1;
 		}
 		else if (p_data->jump_count < p_data->max_jumps) {
 			if (!p_data->canDoubleJump && p_data->jump_count) return;
 
-			self->velocity.y = p_data->jump_speed;
+			player->velocity.y = p_data->jump_speed;
 
 			p_data->jump_count++;
 			p_data->moveTypeY = PMOVE_RISING;
 
-			if (!self->plat_flag)
-				self->plat_flag = 1;
+			if (!player->plat_flag)
+				player->plat_flag = 1;
 		}
 
 	}
@@ -248,82 +338,18 @@ void player_move(void* p) {
 	}
 	*/
 
+	/*
 	// FLOAT ABILITY
 	if (p_data->moveTypeY == PMOVE_FALLING && gfc_input_command_held("moveup")) {
-		self->velocity.y = -0.5f;
+		player->velocity.y = -0.5f;
 	}
+	*/
 
 	/* MOVE THROUGH PLATFORM */
-	if (p_data->moveTypeY == PMOVE_FASTFALLING || 
-		(platform_collision(self) && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown")))
+	if (p_data->moveTypeY == PMOVE_FASTFALLING ||
+		(platform_collision(player) && (gfc_input_command_pressed("movedown") || gfc_input_command_down("movedown")))
 		) {
-		self->plat_flag = 0;
-	}
-
-	/* big ass state check to actually apply the movement */
-	if (p_data->state == PLAYER_MOVING) { // regular movement
-		if ((wall_collision(self, i) && !p_data->wall_jump) || entity_keep_in_bounds(self, i)) {
-			self->velocity.x = 0;
-			p_data->state = PLAYER_IDLE;
-			return;
-		}
-
-		if (self->velocity.x > self->max_velocity.x)
-			self->velocity.x -= p_data->friction.z;
-
-		self->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
-							self->velocity.x : -self->velocity.x;
-	}
-	else if (p_data->state == PLAYER_SLOWDOWN) {
-		if (wall_collision(self, i) || entity_keep_in_bounds(self, i)) {
-			self->velocity.x = 0;
-			p_data->state = PLAYER_IDLE;
-			return;
-		}
-
-		// sliding effect
-		self->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
-			self->velocity.x : -self->velocity.x;
-
-		// if on ground, apply friction
-		if ((ground_collision(self) || platform_collision(self)) && self->velocity.x > 0) {
-			self->velocity.x -= p_data->turnaround ? p_data->friction.x : p_data->friction.y;
-
-			if (self->velocity.x < 0) {
-				self->velocity.x = 0;
-				p_data->moveTypeX = PMOVE_NONE_X;
-				p_data->state = PLAYER_IDLE;
-			}
-		}
-		else { // if in air and turning around, slow down
-			self->velocity.x -= p_data->friction.x;
-
-			if (self->velocity.x < 0) {
-				p_data->moveTypeX = p_data->moveTypeX != PMOVE_RIGHT ? PMOVE_RIGHT : PMOVE_LEFT;
-				p_data->turnaround = 1;
-				self->velocity.x = 0;
-			}
-		}
-	}
-	else if (p_data->state == PLAYER_DODGE) {
-		if (entity_keep_in_bounds(self, i) || wall_collision(self, i)) {
-			self->velocity.x = 0;
-			p_data->state = PLAYER_IDLE;
-			return;
-		}
-
-		self->position.x += p_data->moveTypeX == PMOVE_RIGHT ?
-							self->velocity.x : -self->velocity.x;
-
-		self->velocity.x -= p_data->dodge_vel_reduc;
-
-		// dodge jump momentum carrying
-		if (!ground_collision(self) && !platform_collision(self) && gfc_input_command_pressed("jump"))
-			p_data->state = PLAYER_MOVING;
-		else if (self->velocity.x < 0.4f * p_data->dodge_vel.y) {
-			self->velocity.x = 0.4f * p_data->dodge_vel.y;
-			p_data->state = PLAYER_SLOWDOWN;
-		}
+		player->plat_flag = 0;
 	}
 }
 

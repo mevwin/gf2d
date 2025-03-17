@@ -13,7 +13,7 @@
                 "ceiling": 0
             },
             {
-                "rect": [800, 600, 400, 120],
+                "rect": [800, 600, 1000, 120],
                 "color": [255, 255, 0, 255],
                 "walls": 1,
                 "ceiling": 0
@@ -49,16 +49,7 @@
             "#spawn_position": "if both -1, use random position",
             "list":
             [
-                {
-                    "type": 0,
-                    "spawn_position": [-1, -1],
-                    "item": 0
-                },
-                {
-                    "type": 0,
-                    "spawn_position": [1020, 100],
-                    "item": 0
-                }
+
             ],
             "random_spawns":
             [
