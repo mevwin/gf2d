@@ -87,6 +87,10 @@ void level_load(Uint8 index) {
 	level->wall_list = gfc_list_new();
 	level->platform_list = gfc_list_new();
 
+
+	// level_size
+	sj_object_get_vector2d(level_data, "level_size", &level->level_size);
+
 	// player spawn
 	sj_object_get_vector2d(level_data, "player_spawn", &level->player_spawn);
 
@@ -430,7 +434,11 @@ void level_camera_update(GFC_Vector2D move_speed) {
 		ground = (Ground*)gfc_list_nth(level_manager.curr_level->ground_list, i);
 		if (!ground) continue;
 
-		ground->dimensions.x += move_speed.x;
+		if (move_speed.x != 0)
+			ground->dimensions.x -= move_speed.x;
+
+		//if (ground->dimensions.x < 0)
+			
 		//ground->dimensions.y += move_speed.y;
 
 		// update region
@@ -492,6 +500,8 @@ Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type) {
 	Entity* self;
 	//GFC_Vector2D p1, p2;
 	float offset;
+
+	//return 0; // temporary
 
 	self = (Entity*) e;
 	if (!self) return;

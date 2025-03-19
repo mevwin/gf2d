@@ -6,7 +6,7 @@
 #include "gfc_list.h"
 
 #define GRAVITY 0.3f
-#define RES gfc_rect(0,0,1200, 700)
+#define RES gfc_rect(0,0,1200, 720)
 #define CURRENT_TIME (SDL_GetTicks() * 0.001f)
 #define FRAME_DUR 0.016f
 

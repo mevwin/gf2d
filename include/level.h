@@ -58,6 +58,7 @@ typedef struct Platform_S {
 
 typedef struct Level_S {
 	//LevelType		level_type;
+	GFC_Vector2D	level_size;
 	LevelObjective	obj;
 	Uint32			goal;
 	Uint32			goal_counter;
