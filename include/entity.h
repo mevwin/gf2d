@@ -10,8 +10,14 @@ typedef enum EntityType_S{
     PLAYER,
     ENEMY,
     ITEM,
+    PROJECTILE,
     HAZARD
 }EntityType;
+
+typedef enum EntitySearchType_E {
+    SEARCH_ATK,
+    SEARCH_BASH
+}EntitySearchType;
 
 typedef struct Entity_S{
     Uint8           _inuse;         // flag for memory management
@@ -21,8 +27,11 @@ typedef struct Entity_S{
     GFC_Vector2D	velocity;
     GFC_Vector2D	max_velocity;
     GFC_Vector2D	accel;
+
     Uint8           grav_flag;      // apply gravity to entity?
     Uint8           plat_flag;      // let entity pass through plat?
+    Uint8           bash_flag;      // currently being bashed
+
     Uint8           canBeDamaged;   // let entity be damaged?
     Uint8           canBeBashed;
 
@@ -113,7 +122,7 @@ void update_boundbox(Entity* self);
 
 void entity_damage(Entity* inflictor, Entity* recipient, EntityAtk* atk);
 
-Entity* find_nearest_entity(Entity* source, EntityAtk* atk);
+Entity* find_nearest_entity(Entity* source, void* check, EntitySearchType search);
 
 Uint32 getEntityMax();
 

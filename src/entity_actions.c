@@ -41,54 +41,74 @@ void entity_damage(Entity* inflictor, Entity* recipient, EntityAtk* atk) {
 
     // handle interaction
     switch (dmg_type) {
-        case PLAYER_ENEMY:
-            p_data = (PlayerData*) inflictor->data;
-            e_data = (EnemyData*) recipient->data;
-            if (!p_data || !e_data) return;
+    case PLAYER_ENEMY:
+        p_data = (PlayerData*)inflictor->data;
+        e_data = (EnemyData*)recipient->data;
+        if (!p_data || !e_data) return;
 
-            e_data->currHealth -= atk->damage;
-            //slog("enemy health: %f", e_data->currHealth);
+        e_data->currHealth -= atk->damage;
+        //slog("enemy health: %f", e_data->currHealth);
 
-            break;
+        break;
 
-        case ENEMY_PLAYER:
+    case ENEMY_PLAYER:
 
 
-            break;
+        break;
 
-        case SELF_DAMAGE:
+    case SELF_DAMAGE:
 
-            break;
+        break;
 
-        case PLAYER_HAZARD:
+    case PLAYER_HAZARD:
 
-            break;
+        break;
 
-        case HAZARD_PLAYER:
+    case HAZARD_PLAYER:
 
-            break;
+        break;
 
-        case HAZARD_ENEMY:
+    case HAZARD_ENEMY:
 
-            break;
+        break;
     }
     atk->active = 0;
 }
 
-Entity* find_nearest_entity(Entity* source, EntityAtk* atk) {
+Entity* find_nearest_entity(Entity* source, void* check, EntitySearchType search) {
     Uint32 entityMax;
-    Entity* entityList, *ent;
+    Entity* entityList, * ent;
+    EntityAtk* atk;
+    GFC_Rect* hitbox;
     int i;
 
-    if (!source || !atk) return;
+    if (!source || !check) return;
 
     entityMax = getEntityMax();
     entityList = getEntityList();
+    hitbox = NULL;
     for (i = 0; i < entityMax; i++) {
         ent = &entityList[i];
-        if (!ent->_inuse || source == ent || !ent->canBeDamaged) continue;
-        
-        if (gfc_rect_overlap(ent->hurtbox.s.r, atk->hitbox))
+        if (!ent->_inuse || source == ent) continue;
+
+        switch (search) {
+        case SEARCH_ATK:
+            if (!ent->canBeDamaged) continue;
+
+            atk = (EntityAtk*)check;
+            hitbox = &atk->hitbox;
+
+            break;
+
+        case SEARCH_BASH:
+            if (!ent->canBeBashed) continue;
+            hitbox = (GFC_Rect*)check;
+
+            break;
+
+        }
+
+        if (hitbox && gfc_rect_overlap(ent->hurtbox.s.r, *hitbox))
             return ent;
     }
     return NULL;

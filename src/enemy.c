@@ -85,6 +85,8 @@ void enemy_spawn(int type, GFC_Vector2D position, SJson* sprouter_spawns) {
 	else
 		enemy->grav_flag = 1;
 
+	enemy->canBeBashed = 1;
+
 	update_hurtbox(enemy);
 	update_boundbox(enemy);
 
@@ -121,7 +123,7 @@ void enemy_think(Entity* self) {
 	EnemyData* e_data;
 
 	e_data = self->data;
-	if (!e_data) return;
+	if (!e_data || self->bash_flag) return;
 
 	//if (self->velocity.y == 0)
 		//self->velocity.y = 9.0f;
@@ -134,7 +136,7 @@ void enemy_update(Entity* self) {
 	EnemyData* e_data;
 
 	e_data = self->data;
-	if (!e_data) return;
+	if (!e_data || self->bash_flag) return;
 
 	if (e_data->currHealth <= 0.0f)
 		enemy_die(self, e_data);
@@ -144,7 +146,7 @@ void enemy_gravity(Entity* self) {
 	EnemyData* e_data;
 
 	e_data = self->data;
-	if (!e_data) return;
+	if (!e_data || self->bash_flag) return;
 
 	if ((ground_collision(self) || platform_collision(self)) && self->velocity.y == 0) { // grounded
 		//  uhhhh....

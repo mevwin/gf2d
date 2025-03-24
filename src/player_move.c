@@ -27,6 +27,7 @@ typedef struct RecallManager_S {
 
 typedef struct BashManager_S {
 	BashState			state;					// current state of bashing process
+	Entity*				bashed_obj;
 	BashDir				bash_dir;				// direciton to bash to
 	GFC_Vector2D		bash_vel;				
 	float				bash_velocity_mag;
@@ -113,7 +114,6 @@ void player_bash_close() {
 	memset(&bash_manager, 0, sizeof(BashManager));
 }
 
-// TODO: FIX THIS SHIT BY ADDING A DEDICATED MANAGER
 void player_move(void* p) {
 	PlayerData* p_data;
 	Entity* player;
@@ -553,6 +553,7 @@ void player_bash(void* p, void* data) {
 	Entity* player;
 	GFC_Vector2D coll;
 	GFC_Edge2D p_edge;
+	GFC_Rect hitbox;
 
 	player = (Entity*)p;
 	p_data = (PlayerData*)data;
@@ -560,6 +561,22 @@ void player_bash(void* p, void* data) {
 
 	switch (bash_manager.state) {
 		case BASH_START:
+			hitbox = gfc_rect(player->position.x - player->hurtbox.s.r.w * 0.8f,
+							  player->position.y - player->hurtbox.s.r.h * 0.8f,
+							  player->hurtbox.s.r.w * 1.6f, 
+							  player->hurtbox.s.r.h * 1.6f);
+
+			bash_manager.bashed_obj = find_nearest_entity(player, &hitbox, SEARCH_BASH);
+			if (!bash_manager.bashed_obj) {
+				bash_manager.state = BASH_NONE;
+				p_data->state = PLAYER_MOVING;
+				slog("no entity found");
+				return;
+			}
+
+			bash_manager.bashed_obj->bash_flag = 1;
+			bash_manager.state = BASH_START;
+
 			player->grav_flag = 0;
 			player->plat_flag = 0;
 			gfc_vector2d_clear(player->velocity);
@@ -614,6 +631,7 @@ void player_bash(void* p, void* data) {
 
 		case BASH_MOVE:
 			// if collision detection, adjust move speed
+			/*
 			if ((bash_manager.bash_dir == BASH_RIGHT || bash_manager.bash_dir == BASH_LEFT) ||
 				(entity_keep_in_bounds(player, bash_manager.wall_type) || wall_collision(player, bash_manager.wall_type))
 				) {
@@ -639,7 +657,7 @@ void player_bash(void* p, void* data) {
 				bash_manager.bash_vel = gfc_vector2d(0, 1);
 				break;
 			}
-			
+			*/
 			gfc_vector2d_add(player->position, player->position, bash_manager.bash_vel);
 			
 			// slowdown bash speed
@@ -689,6 +707,7 @@ void player_bash(void* p, void* data) {
 				gfc_vector2d_clear(player->velocity);
 			}
 
+			bash_manager.bashed_obj->bash_flag = 0;
 			bash_manager.state = BASH_NONE;
 			break;
 	}

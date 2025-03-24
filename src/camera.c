@@ -45,25 +45,20 @@ void camera_update(void* p, GFC_Vector2D level_size) {
 
 	if ((gfc_rect_overlap(player->boundbox.s.r, camera.move_space[0]) && p_data->moveTypeX == PMOVE_LEFT)
 		|| (gfc_rect_overlap(player->boundbox.s.r, camera.move_space[1]) && p_data->moveTypeX == PMOVE_RIGHT))
-		{
-		//slog("moving camera");
-
+	{
 		gfc_vector2d_copy(camera.move_speed, player->velocity);
 		if (player->dir.x == 1)
 			camera.move_speed.x = -player->velocity.x;
-		//camera.move_speed.y = -player->velocity.y;
+
+		// temporary
 		camera.move_speed.y = 0;
 
 		camera.move_speed.x *= 2.0f;
 
-		gfc_vector2d_add(camera.position, camera.position, camera.move_speed);
-
-		camera_apply_bounds(level_size);
-
 		// move the level
+		gfc_vector2d_add(camera.position, camera.position, camera.move_speed);
+		camera_apply_bounds(level_size);
 		level_camera_update(camera.move_speed);
-		//player->velocity.x = 0;
-		//gfc_vector2d_clear(player->velocity);
 	}
 
 	if (gfc_input_command_pressed("display")) {
@@ -92,5 +87,6 @@ void camera_apply_bounds(GFC_Vector2D level_size) {
 }
 
 void camera_close() {
+	free(camera.move_space);
 	memset(&camera, 0, sizeof(Camera));
 }

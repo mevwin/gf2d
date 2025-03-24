@@ -84,7 +84,7 @@ void world_update() {
 			entity_update_all();
 			entity_draw_all();
 
-			camera_update(world_manager.player, get_curr_level()->level_size);
+			//camera_update(world_manager.player, get_curr_level()->level_size);
 			drawUI(world_manager.state);
 
 			if (gfc_input_command_released("pause"))

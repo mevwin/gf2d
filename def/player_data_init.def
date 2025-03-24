@@ -15,7 +15,7 @@
             "canRecall": 1,
             "canDoubleJump": 1,
             "canBash": 1,
-            "canWallJump": 10,
+            "canWallJump": 1,
             "canDodge": 1
         },
         "max_jumps": 2,

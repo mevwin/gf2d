@@ -175,7 +175,7 @@ void player_attack(void* p, void* data) {
 			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(255, 0, 0,120));
 
 			if (atk_manager.curr_atk->active)
-				entity_damage(player, find_nearest_entity(player, atk_manager.curr_atk), atk_manager.curr_atk);
+				entity_damage(player, find_nearest_entity(player, atk_manager.curr_atk, SEARCH_ATK), atk_manager.curr_atk);
 
 			// frame checking
 			if (time - atk_manager.then > FRAME_DUR) {
@@ -193,7 +193,7 @@ void player_attack(void* p, void* data) {
 			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(255, 0, 255, 120));
 
 			if (atk_manager.curr_atk->active)
-				entity_damage(player, find_nearest_entity(player, atk_manager.curr_atk), atk_manager.curr_atk);
+				entity_damage(player, find_nearest_entity(player, atk_manager.curr_atk, SEARCH_ATK), atk_manager.curr_atk);
 
 			atk_manager.curr_atk->hitbox.x += atk_manager.curr_atk->velocity.x;
 			atk_manager.curr_atk->hitbox.y += atk_manager.curr_atk->velocity.y;
