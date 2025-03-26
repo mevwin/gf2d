@@ -42,5 +42,6 @@ void* get_player_data();
 */
 GFC_Vector2D get_player_pos();
 
+Uint8 checkFramePass(float then);
 
 #endif

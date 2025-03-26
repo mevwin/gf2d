@@ -178,11 +178,11 @@ void update_hurtbox(Entity* self) {
     offset.y *= 0.5f;
 
     gfc_vector2d_sub(position, self->position, offset);
-    self->hurtbox.s.r = gfc_rect(position.x, 
-                                 position.y,
-                                 self->sprite->frame_w,
-                                 self->sprite->frame_h
-        );
+    self->hurtbox.s.r = gfc_rect(position.x,
+        position.y,
+        self->sprite->frame_w,
+        self->sprite->frame_h
+    );
 }
 
 void update_boundbox(Entity* self) {

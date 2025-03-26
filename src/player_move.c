@@ -365,7 +365,7 @@ void track_player(void* p, void* data) {
 	time = CURRENT_TIME;
 
 	// increment cooldown counter frames
-	if (time - recall_manager.then_cooldown > FRAME_DUR && recall_manager.cooldown_counter <= recall_manager.cooldown_frames) {
+	if (checkFramePass(recall_manager.then_cooldown) && recall_manager.cooldown_counter <= recall_manager.cooldown_frames) {
 		recall_manager.cooldown_counter++;
 		recall_manager.then_cooldown = time;
 	}

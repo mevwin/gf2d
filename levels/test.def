@@ -3,7 +3,6 @@
     {
         "type": 0,
         "obj": 0,
-        "level_size": [2000, 2000],
         "player_spawn": [200, 500],
         "ground_list":
         [

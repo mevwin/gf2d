@@ -55,13 +55,15 @@ typedef struct Entity_S{
 }Entity;
 
 typedef struct EntityAtk_S {
+    GFC_TextWord        name;
     Uint8		        atk_type;
+    Uint8               isProj;         
     Uint8				active;			// deal damage once, turn off once damage has been dealt
     GFC_Rect			hitbox;
-    GFC_Vector2D        direction;
-    GFC_Vector2D        velocity;
-    float               move_mag;
     float				damage;
+
+    // projectile data
+    GFC_Vector2D        direction;
 
     // frame timing
     Uint32				startupFrames;

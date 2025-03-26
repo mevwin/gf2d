@@ -22,7 +22,7 @@ void handle_ent_plat_collision(void* e);
 * @param wall_type: collision with a wall; left == 0, right == 1
 * @note compare entity's bottom edge with nearest ground from current level's ground list
 */
-Uint8 wall_collision(void* ent, Uint8 wall_type); // left = 0, right = 1
+Uint8 wall_collision(void* ent, Uint8 wall_type);
 
 /**
 * @brief check if entity is colliding a ground's ceiling

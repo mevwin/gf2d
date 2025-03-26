@@ -1,7 +1,7 @@
 #include "simple_logger.h"
 #include "gf2d_draw.h"
 #include "world.h"
-#include "camera.h"
+//#include "camera.h"
 #include "player.h"
 #include "level.h"
 #include "ui.h"
@@ -71,7 +71,7 @@ void world_update() {
 	switch (world_manager.state) {
 		case WORLD_GAMESTART:
 			world_gamestart();
-			camera_init();
+			//camera_init();
 			world_manager.state = WORLD_INGAME;
 
 			break;
@@ -128,6 +128,10 @@ void world_update() {
 		default: //WORLD_MAINMENU, WORLD_PAUSEMENU, WORLD_PLAYERDEAD, WORLD_LEVELCOMPLETE, WORLD_GAME_COMPLETE
 			drawUI(world_manager.state); // draw menu and check input	
 	}
+}
+
+Uint8 checkFramePass(float then) {
+	return CURRENT_TIME - then > FRAME_DUR;
 }
 
 void change_world_state(WorldState new_state) {

@@ -3,6 +3,7 @@
 #include "gf2d_draw.h"
 #include "world.h"
 #include "player_attack.h"
+#include "projectile.h"
 #include "player.h"
 #include "collisions.h"
 
@@ -79,25 +80,33 @@ void create_player_atk(SJson* atk_data, Uint8 index) {
 	}
 
 	atk->atk_type = index + 1;
-	sj_object_get_vector2d(atk_data, "hitbox", &hitbox_dimen);
-	atk->hitbox = gfc_rect(0, 0, hitbox_dimen.x, hitbox_dimen.y);
+	gfc_word_cpy(atk->name, sj_object_get_string(atk_data, "name"));
 
-	sj_object_get_float(atk_data, "damage", &atk->damage);
+	// initialize projectile attacks as entities
+	sj_object_get_uint8(atk_data, "isProj", &atk->isProj);
+	if (atk->isProj) {
+		// idea: store what you need to initialize w/ proj_spawn
+		sj_object_get_vector2d(atk_data, "direction", &atk->direction);
 
-	sj_object_get_vector2d(atk_data, "direction", &atk->direction);
+		sj_object_get_uint32(atk_data, "activeFrames", &atk->activeFrames);
+		sj_object_get_uint32(atk_data, "recovFrames", &atk->recovFrames);
+	}
+	else {
+		sj_object_get_vector2d(atk_data, "hitbox", &hitbox_dimen);
+		atk->hitbox = gfc_rect(0, 0, hitbox_dimen.x, hitbox_dimen.y);
 
-	sj_object_get_float(atk_data, "damage", &atk->move_mag);
+		sj_object_get_float(atk_data, "damage", &atk->damage);
 
-	sj_object_get_uint32(atk_data, "startupFrames", &atk->startupFrames);
+		sj_object_get_uint32(atk_data, "startupFrames", &atk->startupFrames);
 
-	sj_object_get_uint32(atk_data, "activeFrames", &atk->activeFrames);
-	atk->activeFrames += atk->startupFrames;
+		sj_object_get_uint32(atk_data, "activeFrames", &atk->activeFrames);
+		atk->activeFrames += atk->startupFrames;
 
-	sj_object_get_uint32(atk_data, "recovFrames", &atk->recovFrames);
-	atk->recovFrames += atk->activeFrames;
+		sj_object_get_uint32(atk_data, "recovFrames", &atk->recovFrames);
+		atk->recovFrames += atk->activeFrames;
+	}
 
 	gfc_list_append(atk_manager.atk_list, atk);
-
 	atk->active = 1;
 }
 
@@ -109,6 +118,7 @@ void create_player_atk(SJson* atk_data, Uint8 index) {
 void player_attack(void* p, void* data) {
 	Entity* player;
 	PlayerData* p_data;
+	GFC_Vector2D proj_pos;
 	Uint8 atk_index;
 	float time;
 
@@ -151,22 +161,23 @@ void player_attack(void* p, void* data) {
 
 	switch (atk_manager.atk_state) {
 		case PLAYER_ATK_STARTUP: // simply delaying until active
-			if (time - atk_manager.then > FRAME_DUR) {
-				atk_manager.frame++;
-				atk_manager.then = time;
-				//slog("startup: %i", atk_manager.frame);
+			if (atk_manager.curr_atk->isProj) {
+				atk_manager.atk_state = PLAYER_ATK_PROJECTILE;
 			}
-		
-			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(0, 0, 255, 120));
+			else {
+				if (time - atk_manager.then > FRAME_DUR) {
+					atk_manager.frame++;
+					atk_manager.then = time;
+					//slog("startup: %i", atk_manager.frame);
+				}
 
-			if (atk_manager.frame == atk_manager.curr_atk->startupFrames) {
-				p_data->isAttacking = 1;
+				gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(0, 0, 255, 120));
 
-				if (atk_manager.curr_atk->atk_type == PLAYER_ATK_TYPE_U_SPECIAL ||
-					atk_manager.curr_atk->atk_type == PLAYER_ATK_TYPE_F_SPECIAL)
-					atk_manager.atk_state = PLAYER_ATK_PROJECTILE;
-				else 
+				if (atk_manager.frame == atk_manager.curr_atk->startupFrames) {
+					p_data->isAttacking = 1;
+
 					atk_manager.atk_state = PLAYER_ATK_ACTIVE;
+				}
 			}
 
 			break;
@@ -178,7 +189,7 @@ void player_attack(void* p, void* data) {
 				entity_damage(player, find_nearest_entity(player, atk_manager.curr_atk, SEARCH_ATK), atk_manager.curr_atk);
 
 			// frame checking
-			if (time - atk_manager.then > FRAME_DUR) {
+			if (checkFramePass(atk_manager.then)) {
 				atk_manager.frame++;
 				atk_manager.then = time;
 				//slog("active: %i", atk_manager.frame);
@@ -190,19 +201,31 @@ void player_attack(void* p, void* data) {
 			break;
 
 		case PLAYER_ATK_PROJECTILE:
+			/* spawn projectile*/
+			if (atk_manager.curr_atk->atk_type == PLAYER_ATK_TYPE_F_SPECIAL)
+				atk_manager.curr_atk->direction.x = player->dir.x == 0 ? 1 : -1;
+
+			proj_spawn(atk_manager.curr_atk->name, atk_manager.curr_atk->direction, player->position, PLAYER);
+
+			// switch state
+			atk_manager.atk_state = PLAYER_ATK_RECOVERY;
+
+			/*
 			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(255, 0, 255, 120));
 
+			
 			if (atk_manager.curr_atk->active)
 				entity_damage(player, find_nearest_entity(player, atk_manager.curr_atk, SEARCH_ATK), atk_manager.curr_atk);
 
 			atk_manager.curr_atk->hitbox.x += atk_manager.curr_atk->velocity.x;
 			atk_manager.curr_atk->hitbox.y += atk_manager.curr_atk->velocity.y;
 
-			if (time - atk_manager.then > FRAME_DUR) {
+			if (checkFramePass(atk_manager.then)) {
 				atk_manager.frame++;
 				atk_manager.then = time;
 				//slog("active: %i", atk_manager.frame);
 			}
+			
 
 			if (atk_manager.frame == atk_manager.curr_atk->recovFrames) {
 				// reset manager values
@@ -213,17 +236,19 @@ void player_attack(void* p, void* data) {
 				// reset player values
 				p_data->isAttacking = 0;
 			}
+			*/
 
 			break;
 
 		case PLAYER_ATK_RECOVERY:
-			if (time - atk_manager.then > FRAME_DUR) {
+			if (checkFramePass(atk_manager.then)) {
 				atk_manager.frame++;
 				atk_manager.then = time;
 				//slog("recovery: %i", atk_manager.frame);
 			}
 
-			gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(0, 255, 0, 120));
+			if (!atk_manager.curr_atk->isProj)
+				gf2d_draw_rect_filled(atk_manager.curr_atk->hitbox, gfc_color8(0, 255, 0, 120));
 
 			if (atk_manager.frame == atk_manager.curr_atk->recovFrames) {
 				// reset manager values
@@ -282,6 +307,7 @@ void player_attack(void* p, void* data) {
 				// change state
 				atk_manager.atk_state = PLAYER_ATK_STARTUP;
 
+				// initialize some things
 				switch (atk_manager.curr_atk->atk_type) {
 					case PLAYER_ATK_TYPE_D_SPECIAL:
 						// only down special on the ground
@@ -295,30 +321,14 @@ void player_attack(void* p, void* data) {
 						atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f);
 
 						p_data->canMove = 0;
+						gfc_vector2d_clear(player->velocity);
+
 						break;
 
-					case PLAYER_ATK_TYPE_F_SPECIAL: 
-						// shift special move hitbox
-						atk_manager.curr_atk->hitbox.x = player->position.x;
-						atk_manager.curr_atk->hitbox.x += player->dir.x == 0 ? (player->hurtbox.s.r.w * 0.5f) :
-							-(player->hurtbox.s.r.w * 0.5f + atk_manager.curr_atk->hitbox.w);
+					case PLAYER_ATK_TYPE_F_SPECIAL:
+					case PLAYER_ATK_TYPE_U_SPECIAL:
+						// do nothing
 
-						atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f);
-
-						// initialize movement
-						gfc_vector2d_copy(atk_manager.curr_atk->velocity, atk_manager.curr_atk->direction);
-						gfc_vector2d_set_magnitude(&atk_manager.curr_atk->velocity, atk_manager.curr_atk->move_mag);
-						atk_manager.curr_atk->velocity.x *= player->dir.x == 0 ? 1 : -1;
-						break;
-
-					case PLAYER_ATK_TYPE_U_SPECIAL: 
-						// shift special move hitbox
-						atk_manager.curr_atk->hitbox.x = player->position.x - (atk_manager.curr_atk->hitbox.w * 0.5f);
-						atk_manager.curr_atk->hitbox.y = player->position.y - (player->hurtbox.s.r.h * 0.5f) - (atk_manager.curr_atk->hitbox.h);
-
-						// initialize movement
-						gfc_vector2d_copy(atk_manager.curr_atk->velocity, atk_manager.curr_atk->direction);
-						gfc_vector2d_set_magnitude(&atk_manager.curr_atk->velocity, atk_manager.curr_atk->move_mag);
 						break;
 
 					default:

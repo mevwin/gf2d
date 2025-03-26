@@ -1,0 +1,25 @@
+{
+    "projectiles":
+    [
+        {
+            "name": "PLAYER_F_SPE",
+            "sprite": "sprites/projectile/player_f_spe.png",
+            "pierce": 1,
+            "passThroughWalls": 0,
+            "hitbox": [100, 50],
+            "damage": 10,
+            "move_mag": 10,
+            "accel": [0, 0]
+        },
+        {
+            "name": "PLAYER_U_SPE",
+            "sprite": "sprites/projectile/player_u_spe.png",
+            "pierce": 0,
+            "passThroughWalls": 1,
+            "hitbox": [30, 50],
+            "damage": 10,
+            "move_mag": 7,
+            "accel": [0, 0]
+        }
+    ]
+}

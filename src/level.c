@@ -87,10 +87,6 @@ void level_load(Uint8 index) {
 	level->wall_list = gfc_list_new();
 	level->platform_list = gfc_list_new();
 
-
-	// level_size
-	sj_object_get_vector2d(level_data, "level_size", &level->level_size);
-
 	// player spawn
 	sj_object_get_vector2d(level_data, "player_spawn", &level->player_spawn);
 
@@ -426,6 +422,7 @@ void level_update() {
 	*/
 }
 
+/*
 void level_camera_update(GFC_Vector2D move_speed) {
 	Ground* ground;
 	int i;
@@ -446,6 +443,7 @@ void level_camera_update(GFC_Vector2D move_speed) {
 										ground->dimensions.x + ground->dimensions.w);
 	}
 }
+*/
 
 void load_next_level(void* p){
 	Entity* player;
