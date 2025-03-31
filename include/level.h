@@ -6,13 +6,13 @@
 
 typedef enum LevelType_E {
 	LEVEL_TYPE_REGULAR
-}LevelType;
+}LvlType;
 
 typedef enum LevelObjective_E {
 	LEVEL_OBJ_KILL_ALL_ENEMIES,
 	LEVEL_OBJ_SURVIVE,
 	LEVEL_OBJ_COLLECT
-}LevelObjective;
+}LvlObjective;
 
 typedef enum WallType_E {
 	WALL_LEFT,
@@ -28,48 +28,68 @@ typedef enum PlatformMove_E {
 }PlatformMove;
 
 typedef struct Wall_S {
-	GFC_Edge2D		dimensions;
-	WallType		type; // left = 0, right = 1
-	Uint8			wjumpable;
+	GFC_Edge2D			dimensions;
+	WallType			type; // left = 0, right = 1
+	Uint8				wjumpable;
 }Wall;
 
 typedef struct Ground_S {
-	GFC_Rect		dimensions;
-	GFC_Vector2D	region;
-	GFC_Color		color; 		// remove later
-	Uint8			wall_flag; //has active walls
-	Uint8			ceil_flag;
-	Sprite*			sprite;
+	GFC_Rect			dimensions;
+	GFC_Vector2D		region;
+	GFC_Color			color; 		// remove later
+	Uint8				ceil_flag;
+	Uint8				wall_flag;  // has active walls
+	Wall				walls[2];
+	//Sprite*			sprite;
 }Ground;
 
 typedef struct Platform_S {
-	GFC_Rect		dimensions;
-	GFC_Vector2D	region;
-	Uint8			pass_through;
-	Uint8			moving;
+	GFC_Rect			dimensions;
+	GFC_Vector2D		region;
+	Uint8				pass_through;
+	Uint8				moving;
 
 	// if moving platform
-	GFC_Vector2D	move_speed;
-	GFC_Vector4D	move_bounds;
-	PlatformMove	moveType;
+	GFC_Vector2D		move_speed;
+	GFC_Vector4D		move_bounds;
+	PlatformMove		moveType;
 	//Sprite*			sprite;
 	// TODO: add specifics later
 }Platform;
 
+typedef struct Room_S {
+	GFC_TextWord		name;
+	GFC_Vector2D		player_spawn;
+	
+	Uint8				ground_count;
+	Ground*				grounds;
+
+	Uint8				platform_count;
+	Platform*			platforms;
+}Room;
+
+typedef struct EntitySpawns_S {
+	GFC_Vector2D		position;
+	EntityType			ent_type;
+	union {
+		GFC_TextBlock	item_name;
+		Uint8			enemy_type;
+		Uint8			hazard_type;
+	}type;
+}EntitySpawns;
+
 typedef struct Level_S {
-	//LevelType		level_type;
-	LevelObjective	obj;
-	Uint32			goal;
-	Uint32			goal_counter;
+	GFC_TextWord	name;
+	LvlType			level_type;
+	LvlObjective	objective;
+	//Uint32			goal;
+	//Uint32			goal_counter;
 
-	// idk yet
-	//GFC_List*		rooms;
-	//Uint8			room_num;
+	Uint8			start_room;
+	Uint8			room_count;
+	Room*			rooms;
 
-	GFC_Vector2D	player_spawn;
-	GFC_List*		ground_list;
-	GFC_List*		platform_list;
-	GFC_List*		wall_list;
+	GFC_List*		entity_spawns;
 }Level;
 
 void level_manager_init(const char* filename);
@@ -82,6 +102,7 @@ void level_update();
 void level_curr_close();
 
 Level* get_curr_level();
+Room* get_current_room();
 Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type);
 
 #endif 

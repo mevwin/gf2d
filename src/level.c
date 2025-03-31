@@ -9,18 +9,34 @@
 
 typedef struct LevelManager_S {
 	Level*			curr_level;
-	GFC_List*		level_list; // a list of filepaths for levels
 	Uint32			curr_level_index;
+	GFC_List*		level_list;				// a list of filepaths for levels
+	Uint8			room_num;
+	Uint8			respawning;
 }LevelManager;
 
-//NOTE: ONLY ONE LEVEL LOADED AT A TIME
+// NOTE: ONLY ONE LEVEL LOADED AT A TIME
+// NOTE: ALL OF THE LEVEL'S ROOMS ARE LOADED IN MEMORY
+
+/**
+* SWAPPING BETWEEN ROOMS:
+*	- save item data
+*	- save enemy data
+*	- change player position
+*/
 
 static LevelManager level_manager = { 0 };
 
 void level_manager_close();
-Ground* create_ground(SJson* ground_data, Level* level);
-Wall* create_wall(GFC_Edge2D dimen, Uint8 type);
-Platform* create_platform(SJson* plat_data);
+
+void create_room(Room* room, SJson* data);
+void create_ground(Ground* ground, SJson* ground_data);
+void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type);
+void create_platform(Platform* platform, SJson* plat_data);
+
+void load_current_room();
+void change_rooms(Uint8 new_index);
+
 void update_platforms();
 void move_platform(Platform* plat);
 
@@ -42,6 +58,8 @@ void level_manager_init(const char* filename){
 	level_manager.curr_level_index = 0;
 	level_manager.curr_level = NULL;
 
+	// TODO: retrieve level objective descriptions and store as list
+
 	sj_free(level_def);
 	atexit(level_manager_close);
 }
@@ -62,11 +80,10 @@ void level_manager_close() {
 
 void level_load(Uint8 index) {
 	Level* level;
-	Ground* ground;
-	Platform* plat;
-	SJson *level_obj, *level_data, *list, *data, *enemy, *sprouter_spawns;
-	GFC_Vector2D spawn;
-	int i, type, random;
+	SJson *level_obj, *level_data, *layout, *row, *column;
+	GFC_Vector2D layout_dimen;
+	GFC_TextLine room_path;
+	int i, j, check;
 
 	level = gfc_allocate_array(sizeof(Level), 1);
 	if (!level) {
@@ -83,81 +100,47 @@ void level_load(Uint8 index) {
 
 	level_data = sj_object_get_value(level_obj, "level");
 
-	level->ground_list = gfc_list_new();
-	level->wall_list = gfc_list_new();
-	level->platform_list = gfc_list_new();
+	// get name
+	gfc_word_cpy(level->name, sj_object_get_string(level_data, "name"));
 
-	// player spawn
-	sj_object_get_vector2d(level_data, "player_spawn", &level->player_spawn);
+	// get type
+	sj_object_get_value_as_int(level_data, "type", &i);
+	level->level_type = (LvlType) i;
 
-	// ground list
-	list = sj_object_get_value(level_data, "ground_list");
-	if (!list) {
-		slog("no ground list");
-		sj_free(level_obj);
-		free(level);
-		return;
-	}
-	for (i = 0; i < list->v.array->count; i++) {
-		data = sj_array_get_nth(list, i);
-		if (!data) continue;
-		
-		ground = create_ground(data, level);
-		if (!ground) {
-			slog("ground failed to be created");
-			continue;
+	// get level objective
+	sj_object_get_value_as_int(level_data, "obj", &i);
+	level->objective = (LvlObjective)i;
+
+	/* generate room layout */
+	sj_object_get_value_as_uint8(level_data, "start_room", &level->start_room);
+	level_manager.room_num = level->start_room;
+
+	sj_object_get_value_as_uint8(level_data, "room_count", &level->room_count);
+	level->rooms = gfc_allocate_array(sizeof(Room), level->room_count);
+
+	// load all the rooms
+	// TODO: add room transitions
+	sj_object_get_vector2d(level_data, "layout_dimen", &layout_dimen);
+	layout = sj_object_get_value(level_data, "layout");
+	for (i = 0; i < layout->v.array->count; i++) {
+		row = sj_array_get_nth(layout, i);
+		if (!row) continue;
+
+		for (j = 0; j < row->v.array->count; j++) {
+			column = sj_array_get_nth(row, j);
+			if (!column) continue;		
+
+			sj_get_integer_value(column, &check);
+			if (!check) continue;
+
+			// create room
+			gfc_line_sprintf(room_path, "levels/%s/room%d.def", level->name, check);
+			create_room(&level->rooms[check - 1], sj_load(room_path));
 		}
-		
-		gfc_list_append(level->ground_list, ground);
 	}
+	
 
-	// platform list
-	list = sj_object_get_value(level_data, "platform_list");
-	if (!list) { 
-		slog("no platform list");
-		sj_free(level_obj);
-		free(level);
-		return; 
-	}
-	for (i = 0; i < list->v.array->count; i++) {
-		data = sj_array_get_nth(list, i);
-		if (!data) continue;
-
-		plat = create_platform(data);
-		gfc_list_append(level->platform_list, plat);
-	}
-
-	// enemy spawns
-	enemy = sj_object_get_value(level_data, "enemies");
-	list = sj_object_get_value(enemy, "list");
-	if (!list) {
-		slog("no enemy list");
-		sj_free(level_obj);
-		free(level);
-		return;
-	}
-	for (i = 0; i < list->v.array->count; i++) {
-		data = sj_array_nth(list, i);
-		if (!data) {
-			slog("no enemy found");
-			continue;
-		}
-		sj_object_get_int(data, "type", &type);
-		sj_object_get_vector2d(data, "spawn_position", &spawn);
-		
-		// check if enemy spawns at random position
-		if (spawn.x == -1.0f && spawn.y == -1.0f) {
-			data = sj_object_get_value(enemy, "random_spawns");
-			random = gfc_random_int(data->v.array->count);
-			sj_object_get_vector2d(sj_array_nth(data, random), "position", &spawn);
-		}
-		if (type == SPROUTER)
-			sprouter_spawns = sj_object_get_value(enemy, "sprouter_spawns");
-		else 
-			sprouter_spawns = NULL;
-
-		enemy_spawn(type, spawn, sprouter_spawns);
-	}
+	/*
 
 	// level objective
 	sj_object_get_uint8(level_data, "obj", &i);
@@ -193,99 +176,169 @@ void level_load(Uint8 index) {
 
 		item_spawn(sj_object_get_string(data, "item_name"), spawn);
 	}
-
-
+	*/
 	level_manager.curr_level = level;
 	sj_free(level_obj);
 }
 
-Ground* create_ground(SJson* ground_data, Level* level) {
-	Ground* ground;
-	Wall* wall;
+void create_room(Room* room, SJson* data) {
+	SJson* room_data, *list, *entry;
+	int i;
+
+	if (!room || !data) return;
+
+	room_data = sj_object_get_value(data, "room");
+
+	gfc_word_cpy(room->name, sj_object_get_string(room_data, "name"));
+	sj_object_get_vector2d(room_data, "player_spawn", &room->player_spawn);
+
+	// ground list
+	list = sj_object_get_value(room_data, "ground_list");
+	if (!list) {
+		slog("no ground list");
+		sj_free(data);
+		return;
+	}
+	
+	room->ground_count = list->v.array->count;
+	room->grounds = gfc_allocate_array(sizeof(Ground), room->ground_count);
+	for (i = 0; i < room->ground_count; i++) {
+		entry = sj_array_get_nth(list, i);
+		if (!entry) continue;
+
+		create_ground(&room->grounds[i], entry);
+	}
+
+	// platform list
+	list = sj_object_get_value(room_data, "platform_list");
+	if (!list) {
+		slog("no platform list");
+		sj_free(data);
+		free(room->grounds);
+		return;
+	}
+
+	room->platform_count = list->v.array->count;
+	room->platforms = gfc_allocate_array(sizeof(Platform), room->platform_count);
+	for (i = 0; i < room->platform_count; i++) {
+		entry = sj_array_get_nth(list, i);
+		if (!entry) continue;
+
+		create_platform(&room->platforms[i], entry);
+	}
+
+	/* initialize entity spawns */
+	list = sj_object_get_value(room_data, "enemy_list");
+	// enemy spawns
+	enemy = sj_object_get_value(level_data, "enemies");
+	list = sj_object_get_value(enemy, "list");
+	if (!list) {
+		slog("no enemy list");
+		sj_free(level_obj);
+		free(level);
+		return;
+	}
+	for (i = 0; i < list->v.array->count; i++) {
+		data = sj_array_nth(list, i);
+		if (!data) {
+			slog("no enemy found");
+			continue;
+		}
+		sj_object_get_int(data, "type", &type);
+		sj_object_get_vector2d(data, "spawn_position", &spawn);
+
+		// check if enemy spawns at random position
+		if (spawn.x == -1.0f && spawn.y == -1.0f) {
+			data = sj_object_get_value(enemy, "random_spawns");
+			random = gfc_random_int(data->v.array->count);
+			sj_object_get_vector2d(sj_array_nth(data, random), "position", &spawn);
+		}
+		if (type == SPROUTER)
+			sprouter_spawns = sj_object_get_value(enemy, "sprouter_spawns");
+		else
+			sprouter_spawns = NULL;
+
+		enemy_spawn(type, spawn, sprouter_spawns);
+	}
+
+	sj_free(data);
+}
+
+void create_ground(Ground* ground, SJson* ground_data) {
 	GFC_Vector4D rec_buf;
 
-	ground = gfc_allocate_array(sizeof(Ground), 1);
 	if (!ground || !ground_data)
-		return NULL;
+		return;
 
 	sj_object_get_vector4d(ground_data, "rect", &rec_buf);
 	ground->dimensions = gfc_rect_from_vector4(rec_buf);
 	ground->region = gfc_vector2d(ground->dimensions.x,
 								ground->dimensions.x + ground->dimensions.w);
 
-	ground->color = sj_object_get_color(ground_data, "color"); 	//REMOVE LATER
+	ground->color = sj_object_get_color(ground_data, "color"); 	// TODO: REMOVE LATER
 
-	// initalize walls if toggled
+	/* initalize walls */
 	sj_object_get_uint8(ground_data, "walls", &ground->wall_flag);
-	if (ground->wall_flag) {
-		// create left wall
-		wall = create_wall(get_edge_from_rect(ground->dimensions, 3), 0);
-		gfc_list_append(level->wall_list, wall);
+	
+	// create left wall
+	create_wall(&ground->walls[0], get_edge_from_rect(ground->dimensions, 3), 0);
 
-
-		wall = create_wall(get_edge_from_rect(ground->dimensions, 2), 1);
-		gfc_list_append(level->wall_list, wall);
-	}
-
+	// create right wall
+	create_wall(&ground->walls[1], get_edge_from_rect(ground->dimensions, 2), 1);
+	
 	sj_object_get_uint8(ground_data, "ceiling", &ground->ceil_flag);
 
 	return ground;
 }
 
-Wall* create_wall(GFC_Edge2D dimen, Uint8 type) {
-	Wall* wall;
-
+void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type) {
 	wall = gfc_allocate_array(sizeof(Wall), 1);
 	if (!wall) {
 		slog("failed to allocate memory for wall");
-		return NULL;
+		return;
 	}
 
 	wall->dimensions = dimen;
 	wall->type = type;
-
-	return wall;
+	//wall->wjumpable = 1;
 }
 
-Platform* create_platform(SJson* plat_data) {
-	Platform* plat;
+void create_platform(Platform* platform, SJson* plat_data){
 	GFC_Vector4D rec_buf;
 	GFC_Rect dimen;
-	Uint8 ibuf;
+	Uint8 i;
 
-	plat = gfc_allocate_array(sizeof(Platform), 1);
-	if (!plat || !plat_data) {
+	if (!plat_data) {
 		slog("failed to allocate memory for platform");
-		return NULL;
+		return;
 	}
 
 	sj_object_get_vector4d(plat_data, "rect", &rec_buf);
 	dimen = gfc_rect_from_vector4(rec_buf);
-	plat->dimensions = dimen;
-	plat->region = gfc_vector2d(plat->dimensions.x,
-								plat->dimensions.x + plat->dimensions.w);
+	platform->dimensions = dimen;
+	platform->region = gfc_vector2d(platform->dimensions.x,
+									platform->dimensions.x + platform->dimensions.w);
 
-	sj_object_get_uint8(plat_data, "pass_through", &plat->pass_through);
+	sj_object_get_uint8(plat_data, "pass_through", &platform->pass_through);
 
-	sj_object_get_uint8(plat_data, "starting_move", &ibuf);
-	plat->moveType = (PlatformMove)ibuf;
+	sj_object_get_uint8(plat_data, "starting_move", &i);
+	platform->moveType = (PlatformMove)i;
 
-	sj_object_get_uint8(plat_data, "moving", &plat->moving);
-	if (plat->moving) {
-		sj_object_get_vector2d(plat_data, "move_speed", &plat->move_speed);
-		sj_object_get_vector4d(plat_data, "move_bounds", &plat->move_bounds);
+	sj_object_get_uint8(plat_data, "moving", &platform->moving);
+	if (platform->moving) {
+		sj_object_get_vector2d(plat_data, "move_speed", &platform->move_speed);
+		sj_object_get_vector4d(plat_data, "move_bounds", &platform->move_bounds);
 	}
-
-	
-	return plat;
 }
 
 void update_platforms() {
 	Platform* plat;
+	Room* room;
 	int i;
 
-	for (i = 0; i < level_manager.curr_level->platform_list->count; i++) {
-		plat = (Platform*)gfc_list_nth(level_manager.curr_level->platform_list, i);
+	room = get_current_room();
+	for (i = 0; i < room->platform_count; i++) {
+		plat = &room->platforms[i];
 		if (!plat) continue;
 
 		// draw plat
@@ -337,14 +390,12 @@ void move_platform(Platform* plat) {
 }
 
 void level_curr_close() {
-	gfc_list_foreach(level_manager.curr_level->ground_list, free);
-	gfc_list_delete(level_manager.curr_level->ground_list);
+	Room* room;
 
-	gfc_list_foreach(level_manager.curr_level->wall_list, free);
-	gfc_list_delete(level_manager.curr_level->wall_list);
+	room = get_current_room();
 
-	gfc_list_foreach(level_manager.curr_level->platform_list, free);
-	gfc_list_delete(level_manager.curr_level->platform_list);
+	free(room->grounds);
+	free(room->platforms);
 
 	memset(level_manager.curr_level, 0, sizeof(Level));
 }
@@ -381,14 +432,26 @@ void draw_ground_to_surface(GFC_List* ground_list){
 }
 */
 
+void load_current_room() {
+	
+}
+
+void change_rooms(Uint8 new_index) {
+	level_manager.room_num = new_index;
+	load_current_room();
+}
+
 void level_update() {
 	int i;
 	Ground* ground;
+	Room* room;
 	GFC_List* enemy_list;
 
+	room = get_current_room();
+	
 	// draw ground
-	for (i = 0; i < level_manager.curr_level->ground_list->count; i++) {
-		ground = (Ground*)gfc_list_nth(level_manager.curr_level->ground_list, i);
+	for (i = 0; i < room->ground_count; i++) {
+		ground = &room->grounds[i];
 		if (!ground) continue;
 
 		gf2d_draw_rect_filled(ground->dimensions, ground->color);
@@ -397,6 +460,7 @@ void level_update() {
 	// draw platforms
 	update_platforms();
 
+	/*
 	// check if level goal has been reached
 	switch (level_manager.curr_level->obj) {
 		case LEVEL_OBJ_SURVIVE:
@@ -411,7 +475,7 @@ void level_update() {
 			enemy_list = get_enemy_list();
 			level_manager.curr_level->goal_counter = enemy_list->count;
 	}
-	/*
+	
 	if (level_manager.curr_level->goal == level_manager.curr_level->goal_counter) {
 		level_manager.curr_level_index++;
 		if (level_manager.curr_level_index == level_manager.level_list->count)
@@ -463,8 +527,8 @@ void load_next_level(void* p){
 	player_atk_system_reset();
 	p_data->canMove = 1;
 	p_data->isAttacking = 0;
-	gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
-	gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
+	//gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
+	//gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
 }
 
 void restart_level(void* p) {
@@ -484,8 +548,8 @@ void restart_level(void* p) {
 	//reset player stuff
 	player_atk_system_reset();
 	player_respawn(player, player->data);
-	gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
-	gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
+	//gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
+	//gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
 	
 }
 
@@ -529,6 +593,10 @@ Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type) {
 	if (e_edge.y1 + self->velocity.y >= screen_edge.y1 - offset)
 		return 0;
 	*/
+}
+
+Room* get_current_room() {
+	return &level_manager.curr_level->rooms[level_manager.room_num];
 }
 
 /**

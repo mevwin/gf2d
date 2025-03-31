@@ -125,8 +125,8 @@ void proj_update(Entity* self) {
 	pj_data = (ProjData*) self->data;
 	if (!pj_data) return;
 
-	// draw hurtbox
-	gf2d_draw_rect_filled(self->hurtbox.s.r, gfc_color8(0, 120, 120, 120));
+	// draw hurtbox (
+	//gf2d_draw_rect_filled(self->hurtbox.s.r, gfc_color8(0, 120, 120, 120));
 
 	// update hurtbox
 	update_hurtbox(self);

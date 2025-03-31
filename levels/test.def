@@ -1,54 +1,17 @@
 {    
     "level":
     {
+        "name": "test",
         "type": 0,
         "obj": 0,
-        "player_spawn": [200, 500],
-        "ground_list":
+        "room_count": 5,
+        "start_room": 1,
+        "layout_dimen": [5, 3],
+        "layout":
         [
-            {
-                "rect": [0, 600, 1000, 120],
-                "color": [0, 120, 0, 255],
-                "walls": 1,
-                "ceiling": 0
-            },
-            {
-                "rect": [1000, 600, 1000, 120],
-                "color": [0, 0, 120, 255],
-                "walls": 1,
-                "ceiling": 0
-            }
-        ],
-        "platform_list":
-        [
-
-        ],
-        "enemies":
-        {
-            "#spawn_position": "if both -1, use random position",
-            "list":
-            [       
-                {
-                    "type": 0,
-                    "spawn_position": [-1, -1]
-                }   
-            ],
-            "random_spawns":
-            [
-                {
-                    "position": [220, 250]
-                },
-                {
-                    "position": [580, 280]
-                },
-                {
-                    "position": [900, 400]
-                }
-            ]
-        },
-        "items":
-        [
-
+            [0, 0, 4, 0, 0],
+            [0, 3, 1, 2, 0],
+            [0, 0, 5, 0, 0]
         ]
     }
 }

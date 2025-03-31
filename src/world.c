@@ -26,20 +26,20 @@ void world_init() {
 	// initialize level_manager
 	world_manager.enemy_list = gfc_list_new();
 	//world_manager.item_list = gfc_list_new();
-	level_manager_init("config/level_list.cfg");
+	level_manager_init("config/levels.cfg");
 	
 	atexit(world_close);
 }
 
 void world_gamestart() {
-	Level* level;
+	Room* room;
 	SJson* data;
 
 	// load first level
 	level_load(0);
 
-	level = get_curr_level();
-	if (!level) {
+	room = get_current_room();
+	if (!room) {
 		slog("failed to load first level");
 		world_manager.close_game = 1;
 		return;
@@ -53,7 +53,7 @@ void world_gamestart() {
 		return;
 	}
 
-	world_manager.player = player_spawn(level->player_spawn, data);
+	world_manager.player = player_spawn(room->player_spawn, data);
 	sj_free(data);
 	if (!world_manager.player) {
 		world_manager.close_game = 1;

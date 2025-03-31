@@ -33,7 +33,7 @@ Uint8 ceiling_collision(void* ent);
 /**
 * @brief return specified edge from rectangle
 * @param box: the rect to pull an edge from
-* @param side: 3 = left, 2 = right, 1 = top, 0 = bottom
+* @param side: left = 3, right = 2, top = 1, bottom = 0
 */
 GFC_Edge2D get_edge_from_rect(GFC_Rect box, Uint8 side);
 

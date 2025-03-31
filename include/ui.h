@@ -21,7 +21,6 @@ typedef struct Button_S {
 }Button;
 
 typedef struct Bar_S {
-    
     Sprite*         sprite;
     GFC_Vector2D    offset;
     GFC_Vector2D    scale;
@@ -31,9 +30,11 @@ typedef struct Window_S {
     Sprite*         bg_sprite;
     GFC_Vector2D    offset;
     GFC_Rect        dimensions;
+
     ButtonLayout    button_layout;
     Uint8           buttonMax;
     Button*         buttonList;   
+
     Uint8           barMax;
     Bar*            barList;
     //GFC_TextLine    text;
