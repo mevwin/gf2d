@@ -34,7 +34,6 @@ void create_ground(Ground* ground, SJson* ground_data);
 void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type);
 void create_platform(Platform* platform, SJson* plat_data);
 
-void load_current_room();
 void change_rooms(Uint8 new_index);
 
 void update_platforms();
@@ -139,7 +138,6 @@ void level_load(Uint8 index) {
 		}
 	}
 	
-
 	/*
 
 	// level objective
@@ -159,31 +157,16 @@ void level_load(Uint8 index) {
 			level->goal = 0;
 			level->goal_counter = list->v.array->count;
 	}
-	
-	// items (that spawn in the level)
-	list = sj_object_get_value(level_data, "items");
-	if (!list) {
-		slog("no item list");
-		sj_free(level_obj);
-		free(level);
-		return;
-	}
-	for (i = 0; i < list->v.array->count; i++) {
-		data = sj_array_get_nth(list, i);
-		if (!data) continue;
 
-		sj_object_get_vector2d(data, "position", &spawn);
-
-		item_spawn(sj_object_get_string(data, "item_name"), spawn);
-	}
 	*/
 	level_manager.curr_level = level;
 	sj_free(level_obj);
 }
 
 void create_room(Room* room, SJson* data) {
-	SJson* room_data, *list, *entry;
-	int i;
+	SJson* room_data, *list, *entry, *e_data;
+	LevelSpawn *l_spawn, *rand_spawns;
+	int i, random;
 
 	if (!room || !data) return;
 
@@ -228,38 +211,64 @@ void create_room(Room* room, SJson* data) {
 	}
 
 	/* initialize entity spawns */
-	list = sj_object_get_value(room_data, "enemy_list");
+	room->entity_spawns = gfc_list_new();
+
 	// enemy spawns
-	enemy = sj_object_get_value(level_data, "enemies");
-	list = sj_object_get_value(enemy, "list");
-	if (!list) {
-		slog("no enemy list");
-		sj_free(level_obj);
-		free(level);
-		return;
-	}
-	for (i = 0; i < list->v.array->count; i++) {
-		data = sj_array_nth(list, i);
-		if (!data) {
-			slog("no enemy found");
-			continue;
-		}
-		sj_object_get_int(data, "type", &type);
-		sj_object_get_vector2d(data, "spawn_position", &spawn);
+	e_data = sj_object_get_value(room_data, "enemies");
+	list = sj_object_get_value(e_data, "list");
+	if (list) {
+		for (i = 0; i < list->v.array->count; i++) {
+			entry = sj_array_nth(list, i);
+			if (!entry) {
+				slog("no enemy found");
+				continue;
+			}
 
-		// check if enemy spawns at random position
-		if (spawn.x == -1.0f && spawn.y == -1.0f) {
-			data = sj_object_get_value(enemy, "random_spawns");
-			random = gfc_random_int(data->v.array->count);
-			sj_object_get_vector2d(sj_array_nth(data, random), "position", &spawn);
-		}
-		if (type == SPROUTER)
-			sprouter_spawns = sj_object_get_value(enemy, "sprouter_spawns");
-		else
-			sprouter_spawns = NULL;
+			l_spawn = gfc_allocate_array(sizeof(LevelSpawn), 1);
 
-		enemy_spawn(type, spawn, sprouter_spawns);
+			l_spawn->ent_type = ENEMY;
+			sj_object_get_int(entry, "type", &l_spawn->type.enemy_type);
+			sj_object_get_vector2d(entry, "spawn_position", &l_spawn->position);
+
+			// check if enemy spawns at random position
+			if (gfc_vector2d_compare(l_spawn->position, gfc_vector2d(-1, -1))) {
+				rand_spawns = sj_object_get_value(e_data, "random_spawns");
+				random = gfc_random_int(data->v.array->count);
+				sj_object_get_vector2d(sj_array_nth(data, random), "position", &l_spawn->position);
+			}
+
+			/*
+			if (type == SPROUTER)
+				sprouter_spawns = sj_object_get_value(enemy, "sprouter_spawns");
+			else
+				sprouter_spawns = NULL;
+			*/
+
+			//enemy_spawn(type, spawn, NULL);
+			gfc_list_append(room->entity_spawns, l_spawn);
+		}
 	}
+	else slog("failed to initalize enemy spawns");
+	
+	// item spawns (that spawn in the level)
+	list = sj_object_get_value(room_data, "items");
+	if (list) {
+		for (i = 0; i < list->v.array->count; i++) {
+			entry = sj_array_nth(list, i);
+			if (!entry) {
+				slog("no item found");
+				continue;
+			}
+
+			l_spawn->ent_type = ITEM;
+			sj_object_get_vector2d(entry, "position", &l_spawn);
+			gfc_word_cpy(l_spawn->type.item_name, sj_object_get_string(entry, "item_name"));
+
+			//item_spawn(sj_object_get_string(entry, "item_name"), spawn);
+			gfc_list_append(room->entity_spawns, l_spawn);
+		}
+	}
+	else slog("failed to initalize item spawns");
 
 	sj_free(data);
 }
@@ -432,8 +441,15 @@ void draw_ground_to_surface(GFC_List* ground_list){
 }
 */
 
+// need to load entity_spawns
 void load_current_room() {
-	
+	Room* room;
+
+	room = get_current_room();
+
+	for (int i = 0; room->entity_spawns->count; i++) {
+		
+	}
 }
 
 void change_rooms(Uint8 new_index) {

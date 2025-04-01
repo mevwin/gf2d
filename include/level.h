@@ -14,18 +14,20 @@ typedef enum LevelObjective_E {
 	LEVEL_OBJ_COLLECT
 }LvlObjective;
 
+typedef struct LevelSpawn_S {
+	GFC_Vector2D		position;
+	EntityType			ent_type;
+	union {
+		GFC_TextBlock	item_name;
+		Uint8			enemy_type;
+		Uint8			hazard_type;
+	}type;
+}LevelSpawn;
+
 typedef enum WallType_E {
 	WALL_LEFT,
 	WALL_RIGHT
 }WallType;
-
-typedef enum PlatformMove_E {
-	PLATFORM_MOVE_NONE,
-	PLATFORM_MOVE_LEFT,
-	PLATFORM_MOVE_RIGHT,
-	PLATFORM_MOVE_UP,
-	PLATFORM_MOVE_DOWN
-}PlatformMove;
 
 typedef struct Wall_S {
 	GFC_Edge2D			dimensions;
@@ -42,6 +44,14 @@ typedef struct Ground_S {
 	Wall				walls[2];
 	//Sprite*			sprite;
 }Ground;
+
+typedef enum PlatformMove_E {
+	PLATFORM_MOVE_NONE,
+	PLATFORM_MOVE_LEFT,
+	PLATFORM_MOVE_RIGHT,
+	PLATFORM_MOVE_UP,
+	PLATFORM_MOVE_DOWN
+}PlatformMove;
 
 typedef struct Platform_S {
 	GFC_Rect			dimensions;
@@ -66,17 +76,9 @@ typedef struct Room_S {
 
 	Uint8				platform_count;
 	Platform*			platforms;
-}Room;
 
-typedef struct EntitySpawns_S {
-	GFC_Vector2D		position;
-	EntityType			ent_type;
-	union {
-		GFC_TextBlock	item_name;
-		Uint8			enemy_type;
-		Uint8			hazard_type;
-	}type;
-}EntitySpawns;
+	GFC_List*			entity_spawns;
+}Room;
 
 typedef struct Level_S {
 	GFC_TextWord	name;
@@ -88,12 +90,12 @@ typedef struct Level_S {
 	Uint8			start_room;
 	Uint8			room_count;
 	Room*			rooms;
-
-	GFC_List*		entity_spawns;
 }Level;
 
 void level_manager_init(const char* filename);
 void level_load(Uint8 index);
+
+void load_current_room();
 void load_next_level(void* p);
 void restart_level(void* p);
 

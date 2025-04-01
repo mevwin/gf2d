@@ -56,7 +56,14 @@
         },
         "items":
         [
-
+            {
+                "item_name": "ability_unlock_wall_jump",
+                "position": [800, 520]
+            }
+        ],
+        "adjacent_rooms":
+        [
+            
         ]
     }
 }
