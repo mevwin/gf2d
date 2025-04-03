@@ -2,7 +2,7 @@
     "items":
     [
         {
-            "name": "ability_unlock_double_jump",
+            "name": "ab_unlock_dj",
             "type": 1,
             "interact_type": 0,
             "grav_flag": 0,
@@ -10,7 +10,7 @@
             "effect_value": "DOUBLEJUMP"
         },
         {
-            "name": "ability_unlock_wall_jump",
+            "name": "ab_unlock_wj",
             "type": 1,
             "interact_type": 0,
             "grav_flag": 0,
@@ -18,7 +18,7 @@
             "effect_value": "WALLJUMP"
         },
         {
-            "name": "ability_unlock_move_dodge",
+            "name": "ab_unlock_dodge",
             "type": 1,
             "interact_type": 0,
             "grav_flag": 0,
@@ -26,7 +26,7 @@
             "effect_value": "DODGE"
         },
         {
-            "name": "ability_unlock_recall",
+            "name": "ab_unlock_recall",
             "type": 1,
             "interact_type": 0,
             "grav_flag": 0,
@@ -34,7 +34,7 @@
             "effect_value": "RECALL"
         },
         {
-            "name": "ability_unlock_bash",
+            "name": "ab_unlock_bash",
             "type": 1,
             "interact_type": 0,
             "grav_flag": 0,

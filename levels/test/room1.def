@@ -12,7 +12,7 @@
                 "ceiling": 0
             },
             {
-                "rect": [1000, 600, 1000, 120],
+                "rect": [1000, 600, 200, 120],
                 "color": [0, 0, 120, 255],
                 "walls": 1,
                 "ceiling": 0
@@ -33,12 +33,13 @@
         ],
         "enemies":
         {
-            "#spawn_position": "if both -1, use random position",
+            "#position": "if both -1, use random spawns",
             "list":
             [       
                 {
                     "type": 0,
-                    "spawn_position": [-1, -1]
+                    "name": "bruiser1",
+                    "position": [-1, -1]
                 }   
             ],
             "random_spawns":
@@ -57,13 +58,18 @@
         "items":
         [
             {
-                "item_name": "ability_unlock_wall_jump",
+                "name": "ab_unlock_wj",
                 "position": [800, 520]
             }
         ],
-        "adjacent_rooms":
+        "room_transitions":
         [
-            
+            {
+                "region": [1050, 450, 150, 150],
+                "player_repo": [75, 550],
+                "room_num": 2,
+                "locked": 0
+            }
         ]
     }
 }

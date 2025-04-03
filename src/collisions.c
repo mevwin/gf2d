@@ -12,16 +12,16 @@ Wall* level_find_nearest_wall(Entity* ent, WallType wall_type);
 GFC_Rect level_find_nearest_ground(Entity* ent) {
 	Ground* ground;
 	GFC_Edge2D left, right, g_level, g_bottom;
-	Level* level;
+	Room* room;
 	int i;
 
 	left = get_edge_from_rect(ent->boundbox.s.r, 3);
 	right = get_edge_from_rect(ent->boundbox.s.r, 2);
 
-	level = get_curr_level();
+	room = get_current_room();
 
-	for (i = 0; i < level->ground_list->count; i++) {
-		ground = (Ground*)gfc_list_nth(level->ground_list, i);
+	for (i = 0; i < room->ground_count; i++) {
+		ground = &room->grounds[i];
 
 		if (!ground) continue;
 
@@ -72,15 +72,15 @@ Uint8 ground_collision(void* ent) {
 Platform* level_find_nearest_plat(Entity* ent) {
 	Platform* plat;
 	GFC_Edge2D e_left, e_right, p_top, p_bottom;
-	Level* level;
+	Room *room;
 	int i;
 
 	e_left = get_edge_from_rect(ent->boundbox.s.r, 3);
 	e_right = get_edge_from_rect(ent->boundbox.s.r, 2);
-	level = get_curr_level();
+	room = get_current_room();
 
-	for (i = 0; i < level->platform_list->count; i++) {
-		plat = (Platform*)gfc_list_nth(level->platform_list, i);
+	for (i = 0; i < room->platform_count; i++) {
+		plat = &room->platforms[i];
 
 		if (!plat) continue;
 
@@ -168,21 +168,21 @@ void handle_ent_plat_collision(void* e) {
 
 GFC_Edge2D level_find_nearest_ceiling(Entity* ent) {
 	Ground* ground;
+	Room* room;
 	GFC_Vector2D ceil_point, e_point;
 	GFC_Edge2D g_bottom, e_top;
 	int i;
 	float offset;
-	Level* level;
 
-	level = get_curr_level();
+	room = get_current_room();
 
 	offset = 7.0f;
 
 	e_top = get_edge_from_rect(ent->boundbox.s.r, 1);
 	e_top.y1 += ent->velocity.y;
 
-	for (i = 0; i < level->ground_list->count; i++) {
-		ground = (Ground*)gfc_list_nth(level->ground_list, i);
+	for (i = 0; i < room->ground_count; i++) {
+		ground = &room->grounds[i];
 
 		if (!ground || !ground->ceil_flag) continue;
 
@@ -227,12 +227,13 @@ Uint8 ceiling_collision(void* ent) {
 }
 
 Wall* level_find_nearest_wall(Entity* ent, WallType wall_type) {
+	Ground* ground;
 	Wall* wall;
+	Room* room;
 	GFC_Vector2D wall_point, p_point; //, p1, p2;
 	GFC_Edge2D p_side;
-	int i;
+	int i, j;
 	float offset;
-	Level* level;
 
 	if (!ent) {
 		slog("no entity given");
@@ -240,23 +241,26 @@ Wall* level_find_nearest_wall(Entity* ent, WallType wall_type) {
 	}
 
 	offset = 20.0f;
-	level = get_curr_level();
+	room = get_current_room();
 
-	for (i = 0; i < level->wall_list->count; i++) {
-		wall = (Wall*)gfc_list_nth(level->wall_list, i);
-
-		if (!wall) continue;
+	for (i = 0; i < room->ground_count; i++) {
+		ground = &room->grounds[i];
+	
+		if (!ground || !ground->wall_flag) continue;
 
 		p_side = get_edge_from_rect(ent->boundbox.s.r, 2);
 
-		if (p_side.y2 > wall->dimensions.y1 && p_side.y1 < wall->dimensions.y2) {
-			wall_point = gfc_vector2d(wall->dimensions.x1, ent->position.y);
-			p_side = get_edge_from_rect(ent->boundbox.s.r, ((Uint8) wall_type) + 2);
-			p_point = gfc_vector2d(p_side.x1, ent->position.y);
-			p_point.x += wall_type == WALL_LEFT ? ent->velocity.x : -ent->velocity.x;
+		for (j = 0; j < 2; j++){
+			wall = &ground->walls[i];
+			if (p_side.y2 > wall->dimensions.y1 && p_side.y1 < wall->dimensions.y2) {
+				wall_point = gfc_vector2d(wall->dimensions.x1, ent->position.y);
+				p_side = get_edge_from_rect(ent->boundbox.s.r, ((Uint8)wall_type) + 2);
+				p_point = gfc_vector2d(p_side.x1, ent->position.y);
+				p_point.x += wall_type == WALL_LEFT ? ent->velocity.x : -ent->velocity.x;
 
-			if (gfc_vector2d_distance_between_less_than(wall_point, p_point, offset))
-				return wall;
+				if (gfc_vector2d_distance_between_less_than(wall_point, p_point, offset))
+					return wall;
+			}
 		}
 	}
 

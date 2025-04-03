@@ -9,10 +9,14 @@
 
 typedef struct LevelManager_S {
 	Level*			curr_level;
-	Uint32			curr_level_index;
 	GFC_List*		level_list;				// a list of filepaths for levels
+
+	Uint32			curr_level_index;
 	Uint8			room_num;
+
+	// flags
 	Uint8			respawning;
+	//Uint8			transitioning;
 }LevelManager;
 
 // NOTE: ONLY ONE LEVEL LOADED AT A TIME
@@ -33,8 +37,10 @@ void create_room(Room* room, SJson* data);
 void create_ground(Ground* ground, SJson* ground_data);
 void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type);
 void create_platform(Platform* platform, SJson* plat_data);
+void create_room_transition(RoomTransition* t, SJson* t_data);
 
-void change_rooms(Uint8 new_index);
+void clear_current_room(Uint8 save_data);
+void change_rooms(Uint8 new_room, GFC_Vector2D new_player_pos);
 
 void update_platforms();
 void move_platform(Platform* plat);
@@ -112,20 +118,19 @@ void level_load(Uint8 index) {
 
 	/* generate room layout */
 	sj_object_get_value_as_uint8(level_data, "start_room", &level->start_room);
-	level_manager.room_num = level->start_room;
+	level_manager.room_num = level->start_room - 1;
 
 	sj_object_get_value_as_uint8(level_data, "room_count", &level->room_count);
 	level->rooms = gfc_allocate_array(sizeof(Room), level->room_count);
 
 	// load all the rooms
-	// TODO: add room transitions
 	sj_object_get_vector2d(level_data, "layout_dimen", &layout_dimen);
 	layout = sj_object_get_value(level_data, "layout");
-	for (i = 0; i < layout->v.array->count; i++) {
+	for (i = 0; i < layout_dimen.y; i++) {
 		row = sj_array_get_nth(layout, i);
 		if (!row) continue;
 
-		for (j = 0; j < row->v.array->count; j++) {
+		for (j = 0; j < layout_dimen.x; j++) {
 			column = sj_array_get_nth(row, j);
 			if (!column) continue;		
 
@@ -139,7 +144,6 @@ void level_load(Uint8 index) {
 	}
 	
 	/*
-
 	// level objective
 	sj_object_get_uint8(level_data, "obj", &i);
 	level->obj = (LevelObjective)i;
@@ -184,12 +188,14 @@ void create_room(Room* room, SJson* data) {
 	}
 	
 	room->ground_count = list->v.array->count;
-	room->grounds = gfc_allocate_array(sizeof(Ground), room->ground_count);
-	for (i = 0; i < room->ground_count; i++) {
-		entry = sj_array_get_nth(list, i);
-		if (!entry) continue;
+	if (room->ground_count) {
+		room->grounds = gfc_allocate_array(sizeof(Ground), room->ground_count);
+		for (i = 0; i < room->ground_count; i++) {
+			entry = sj_array_get_nth(list, i);
+			if (!entry) continue;
 
-		create_ground(&room->grounds[i], entry);
+			create_ground(&room->grounds[i], entry);
+		}
 	}
 
 	// platform list
@@ -202,16 +208,18 @@ void create_room(Room* room, SJson* data) {
 	}
 
 	room->platform_count = list->v.array->count;
-	room->platforms = gfc_allocate_array(sizeof(Platform), room->platform_count);
-	for (i = 0; i < room->platform_count; i++) {
-		entry = sj_array_get_nth(list, i);
-		if (!entry) continue;
+	if (room->platform_count) {
+		room->platforms = gfc_allocate_array(sizeof(Platform), room->platform_count);
+		for (i = 0; i < room->platform_count; i++) {
+			entry = sj_array_get_nth(list, i);
+			if (!entry) continue;
 
-		create_platform(&room->platforms[i], entry);
+			create_platform(&room->platforms[i], entry);
+		}
 	}
 
-	/* initialize entity spawns */
-	room->entity_spawns = gfc_list_new();
+	/* initialize level spawns */
+	room->level_spawns = gfc_list_new();
 
 	// enemy spawns
 	e_data = sj_object_get_value(room_data, "enemies");
@@ -228,13 +236,13 @@ void create_room(Room* room, SJson* data) {
 
 			l_spawn->ent_type = ENEMY;
 			sj_object_get_int(entry, "type", &l_spawn->type.enemy_type);
-			sj_object_get_vector2d(entry, "spawn_position", &l_spawn->position);
+			sj_object_get_vector2d(entry, "position", &l_spawn->position);
 
 			// check if enemy spawns at random position
-			if (gfc_vector2d_compare(l_spawn->position, gfc_vector2d(-1, -1))) {
+			if (l_spawn->position.x == -1.0f && l_spawn->position.y == -1.0f) {
 				rand_spawns = sj_object_get_value(e_data, "random_spawns");
 				random = gfc_random_int(data->v.array->count);
-				sj_object_get_vector2d(sj_array_nth(data, random), "position", &l_spawn->position);
+				sj_object_get_vector2d(sj_array_nth(rand_spawns, random), "position", &l_spawn->position);
 			}
 
 			/*
@@ -244,12 +252,12 @@ void create_room(Room* room, SJson* data) {
 				sprouter_spawns = NULL;
 			*/
 
-			//enemy_spawn(type, spawn, NULL);
-			gfc_list_append(room->entity_spawns, l_spawn);
+			l_spawn->data_copy = NULL;
+			gfc_list_append(room->level_spawns, l_spawn);
 		}
 	}
 	else slog("failed to initalize enemy spawns");
-	
+
 	// item spawns (that spawn in the level)
 	list = sj_object_get_value(room_data, "items");
 	if (list) {
@@ -260,24 +268,45 @@ void create_room(Room* room, SJson* data) {
 				continue;
 			}
 
-			l_spawn->ent_type = ITEM;
-			sj_object_get_vector2d(entry, "position", &l_spawn);
-			gfc_word_cpy(l_spawn->type.item_name, sj_object_get_string(entry, "item_name"));
+			l_spawn = gfc_allocate_array(sizeof(LevelSpawn), 1);
 
-			//item_spawn(sj_object_get_string(entry, "item_name"), spawn);
-			gfc_list_append(room->entity_spawns, l_spawn);
+			l_spawn->ent_type = ITEM;
+			sj_object_get_vector2d(entry, "position", &l_spawn->position);
+			gfc_word_cpy(l_spawn->ent_name, sj_object_get_string(entry, "name"));
+			
+			l_spawn->data_copy = NULL;
+			gfc_list_append(room->level_spawns, l_spawn);
 		}
 	}
 	else slog("failed to initalize item spawns");
 
+	// room transitions
+	list = sj_object_get_value(room_data, "room_transitions");
+	if (list) {
+		room->transition_count = list->v.array->count;
+		if (room->transition_count) {
+			room->transitions = gfc_allocate_array(sizeof(RoomTransition), room->transition_count);
+
+			for (i = 0; i < room->transition_count; i++) {
+				entry = sj_array_nth(list, i);
+				if (!entry) {
+					slog("no transition found");
+					continue;
+				}
+
+				create_room_transition(&room->transitions[i], entry);
+			}
+		}
+	}
+
+	room->_inuse = 1;
 	sj_free(data);
 }
 
 void create_ground(Ground* ground, SJson* ground_data) {
 	GFC_Vector4D rec_buf;
 
-	if (!ground || !ground_data)
-		return;
+	if (!ground || !ground_data) return;
 
 	sj_object_get_vector4d(ground_data, "rect", &rec_buf);
 	ground->dimensions = gfc_rect_from_vector4(rec_buf);
@@ -296,8 +325,6 @@ void create_ground(Ground* ground, SJson* ground_data) {
 	create_wall(&ground->walls[1], get_edge_from_rect(ground->dimensions, 2), 1);
 	
 	sj_object_get_uint8(ground_data, "ceiling", &ground->ceil_flag);
-
-	return ground;
 }
 
 void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type) {
@@ -338,6 +365,20 @@ void create_platform(Platform* platform, SJson* plat_data){
 		sj_object_get_vector2d(plat_data, "move_speed", &platform->move_speed);
 		sj_object_get_vector4d(plat_data, "move_bounds", &platform->move_bounds);
 	}
+}
+
+void create_room_transition(RoomTransition* t, SJson* t_data) {
+	GFC_Vector4D rec_buf;
+
+	if (!t | !t_data) return;
+
+	sj_object_get_vector4d(t_data, "region", &rec_buf);
+	t->region = gfc_rect_from_vector4(rec_buf);
+
+	sj_object_get_vector2d(t_data, "player_repo", &t->player_repo);
+
+	sj_object_get_uint8(t_data, "room_num", &t->room_num);
+	sj_object_get_uint8(t_data, "locked", &t->locked);
 }
 
 void update_platforms() {
@@ -400,13 +441,29 @@ void move_platform(Platform* plat) {
 
 void level_curr_close() {
 	Room* room;
+	LevelSpawn* l_spawn;
+	int i, j;
 
-	room = get_current_room();
+	for (i = 0; i < level_manager.curr_level->room_count; i++) {
+		room = &level_manager.curr_level->rooms[i];
+		if (!room->_inuse) continue;
 
-	free(room->grounds);
-	free(room->platforms);
+		free(room->grounds);
+		free(room->platforms);
+		free(room->transitions);
 
-	memset(level_manager.curr_level, 0, sizeof(Level));
+		for (j = 0; j < room->level_spawns->count; j++) {
+			l_spawn = (LevelSpawn*)gfc_list_nth(room->level_spawns, j);
+
+			if (l_spawn->data_copy) free(l_spawn->data_copy);
+			free(l_spawn);
+		}
+		gfc_list_delete(room->level_spawns);
+	}
+
+	free(level_manager.curr_level->rooms);
+	free(level_manager.curr_level);
+	level_manager.curr_level = NULL;
 }
 
 /** 
@@ -441,30 +498,146 @@ void draw_ground_to_surface(GFC_List* ground_list){
 }
 */
 
-// need to load entity_spawns
 void load_current_room() {
 	Room* room;
+	LevelSpawn* l_spawn;
 
 	room = get_current_room();
 
-	for (int i = 0; room->entity_spawns->count; i++) {
-		
+	// load level_spawns
+	for (int i = 0; i < room->level_spawns->count; i++) {
+		l_spawn = (LevelSpawn*) gfc_list_nth(room->level_spawns, i);
+		if (!l_spawn) continue;
+
+		// distinguish between initial spawn and respawns
+		switch (l_spawn->ent_type) {
+			case ENEMY:
+				enemy_spawn(l_spawn->type.enemy_type, l_spawn->ent_name, l_spawn->position, NULL);
+				//slog("enemy");
+
+				break;
+
+			case ITEM:
+				item_spawn(l_spawn->ent_name, l_spawn->position);
+				//slog("item");
+
+				break;
+		}
 	}
 }
 
-void change_rooms(Uint8 new_index) {
-	level_manager.room_num = new_index;
+void clear_current_room(Uint8 save_data) {
+	Entity* entityList, *ent;
+	Room* room;
+	LevelSpawn* l_spawn;
+	Uint32 entityCount;
+	size_t size;
+	int i, j;
+	
+	entityList = getEntityList();
+	entityCount = getEntityMax();
+	room = get_current_room();
+
+	for (i = 0; i < entityCount; i++) {
+		ent = &entityList[i];
+		if (ent->type == PLAYER) continue;
+
+		// update level_spawns (save copy of data if needed)
+		if (save_data && ent->type != PROJECTILE) {
+			//slog("saved data");
+			// get corresponding level spawns data	
+			for (j = 0; j < room->level_spawns->count j++) {
+				l_spawn = (LevelSpawn*) gfc_list_nth(room->level_spawns, j);
+				if (!l_spawn) continue;
+
+				if (!gfc_word_cmp(l_spawn->ent_name, ent->name)) {
+					// make a copy of its data
+					switch (ent->type) {
+						case ITEM:
+							size = sizeof(ItemData);
+							break;
+
+						case ENEMY:
+							size = sizeof(EnemyData);
+							break;
+					}
+
+					memcpy(l_spawn->data_copy, ent->data, size);
+				}
+				
+			}
+		}
+
+		// free level_spawns
+		entity_free(ent);
+	}
+}
+
+void change_rooms(Uint8 new_room, GFC_Vector2D new_player_pos) {
+	clear_current_room(1);
+	level_manager.room_num = new_room - 1;
+
+	// set new player position
+	set_player_position(new_player_pos);
+
 	load_current_room();
+}
+
+void load_next_level(void* p) {
+	Entity* player;
+	PlayerData* p_data;
+
+	player = (Entity*)p;
+	if (!player) {
+		slog("player is null");
+		change_world_state(WORLD_CLOSE);
+		return;
+	}
+	p_data = (PlayerData*)player->data;
+
+	//level_load(level_manager.curr_level_index);
+
+	//reset player stuff
+	player_atk_system_reset();
+	p_data->canMove = 1;
+	p_data->isAttacking = 0;
+	//gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
+	//gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
+}
+
+void restart_level(void* p) {
+	Entity* player;
+	PlayerData* p_data;
+
+	player = (Entity*)p;
+	if (!player) {
+		slog("player is null");
+		change_world_state(WORLD_CLOSE);
+		return;
+	}
+	p_data = (PlayerData*)player->data;
+
+	//level_load(level_manager.curr_level_index);
+
+	//reset player stuff
+	player_atk_system_reset();
+	player_respawn(player, player->data);
+	//gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
+	//gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
+
 }
 
 void level_update() {
 	int i;
 	Ground* ground;
 	Room* room;
-	GFC_List* enemy_list;
+	RoomTransition* tr;
+	Entity* player;
+	//GFC_List* enemy_list;
 
 	room = get_current_room();
-	
+	player = (Entity*) get_player();
+
 	// draw ground
 	for (i = 0; i < room->ground_count; i++) {
 		ground = &room->grounds[i];
@@ -475,6 +648,24 @@ void level_update() {
 
 	// draw platforms
 	update_platforms();
+
+	// draw room transition regions
+	for (i = 0; i < room->transition_count; i++) {
+		tr = &room->transitions[i];
+		if (!tr) continue;
+
+		gf2d_draw_rect_filled(tr->region, GFC_COLOR_BROWN);
+	}
+
+	// check if player wants to transition to next room
+	for (i = 0; i < room->transition_count; i++) {
+		tr = &room->transitions[i];
+		
+		if (!tr || tr->locked) continue;
+
+		if (gfc_input_command_pressed("interact") && gfc_rect_overlap(player->hurtbox.s.r, tr->region))
+			change_rooms(tr->room_num, tr->player_repo);
+	}
 
 	/*
 	// check if level goal has been reached
@@ -524,50 +715,6 @@ void level_camera_update(GFC_Vector2D move_speed) {
 	}
 }
 */
-
-void load_next_level(void* p){
-	Entity* player;
-	PlayerData* p_data;
-
-	player = (Entity*) p;
-	if (!player) {
-		slog("player is null");
-		change_world_state(WORLD_CLOSE);
-		return;
-	}
-	p_data = (PlayerData*)player->data;
-
-	level_load(level_manager.curr_level_index);
-
-	//reset player stuff
-	player_atk_system_reset();
-	p_data->canMove = 1;
-	p_data->isAttacking = 0;
-	//gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
-	//gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
-}
-
-void restart_level(void* p) {
-	Entity* player;
-	PlayerData* p_data;
-
-	player = (Entity*)p;
-	if (!player) {
-		slog("player is null");
-		change_world_state(WORLD_CLOSE);
-		return;
-	}
-	p_data = (PlayerData*)player->data;
-
-	level_load(level_manager.curr_level_index);
-
-	//reset player stuff
-	player_atk_system_reset();
-	player_respawn(player, player->data);
-	//gfc_vector2d_copy(player->position, level_manager.curr_level->player_spawn);
-	//gfc_vector2d_copy(p_data->spawn_pos, level_manager.curr_level->player_spawn);
-	
-}
 
 Level* get_curr_level() {
 	return level_manager.curr_level;

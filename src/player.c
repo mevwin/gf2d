@@ -32,7 +32,7 @@ Entity* player_spawn(GFC_Vector2D position, SJson* data) {
 	}
 
 	player->type = PLAYER;
-	gfc_line_cpy(player->name, "Player");	// change later
+	gfc_word_cpy(player->name, "Player");	// change later
 
 	curr_entry = sj_object_get_value(data, "entity_data");
 

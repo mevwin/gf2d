@@ -31,6 +31,6 @@ typedef struct EnemyData_S{
     Uint8               sprouter_spawns_count;
 }EnemyData;
 
-void enemy_spawn(int type, GFC_Vector2D position, SJson* sprouter_spawns);
+void enemy_spawn(int type, const char* name, GFC_Vector2D position, SJson* sprouter_spawns);
 
 #endif

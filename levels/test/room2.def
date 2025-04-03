@@ -1,0 +1,53 @@
+{
+    "room":
+    {
+        "name": "Right Room",
+        "player_spawn": [200, 500],
+        "ground_list":
+        [
+            {
+                "rect": [0, 600, 1000, 120],
+                "color": [0, 120, 0, 255],
+                "walls": 1,
+                "ceiling": 0
+            }
+        ],
+        "platform_list":
+        [
+
+        ],
+        "enemies":
+        {
+            "#position": "if both -1, use random spawns",
+            "list":
+            [       
+   
+            ],
+            "random_spawns":
+            [
+                {
+                    "position": [220, 250]
+                },
+                {
+                    "position": [580, 280]
+                },
+                {
+                    "position": [900, 400]
+                }
+            ]
+        },
+        "items":
+        [
+            
+        ],
+        "room_transitions":
+        [
+            {
+                "region": [0, 450, 150, 150],
+                "player_repo": [1050, 550],
+                "room_num": 1,
+                "locked": 0
+            }
+        ]
+    }
+}

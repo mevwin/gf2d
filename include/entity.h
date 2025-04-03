@@ -22,7 +22,7 @@ typedef enum EntitySearchType_E {
 typedef struct Entity_S{
     Uint8           _inuse;         // flag for memory management
     EntityType      type;
-    GFC_TextLine    name;           // name of entity
+    GFC_TextWord    name;           // name of entity
     GFC_Vector2D    position;       // where it is in space
     GFC_Vector2D	velocity;
     GFC_Vector2D	max_velocity;

@@ -71,7 +71,7 @@ void world_update() {
 	switch (world_manager.state) {
 		case WORLD_GAMESTART:
 			world_gamestart();
-			//camera_init();
+			load_current_room();
 			world_manager.state = WORLD_INGAME;
 
 			break;
@@ -156,6 +156,10 @@ GFC_List* get_enemy_list() {
 
 GFC_Vector2D get_player_pos() {
 	return world_manager.player->position;
+}
+
+void set_player_position(GFC_Vector2D new_pos) {
+	gfc_vector2d_copy(world_manager.player->position, new_pos);
 }
 
 /*

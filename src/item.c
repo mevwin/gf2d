@@ -56,7 +56,7 @@ void item_spawn(const char* item_name, GFC_Vector2D position) {
 
 		gfc_word_cpy(text, sj_object_get_string(init_data, "name"));
 		if (!gfc_word_cmp(text, item_name)) {
-			gfc_word_cpy(i_data->effect_value.text, item_name);
+			gfc_word_cpy(item->name, item_name);
 			break;
 		}
 	}

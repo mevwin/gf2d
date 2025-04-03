@@ -36,11 +36,14 @@ GFC_List* get_enemy_list();
 void* get_player();
 void* get_player_data();
 //GFC_List* get_item_list();
+
 /**
 * @brief pointer to player's position
 * @note used for circumstances where player position is needed w/o needing the player entity
 */
 GFC_Vector2D get_player_pos();
+
+void set_player_position(GFC_Vector2D new_pos);
 
 Uint8 checkFramePass(float then);
 
