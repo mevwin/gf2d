@@ -16,7 +16,7 @@ typedef struct LevelManager_S {
 
 	// flags
 	Uint8			respawning;
-	//Uint8			transitioning;
+	Uint8			transitioning;
 }LevelManager;
 
 // NOTE: ONLY ONE LEVEL LOADED AT A TIME
@@ -39,6 +39,7 @@ void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type);
 void create_platform(Platform* platform, SJson* plat_data);
 void create_room_transition(RoomTransition* t, SJson* t_data);
 
+LevelSpawn* find_level_spawn(const char* name);
 void clear_current_room(Uint8 save_data);
 void change_rooms(Uint8 new_room, GFC_Vector2D new_player_pos);
 
@@ -237,6 +238,8 @@ void create_room(Room* room, SJson* data) {
 			l_spawn->ent_type = ENEMY;
 			sj_object_get_int(entry, "type", &l_spawn->type.enemy_type);
 			sj_object_get_vector2d(entry, "position", &l_spawn->position);
+
+			gfc_word_cpy(l_spawn->ent_name, sj_object_get_string(entry, "name"));
 
 			// check if enemy spawns at random position
 			if (l_spawn->position.x == -1.0f && l_spawn->position.y == -1.0f) {
@@ -453,7 +456,8 @@ void level_curr_close() {
 		free(room->transitions);
 
 		for (j = 0; j < room->level_spawns->count; j++) {
-			l_spawn = (LevelSpawn*)gfc_list_nth(room->level_spawns, j);
+			l_spawn = (LevelSpawn*) gfc_list_nth(room->level_spawns, j);
+			if (!l_spawn) continue;
 
 			if (l_spawn->data_copy) free(l_spawn->data_copy);
 			free(l_spawn);
@@ -498,27 +502,74 @@ void draw_ground_to_surface(GFC_List* ground_list){
 }
 */
 
+LevelSpawn* find_level_spawn(const char* name) {
+	Room* room;
+	LevelSpawn* l_spawn;
+	int i;
+
+	room = get_current_room();
+
+	for (i = 0; i < room->level_spawns->count; i++) {
+		l_spawn = (LevelSpawn*)gfc_list_nth(room->level_spawns, i);
+		if (!l_spawn) continue;
+
+		if (!gfc_word_cmp(l_spawn->ent_name, name)) {
+			return l_spawn;
+		}
+	}
+	return NULL;
+}
+
+void level_free_level_spawn(const char* name) {
+	Room* room;
+	LevelSpawn* l_spawn;
+
+	if (level_manager.transitioning) return;
+
+	room = get_current_room();
+
+	l_spawn = find_level_spawn(name);
+	if (l_spawn) {
+		slog("freed: %s", name);
+		gfc_list_delete_data(room->level_spawns, l_spawn);
+		if (l_spawn->data_copy) free(l_spawn->data_copy);
+		free(l_spawn);
+		return;
+	}
+}
+
 void load_current_room() {
 	Room* room;
+	Entity* ent;
 	LevelSpawn* l_spawn;
 
 	room = get_current_room();
 
 	// load level_spawns
 	for (int i = 0; i < room->level_spawns->count; i++) {
-		l_spawn = (LevelSpawn*) gfc_list_nth(room->level_spawns, i);
+		l_spawn = (LevelSpawn*)gfc_list_nth(room->level_spawns, i);
 		if (!l_spawn) continue;
 
 		// distinguish between initial spawn and respawns
 		switch (l_spawn->ent_type) {
 			case ENEMY:
-				enemy_spawn(l_spawn->type.enemy_type, l_spawn->ent_name, l_spawn->position, NULL);
+				ent = enemy_spawn(l_spawn->type.enemy_type, l_spawn->ent_name, l_spawn->position, NULL);
 				//slog("enemy");
+				if (l_spawn->data_copy) {
+					free(ent->data);
+					ent->data = l_spawn->data_copy;
+					l_spawn->data_copy = NULL;	
+				}
 
 				break;
 
 			case ITEM:
-				item_spawn(l_spawn->ent_name, l_spawn->position);
+				ent = item_spawn(l_spawn->ent_name, l_spawn->position);
+				if (l_spawn->data_copy) {
+					free(ent->data);
+					ent->data = l_spawn->data_copy;
+					l_spawn->data_copy = NULL;
+				}
 				//slog("item");
 
 				break;
@@ -528,7 +579,6 @@ void load_current_room() {
 
 void clear_current_room(Uint8 save_data) {
 	Entity* entityList, *ent;
-	Room* room;
 	LevelSpawn* l_spawn;
 	Uint32 entityCount;
 	size_t size;
@@ -536,7 +586,6 @@ void clear_current_room(Uint8 save_data) {
 	
 	entityList = getEntityList();
 	entityCount = getEntityMax();
-	room = get_current_room();
 
 	for (i = 0; i < entityCount; i++) {
 		ent = &entityList[i];
@@ -545,27 +594,32 @@ void clear_current_room(Uint8 save_data) {
 		// update level_spawns (save copy of data if needed)
 		if (save_data && ent->type != PROJECTILE) {
 			//slog("saved data");
+			
 			// get corresponding level spawns data	
-			for (j = 0; j < room->level_spawns->count j++) {
-				l_spawn = (LevelSpawn*) gfc_list_nth(room->level_spawns, j);
-				if (!l_spawn) continue;
+			l_spawn = find_level_spawn(ent->name);
+			if (l_spawn) {
+				// make a copy of its data
+				switch (ent->type) {
+					case ITEM:
+						size = sizeof(ItemData);
+						//slog("saved items");
+						break;
 
-				if (!gfc_word_cmp(l_spawn->ent_name, ent->name)) {
-					// make a copy of its data
-					switch (ent->type) {
-						case ITEM:
-							size = sizeof(ItemData);
-							break;
+					case ENEMY:
+						size = sizeof(EnemyData);
+						//slog("saved enemy");
+						break;
+					default:
+						size = 0;
+				}
+				gfc_vector2d_copy(l_spawn->position, ent->position);
 
-						case ENEMY:
-							size = sizeof(EnemyData);
-							break;
-					}
-
+				if (size) {
+					//slog("%d", size);
+					l_spawn->data_copy = gfc_allocate_array(size, 1);
 					memcpy(l_spawn->data_copy, ent->data, size);
 				}
-				
-			}
+			}	
 		}
 
 		// free level_spawns
@@ -574,13 +628,16 @@ void clear_current_room(Uint8 save_data) {
 }
 
 void change_rooms(Uint8 new_room, GFC_Vector2D new_player_pos) {
+	level_manager.transitioning = 1;
 	clear_current_room(1);
+
 	level_manager.room_num = new_room - 1;
 
 	// set new player position
 	set_player_position(new_player_pos);
 
 	load_current_room();
+	level_manager.transitioning = 0;
 }
 
 void load_next_level(void* p) {

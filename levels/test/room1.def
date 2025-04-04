@@ -40,7 +40,7 @@
                     "type": 0,
                     "name": "bruiser1",
                     "position": [-1, -1]
-                }   
+                }
             ],
             "random_spawns":
             [
@@ -68,6 +68,12 @@
                 "region": [1050, 450, 150, 150],
                 "player_repo": [75, 550],
                 "room_num": 2,
+                "locked": 0
+            },
+            {
+                "region": [0, 450, 150, 150],
+                "player_repo": [1050, 550],
+                "room_num": 3,
                 "locked": 0
             }
         ]

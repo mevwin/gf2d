@@ -10,7 +10,7 @@ void item_free(Entity* self);
 
 void item_activate(Entity* self, ItemType type);
 
-void item_spawn(const char* item_name, GFC_Vector2D position) {
+Entity* item_spawn(const char* item_name, GFC_Vector2D position) {
 	SJson* file, * item_list, * init_data;
 	//GFC_List* item_list;
 	GFC_TextBlock text;
@@ -91,6 +91,8 @@ void item_spawn(const char* item_name, GFC_Vector2D position) {
 
 	update_hurtbox(item);
 	update_boundbox(item);
+
+	return item;
 }
 
 void item_think(Entity* self) {
@@ -159,6 +161,7 @@ void item_free(Entity* self) {
 	gf2d_sprite_free(self->sprite);
 
 	if (self->data) free(self->data);
+	level_free_level_spawn(self->name);
 }
 
 void item_activate(Entity* self, ItemType type) {

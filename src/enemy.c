@@ -16,7 +16,7 @@ void enemy_die(Entity* self, EnemyData* e_data);
 void enemy_move(Entity* self);
 void enemy_attack(Entity* self);
 
-void enemy_spawn(int type, const char* name, GFC_Vector2D position, SJson* sprouter_spawns) {
+Entity* enemy_spawn(int type, const char* name, GFC_Vector2D position, SJson* sprouter_spawns) {
 	SJson* file, *enemy_type, *init_data;
 	EnemyData* e_data;
 	GFC_List* enemy_list;
@@ -92,6 +92,8 @@ void enemy_spawn(int type, const char* name, GFC_Vector2D position, SJson* sprou
 
 	enemy_list = get_enemy_list();
 	gfc_list_append(enemy_list, enemy);
+
+	return enemy;
 }
 
 EnemyData* enemy_data_init(SJson* data, EnemyType type) {
@@ -176,6 +178,8 @@ void enemy_free(Entity* self) {
 
 		free(e_data);
 	}
+
+	level_free_level_spawn(self->name);
 }
 
 void enemy_move(Entity* self) {

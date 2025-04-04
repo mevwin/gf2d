@@ -25,7 +25,7 @@ typedef struct ItemData_S {
 	Uint8				active;
 }ItemData;
 
-void item_spawn(const char* item_name, GFC_Vector2D position);
+Entity* item_spawn(const char* item_name, GFC_Vector2D position);
 
 //IF AN ENEMY HOLDS AN ITEM, IT WILL BE CREATED AFTER THE ENEMY DIES
 

@@ -117,6 +117,8 @@ void level_update();
 //void level_camera_update(GFC_Vector2D move_speed);
 void level_curr_close();
 
+void level_free_level_spawn(const char* name);
+
 Level* get_curr_level();
 Room* get_current_room();
 Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type);
