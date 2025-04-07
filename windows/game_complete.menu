@@ -12,7 +12,7 @@
         {
             "cmd": "QUIT",
             "sprite": "images/ui/game_complete/quit_button.png",
-            "offset": [450, 290]  
+            "offset": [490, 300]  
         }
     ]
 }

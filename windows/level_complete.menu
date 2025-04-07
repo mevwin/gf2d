@@ -12,12 +12,12 @@
         {
             "cmd": "NEXT",
             "sprite": "images/ui/level_complete/next_button.png",
-            "offset": [450, 290]  
+            "offset": [490, 300]  
         },
         {
             "cmd": "QUIT",
             "sprite": "images/ui/level_complete/quit_button.png",
-            "offset": [450, 430]  
+            "offset": [490, 440]  
         }
     ]
 }

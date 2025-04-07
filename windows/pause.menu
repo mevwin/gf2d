@@ -12,12 +12,12 @@
         {
             "cmd": "RESUME",
             "sprite": "images/ui/pause_menu/resume_button.png",
-            "offset": [450, 203]  
+            "offset": [490, 300]   
         },
         {
             "cmd": "QUIT",
             "sprite": "images/ui/pause_menu/quit_button.png",
-            "offset": [450, 377]  
+            "offset": [490, 440] 
         }
     ]
 }

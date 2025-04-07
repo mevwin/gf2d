@@ -4,6 +4,7 @@
 //#include "camera.h"
 #include "player.h"
 #include "level.h"
+#include "level_editor.h"
 #include "ui.h"
 
 typedef struct WorldManager_S {
@@ -116,6 +117,18 @@ void world_update() {
 			level_curr_close();
 			gfc_list_clear(world_manager.enemy_list);
 			
+			world_manager.state = WORLD_MAINMENU;
+
+			break;
+
+		case WORLD_LEVEL_EDITOR:
+			//level_editor_init();
+
+
+			break;
+
+		case WORLD_LEVEL_EDITOR_CLOSE:
+			//level_editor_close();
 			world_manager.state = WORLD_MAINMENU;
 
 			break;

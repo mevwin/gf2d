@@ -250,17 +250,15 @@ Wall* level_find_nearest_wall(Entity* ent, WallType wall_type) {
 
 		p_side = get_edge_from_rect(ent->boundbox.s.r, 2);
 
-		for (j = 0; j < 2; j++){
-			wall = &ground->walls[i];
-			if (p_side.y2 > wall->dimensions.y1 && p_side.y1 < wall->dimensions.y2) {
-				wall_point = gfc_vector2d(wall->dimensions.x1, ent->position.y);
-				p_side = get_edge_from_rect(ent->boundbox.s.r, ((Uint8)wall_type) + 2);
-				p_point = gfc_vector2d(p_side.x1, ent->position.y);
-				p_point.x += wall_type == WALL_LEFT ? ent->velocity.x : -ent->velocity.x;
+		wall = wall_type ? &ground->walls[1] : &ground->walls[0];
+		if (p_side.y2 > wall->dimensions.y1 && p_side.y1 < wall->dimensions.y2) {
+			wall_point = gfc_vector2d(wall->dimensions.x1, ent->position.y);
+			p_side = get_edge_from_rect(ent->boundbox.s.r, ((Uint8)wall_type) + 2);
+			p_point = gfc_vector2d(p_side.x1, ent->position.y);
+			p_point.x += wall_type == WALL_LEFT ? ent->velocity.x : -ent->velocity.x;
 
-				if (gfc_vector2d_distance_between_less_than(wall_point, p_point, offset))
-					return wall;
-			}
+			if (gfc_vector2d_distance_between_less_than(wall_point, p_point, offset))
+				return wall;
 		}
 	}
 

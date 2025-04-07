@@ -331,9 +331,7 @@ void create_ground(Ground* ground, SJson* ground_data) {
 }
 
 void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type) {
-	wall = gfc_allocate_array(sizeof(Wall), 1);
 	if (!wall) {
-		slog("failed to allocate memory for wall");
 		return;
 	}
 
@@ -530,7 +528,7 @@ void level_free_level_spawn(const char* name) {
 
 	l_spawn = find_level_spawn(name);
 	if (l_spawn) {
-		slog("freed: %s", name);
+		//slog("freed: %s", name);
 		gfc_list_delete_data(room->level_spawns, l_spawn);
 		if (l_spawn->data_copy) free(l_spawn->data_copy);
 		free(l_spawn);
