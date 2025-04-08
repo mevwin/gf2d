@@ -3,6 +3,7 @@
 #include "gf2d_graphics.h"
 #include "gf2d_sprite.h"
 #include "gfc_input.h"
+#include "font.h"
 #include "entity.h"
 #include "world.h"
 #include "level.h"
@@ -38,11 +39,12 @@ int main(int argc, char * argv[])
     /*demo setup*/
     sprite = gf2d_sprite_load_image("images/backgrounds/bg_flat.png");
     mouse = gf2d_sprite_load_all("images/pointer.png",32,32,16,0);
-    slog("press [escape] to quit");
+    //slog("press [escape] to quit");
 
     ui_system_init("config/ui_system.cfg");
     entity_system_init(MAX_ENTITY);
     world_init();
+    font_system_init();
 
     /*main game loop*/
     while(!close_game_check())
@@ -66,6 +68,8 @@ int main(int argc, char * argv[])
             world_update();
 
             //UI elements last
+            font_display_text("Testing\nBruh", FONT_STANDARD, FONT_STYLE_LARGE, gfc_vector2d(20, 20), GFC_COLOR_BLUE);
+
             gf2d_sprite_draw(
                 mouse,
                 gfc_vector2d(mx,my),

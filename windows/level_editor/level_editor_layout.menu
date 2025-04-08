@@ -1,0 +1,33 @@
+{
+    "window":
+    {
+        "bg_sprite": "",
+        "offset": [0, 0],
+        "buttonMax": 2,
+        "buttonLayout": 0,
+        "barMax": 0
+    },
+    "buttons":
+    [
+        {
+            "cmd": "LENGTH_INC",
+            "sprite": "",
+            "offset": [0, 0]  
+        },
+        {
+            "cmd": "LENGTH_DEC",
+            "sprite": "",
+            "offset": [0, 0]  
+        },
+        {
+            "cmd": "WIDTH_INC",
+            "sprite": "",
+            "offset": [0, 0]  
+        },
+        {
+            "cmd": "WIDTH_DEC",
+            "sprite": "",
+            "offset": [0, 0]  
+        }
+    ]
+}
