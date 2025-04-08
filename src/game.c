@@ -3,7 +3,6 @@
 #include "gf2d_graphics.h"
 #include "gf2d_sprite.h"
 #include "gfc_input.h"
-#include "font.h"
 #include "entity.h"
 #include "world.h"
 #include "level.h"
@@ -68,7 +67,7 @@ int main(int argc, char * argv[])
             world_update();
 
             //UI elements last
-            font_display_text("Testing\nBruh", FONT_STANDARD, FONT_STYLE_LARGE, gfc_vector2d(20, 20), GFC_COLOR_BLUE);
+            //font_display_text("Testing\nBruh", FONT_STANDARD, FONT_STYLE_LARGE, gfc_vector2d(20, 20), GFC_COLOR_BLUE);
 
             gf2d_sprite_draw(
                 mouse,

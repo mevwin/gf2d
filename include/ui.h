@@ -3,6 +3,7 @@
 
 #include "gf2d_sprite.h"
 #include "gfc_shape.h"
+#include "font.h"
 
 typedef enum ButtonLayout_E {
     WINDOW_BUTTON_HORIZONTAL,
@@ -10,8 +11,14 @@ typedef enum ButtonLayout_E {
     WINDOW_BUTTON_CARDINAL
 }ButtonLayout;
 
+typedef struct TextBlock_S {
+    GFC_TextBlock   text;
+    GFC_Vector2D    offset;
+    GFC_Color       color;
+}TextBlock;
+
 typedef struct Button_S {
-    char            cmd[20];
+    TextBlock       textblock;
     Sprite*         sprite;
     GFC_Vector2D    offset;
     GFC_Rect        region;

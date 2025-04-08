@@ -9,6 +9,7 @@ typedef struct UIManager_S {
     GFC_List*       ui_list;
     int             active_button;
     GFC_Color       active_shift;
+    Sprite*         menu_block;
 }UIManager;
 
 static UIManager ui_manager = { 0 };
