@@ -1,5 +1,5 @@
 {
-    "window":
+    "menu":
     {
         "bg_sprite": "images/ui/pause_menu/pause_menu.png",
         "offset": [0, 0],
@@ -10,14 +10,20 @@
     "buttons":
     [
         {
-            "cmd": "RESUME",
-            "sprite": "images/ui/pause_menu/resume_button.png",
-            "offset": [490, 300]   
+            "text": "RESUME",
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [490, 300],
+            "buttonColor": [0, 0, 120, 255]
         },
         {
-            "cmd": "QUIT",
-            "sprite": "images/ui/pause_menu/quit_button.png",
-            "offset": [490, 440] 
+            "text": "QUIT",
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [490, 440],
+            "buttonColor": [0, 0, 120, 255]
         }
     ]
 }

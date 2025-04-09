@@ -1,5 +1,5 @@
 {
-    "window":
+    "menu":
     {
         "bg_sprite": "images/ui/game_complete/game_complete.png",
         "offset": [0, 0],
@@ -10,9 +10,13 @@
     "buttons":
     [
         {
-            "cmd": "QUIT",
-            "sprite": "images/ui/game_complete/quit_button.png",
-            "offset": [490, 300]  
+            "text": "QUIT",
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textOffset": [85, 49],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [490, 440],
+            "buttonColor": [0, 0, 120, 255]
         }
     ]
 }

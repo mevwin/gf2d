@@ -4,6 +4,7 @@
 #include <string.h>
 #include <SDL_ttf.h>
 
+#include "gfc_shape.h"
 #include "gfc_vector.h"
 
 typedef enum FontType_E {
@@ -12,10 +13,10 @@ typedef enum FontType_E {
 }FontType;
 
 typedef enum FontSize_E {
-	FONT_STYLE_SMALL = 10,
-	FONT_STYLE_MEDIUM = 14,
-	FONT_STYLE_LARGE = 28,
-	FONT_STYLE_HEADING = 34
+	FONT_SIZE_SMALL,
+	FONT_SIZE_MEDIUM,
+	FONT_SIZE_LARGE,
+	FONT_SIZE_HEADING
 }FontSize;
 
 typedef struct Font_S {
@@ -29,7 +30,10 @@ void font_display_text(
 	const char* text,
 	FontType type,
 	FontSize size,
-	GFC_Vector2D offset,
-	GFC_Color color);
+	GFC_Color color,
+	Uint8 center,
+	GFC_Vector2D* offset,
+	GFC_Rect* rect_to_cent);
+int get_font_size(Uint8 tag);
 
 #endif
