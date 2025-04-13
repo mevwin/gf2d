@@ -5,7 +5,8 @@
         "offset": [0, 0],
         "buttonMax": 2,
         "buttonLayout": 1,
-        "barMax": 0
+        "barMax": 0,
+        "windowMax": 0
     },
     "buttons":
     [

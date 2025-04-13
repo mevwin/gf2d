@@ -140,6 +140,7 @@ void world_update() {
 
 		default: //WORLD_MAINMENU, WORLD_PAUSEMENU, WORLD_PLAYERDEAD, WORLD_LEVELCOMPLETE, WORLD_GAME_COMPLETE
 			drawUI(world_manager.state); // draw menu and check input	
+			if (gfc_input_command_pressed("display")) toggle_window("TEST_NOTIF", 1);
 	}
 }
 
@@ -149,6 +150,10 @@ Uint8 checkFramePass(float then) {
 
 void change_world_state(WorldState new_state) {
 	world_manager.state = new_state;
+}
+
+WorldState get_world_state() {
+	return world_manager.state;
 }
 
 Uint8 close_game_check() {

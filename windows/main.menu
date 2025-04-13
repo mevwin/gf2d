@@ -5,7 +5,8 @@
         "offset": [0, 0],
         "buttonMax": 2,
         "buttonLayout": 1,
-        "barMax": 0
+        "barMax": 0,
+        "windowMax": 1
     },
     "buttons":
     [
@@ -24,6 +25,21 @@
             "textColor": [255, 255, 255, 255],
             "buttonOffset": [490, 440],
             "buttonColor": [0, 0, 120, 255]
+        }
+    ],
+    "windows":
+    [
+        {
+            "text": "ALL OF THE LIGHTS TURN ON THE LIGHTS IN HERE BABEH",
+            "fontType": "STANDARD",
+            "fontSize": "SMALL",
+            "textColor": [255, 255, 255, 255],
+            "name": "TEST_NOTIF",
+            "type": "NOTIF",
+            "offset": [200, 200],
+            "scale": [300, 200],
+            "color": [120, 0, 120, 180],
+            "ttl": 180
         }
     ]
 }

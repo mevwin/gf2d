@@ -4,7 +4,8 @@
         "bg_sprite": "no sprite",
         "offset": [0, 0],
         "buttonMax": 0,
-        "barMax": 2
+        "barMax": 2,
+        "windowMax": 0
     },
     "bars":
     [

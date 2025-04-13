@@ -11,6 +11,11 @@ typedef enum ButtonLayout_E {
     MENU_BUTTON_CARDINAL
 }ButtonLayout;
 
+typedef enum WindowType_E {
+    WINDOW_NOTIF,       // exists for some ttl
+    WINDOW_BLOCK        // exists forever
+}WindowType;
+
 typedef struct TextLine_S {
     GFC_TextLine    text;
     FontType        type;
@@ -33,10 +38,25 @@ typedef struct Bar_S {
     GFC_Vector2D    scale;
 }Bar;
 
+typedef struct Window_S {
+    GFC_TextWord    name;
+    WindowType      type;
+
+    Uint8           toggled;
+    float           ttl_then;
+    int             ttl_counter;
+    int             ttl;                // if ttl = -1, live forever
+    TextLine        textline;
+
+    GFC_Vector2D    offset;
+    GFC_Vector2D    scale;
+    GFC_Color       color;
+}Window;
+
 typedef struct Menu_S {
+    GFC_TextWord    name;
     Sprite*         bg_sprite;
     GFC_Vector2D    offset;
-    GFC_Rect        dimensions;
 
     ButtonLayout    button_layout;
     Uint8           buttonMax;
@@ -45,11 +65,22 @@ typedef struct Menu_S {
     Uint8           barMax;
     Bar*            barList;
 
+    Uint8           windowMax;
+    Window*         windowList;
+
     //Uint8           textblockMax;
     //TextBlock*      textblockList;
 }Menu;
 
+/**
+* NOTE: difference between menu and window
+* menu covers the whole screen
+* window covers only a small portion
+* a window can exist on its on without a menu
+*/
+
 void ui_system_init(char* configFile);
 void drawUI(Uint8 w_state);
+void toggle_window(const char* name, Uint8 toggle);
 
 #endif

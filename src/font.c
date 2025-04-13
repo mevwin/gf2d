@@ -112,7 +112,7 @@ void font_display_text(
 	}
 
 	fg = gfc_color_to_sdl(color);
-	surface = TTF_RenderUTF8_Blended_Wrapped(font->font, text, fg, 0);
+	surface = TTF_RenderUTF8_Blended_Wrapped(font->font, text, fg, (Uint32) rect_to_cent->w);
 	if (!surface) {
 		slog("failed to initialize surface from parameters");
 		return;

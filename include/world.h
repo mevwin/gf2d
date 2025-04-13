@@ -36,7 +36,10 @@ typedef enum WorldState_E {
 void world_init();
 void world_update();
 Uint8 close_game_check();
+
 void change_world_state(WorldState new_state);
+WorldState get_world_state();
+
 GFC_List* get_enemy_list();
 
 void* get_player();

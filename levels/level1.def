@@ -1,75 +1,17 @@
 {    
     "level":
     {
+        "name": "level1",
         "type": 0,
         "obj": 0,
-        "player_spawn": [200, 500],
-        "ground_list":
+        "room_count": 5,
+        "start_room": 1,
+        "layout_dimen": [5, 3],
+        "layout":
         [
-            {
-                "rect": [0, 600, 400, 120],
-                "color": [0, 0, 0, 255],
-                "walls": 1,
-                "ceiling": 0
-            },
-            {
-                "rect": [800, 600, 1000, 120],
-                "color": [255, 255, 0, 255],
-                "walls": 1,
-                "ceiling": 0
-            },
-            {
-                "rect": [500, 450, 200, 70],
-                "color": [0, 255, 0, 255],
-                "walls": 1,
-                "ceiling": 1
-            },
-            {
-                "rect": [1000, 150, 200, 70],
-                "color": [0, 255, 0, 255],
-                "walls": 1,
-                "ceiling": 1
-            }
-        ],
-        "platform_list":
-        [
-            {
-                "rect": [300, 300, 150, 20],
-                "sprite": "bruh",
-                "pass_through": 1,
-                "starting_move": 1,
-                "moving": 1,
-                "move_speed": [1.0, 1.0],
-                "#move_bounds" : "[left edge bound, right edge bound, top edge bound, bottom edge bound]",
-                "move_bounds": [50, 400, 300, 500]
-            }
-        ],
-        "enemies":
-        {
-            "#spawn_position": "if both -1, use random position",
-            "list":
-            [
-
-            ],
-            "random_spawns":
-            [
-                {
-                    "position": [220, 250]
-                },
-                {
-                    "position": [580, 280]
-                },
-                {
-                    "position": [900, 400]
-                }
-            ]
-        },
-        "items":
-        [
-            {
-                "item_name": "ability_unlock_double_jump",
-                "position": [70, 275]
-            }
+            [0, 0, 4, 0, 0],
+            [0, 3, 1, 2, 0],
+            [0, 0, 5, 0, 0]
         ]
     }
 }

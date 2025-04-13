@@ -58,7 +58,7 @@ void level_manager_init(const char* filename){
 
 	for (i = 0; i < level_list->v.array->count; i++) {
 		path = gfc_allocate_array(sizeof(GFC_TextLine), 1);
-		gfc_line_cpy(path, sj_object_get_string(sj_array_get_nth(level_list, i), "path"));
+		gfc_line_cpy(path, sj_get_string_value(sj_array_get_nth(level_list, i)));
 		gfc_list_append(level_manager.level_list, path);
 	}
 	level_manager.curr_level_index = 0;
@@ -244,8 +244,9 @@ void create_room(Room* room, SJson* data) {
 			// check if enemy spawns at random position
 			if (l_spawn->position.x == -1.0f && l_spawn->position.y == -1.0f) {
 				rand_spawns = sj_object_get_value(e_data, "random_spawns");
-				random = gfc_random_int(data->v.array->count);
-				sj_object_get_vector2d(sj_array_nth(rand_spawns, random), "position", &l_spawn->position);
+				random = gfc_random_int(e_data->v.array->count);
+				sj_value_as_vector2d(sj_array_nth(rand_spawns, random), &l_spawn->position);
+				//sj_object_get_vector2d(sj_array_nth(rand_spawns, random), "position", &l_spawn->position);
 			}
 
 			/*
