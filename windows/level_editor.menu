@@ -1,62 +1,61 @@
 {
     "menu":
     {
-        "bg_sprite": "images/ui/main_menu/main_menu.png",
+        "bg_sprite": "images/ui/level_editor/menu.png",
         "offset": [0, 0],
         "buttonMax": 3,
-        "buttonLayout": 1,
+        "buttonLayout": 0,
         "barMax": 0,
         "windowMax": 1
     },
     "buttons":
     [
         {
-            "text": "PLAY",
-            "fontType": "STANDARD",
-            "fontSize": "LARGE",
-            "textOffset": [-1, -1],
-            "textColor": [255, 255, 255, 255],
-            "buttonOffset": [490, 229],
-            "buttonColor": [0, 0, 120, 255],
-            "buttonType": "MENU"
-        },
-        {
-            "text": "LEVEL EDITOR",
-            "fontType": "STANDARD",
-            "fontSize": "MEDIUM",
-            "textOffset": [-1, -1],
-            "textColor": [255, 255, 255, 255],
-            "buttonOffset": [490, 360],
-            "buttonColor": [0, 0, 120, 255],
-            "buttonType": "MENU"
-        },
-        {
             "text": "QUIT",
             "fontType": "STANDARD",
             "fontSize": "LARGE",
             "textOffset": [-1, -1],
             "textColor": [255, 255, 255, 255],
-            "buttonOffset": [490, 500],
+            "buttonOffset": [490, 444],
             "buttonColor": [0, 0, 120, 255],
             "buttonType": "MENU"
+        },
+        {
+            "text": "-",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [443, 264],
+            "buttonColor": [120, 0, 0, 255],
+            "buttonType": "SCROLL"
+        },
+        {
+            "text": "+",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [770, 264],
+            "buttonColor": [0, 120, 0, 255],
+            "buttonType": "SCROLL"
         }
     ],
     "windows":
     [
         {
-            "name": "TEST_NOTIF",
-            "toggled": 0,
-            "type": "NOTIF",
-            "offset": [200, 200],
-            "scale": [300, 200],
-            "color": [120, 0, 120, 180],
-            "ttl": 180,
-            "text": "TESTING",
-            "textOffset": [-1, -1],
+            "name": "ROOM_COUNT",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [295, 166],
+            "scale": [690, 438],
+            "color": [120, 120, 10, 120],
+            "text": "HOW MANY ROOMS?",
+            "textOffset": [40, 10],
             "fontType": "STANDARD",
-            "fontSize": "SMALL",
+            "fontSize": "MEDIUM",
             "textColor": [255, 255, 255, 255],
-            "button_ranges": []
+            "button_ranges": [0, 1, 2]
         }
     ]
 }

@@ -101,6 +101,7 @@ void font_display_text(
 	SDL_Color fg;
 	SDL_Texture* texture;
 	SDL_Rect rect;
+	Uint32 length = 0;
 
 	if (!TTF_WasInit())
 		return;
@@ -112,7 +113,10 @@ void font_display_text(
 	}
 
 	fg = gfc_color_to_sdl(color);
-	surface = TTF_RenderUTF8_Blended_Wrapped(font->font, text, fg, (Uint32) rect_to_cent->w);
+	if (rect_to_cent)
+		length = (Uint32) rect_to_cent->w;
+
+	surface = TTF_RenderUTF8_Blended_Wrapped(font->font, text, fg, length);
 	if (!surface) {
 		slog("failed to initialize surface from parameters");
 		return;

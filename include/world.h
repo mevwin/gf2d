@@ -11,25 +11,22 @@
 #define FRAME_DUR 0.016f
 
 typedef enum WorldState_E {
-	WORLD_MAINMENU,
-
 	// UI states
+	WORLD_MAINMENU,
 	WORLD_PAUSEMENU,
-	WORLD_INGAME,
+	WORLD_INGAME,						// player hud
 	WORLD_LEVELCOMPLETE,
 	WORLD_PLAYERDEAD,
 	WORLD_GAME_COMPLETE,
+	WORLD_EDITOR,						// editor menu
 
-	// in-between states
-	WORLD_GAMESTART,	
+	// in-between/loading states
+	WORLD_GAMESTART,
 	WORLD_RESTART_LEVEL,
 	WORLD_LOAD_NEXT_LEVEL,
 	WORLD_GAMECLOSE,
-
-	// level-editor states
-	WORLD_LEVEL_EDITOR, 
-	WORLD_LEVEL_EDITOR_CLOSE,
-
+	WORLD_EDITOR_START,
+	WORLD_EDITOR_CLOSE,
 	WORLD_CLOSE
 }WorldState;
 

@@ -27,7 +27,6 @@ void world_init() {
 	// initialize level_manager
 	world_manager.enemy_list = gfc_list_new();
 	//world_manager.item_list = gfc_list_new();
-	level_manager_init("config/levels.cfg");
 	
 	atexit(world_close);
 }
@@ -37,6 +36,7 @@ void world_gamestart() {
 	SJson* data;
 
 	// load first level
+	level_manager_init("config/levels.cfg");
 	level_load(0);
 
 	room = get_current_room();
@@ -121,14 +121,20 @@ void world_update() {
 
 			break;
 
-		case WORLD_LEVEL_EDITOR:
-			//level_editor_init();
-
+		case WORLD_EDITOR_START:
+			level_editor_init();
+			world_manager.state = WORLD_EDITOR;
 
 			break;
 
-		case WORLD_LEVEL_EDITOR_CLOSE:
-			//level_editor_close();
+		case WORLD_EDITOR:
+			drawUI(world_manager.state);
+			level_editor_update();
+
+			break;
+
+		case WORLD_EDITOR_CLOSE:
+			level_editor_close();
 			world_manager.state = WORLD_MAINMENU;
 
 			break;
@@ -138,7 +144,7 @@ void world_update() {
 
 			break;
 
-		default: //WORLD_MAINMENU, WORLD_PAUSEMENU, WORLD_PLAYERDEAD, WORLD_LEVELCOMPLETE, WORLD_GAME_COMPLETE
+		default: // UI states except world editor
 			drawUI(world_manager.state); // draw menu and check input	
 			if (gfc_input_command_pressed("display")) toggle_window("TEST_NOTIF", 1);
 	}

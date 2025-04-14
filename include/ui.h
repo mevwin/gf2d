@@ -11,9 +11,14 @@ typedef enum ButtonLayout_E {
     MENU_BUTTON_CARDINAL
 }ButtonLayout;
 
+typedef enum ButtonType_E {
+    BUTTON_MENU,
+    BUTTON_SCROLL
+}ButtonType;
+
 typedef enum WindowType_E {
-    WINDOW_NOTIF,       // exists for some ttl
-    WINDOW_BLOCK        // exists forever
+    WINDOW_NOTIF,               // exists for some ttl
+    WINDOW_BLOCK                // exists forever
 }WindowType;
 
 typedef struct TextLine_S {
@@ -21,9 +26,11 @@ typedef struct TextLine_S {
     FontType        type;
     FontSize        size;
     GFC_Color       color;
+    GFC_Vector2D    offset;
 }TextLine;
 
 typedef struct Button_S {
+    ButtonType      type;
     TextLine        textline;
     GFC_Vector2D    offset;
     GFC_Rect        region;
@@ -51,6 +58,9 @@ typedef struct Window_S {
     GFC_Vector2D    offset;
     GFC_Vector2D    scale;
     GFC_Color       color;
+
+    Uint8           button_ranges_count;
+    Uint8*          button_ranges;
 }Window;
 
 typedef struct Menu_S {
@@ -67,9 +77,6 @@ typedef struct Menu_S {
 
     Uint8           windowMax;
     Window*         windowList;
-
-    //Uint8           textblockMax;
-    //TextBlock*      textblockList;
 }Menu;
 
 /**

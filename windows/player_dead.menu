@@ -14,17 +14,21 @@
             "text": "RESPAWN",
             "fontType": "STANDARD",
             "fontSize": "LARGE",
+            "textOffset": [-1, -1],
             "textColor": [255, 255, 255, 255],
             "buttonOffset": [490, 300],
-            "buttonColor": [0, 0, 120, 255]
+            "buttonColor": [0, 0, 120, 255],
+            "buttonType": "MENU"
         },
         {
             "text": "QUIT",
             "fontType": "STANDARD",
             "fontSize": "LARGE",
+            "textOffset": [-1, -1],
             "textColor": [255, 255, 255, 255],
             "buttonOffset": [490, 440],
-            "buttonColor": [0, 0, 120, 255]
+            "buttonColor": [0, 0, 120, 255],
+            "buttonType": "MENU"
         }
     ]
 }

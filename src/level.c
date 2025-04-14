@@ -8,6 +8,8 @@
 #include "enemy.h"
 
 typedef struct LevelManager_S {
+	Uint8			wasInit;
+
 	Level*			curr_level;
 	GFC_List*		level_list;				// a list of filepaths for levels
 
@@ -50,6 +52,8 @@ void level_manager_init(const char* filename){
 	SJson* level_def, *level_list;
 	GFC_TextLine *path;
 	int i;
+
+	if (level_manager.wasInit) return;
 	
 	// load level list
 	level_manager.level_list = gfc_list_new();
@@ -65,7 +69,9 @@ void level_manager_init(const char* filename){
 	level_manager.curr_level = NULL;
 
 	// TODO: retrieve level objective descriptions and store as list
+	
 
+	level_manager.wasInit = 1;
 	sj_free(level_def);
 	atexit(level_manager_close);
 }

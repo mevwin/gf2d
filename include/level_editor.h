@@ -2,19 +2,17 @@
 #define __LEVEL_EDITOR_H__
 
 typedef enum EditorState_E {
-	EDITOR_START,
-	EDITOR_LAYOUT,
-	EDITOR_SAVE,
-	EDITOR_CLOSE,
-	EDITOR_ADD_ENTITY,
-	EDITOR_ADD_ROOM,
-	EDITOR_CHANGE_ROOM,
-	EDITOR_REMOVE_ROOM,
-	EDITOR_EDITING
+	EDITOR_ROOM_INIT
 }EditorState;
 
 void level_editor_init();
 void level_editor_update();
 void level_editor_close();
+
+void level_editor_inc_room_count();
+void level_editor_dec_room_count();
+
+EditorState get_level_editor_state();
+void set_level_editor_state(EditorState state);
 
 #endif

@@ -2,6 +2,7 @@
 #include "gfc_input.h"
 #include "gf2d_draw.h"
 #include "world.h"
+#include "level_editor.h"
 #include "ui.h"
 #include "player.h"
 #include "enemy.h"
@@ -10,9 +11,10 @@ typedef struct UIManager_S {
     GFC_List*       ui_list;
     //GFC_List*       window_list;
     int             active_button;
-    Sprite*         button;
+    int             button_range_index;
+    Sprite*         menu_button;
+    Sprite*         scroll_button;
     Sprite*         window;
-
 }UIManager;
 
 static UIManager ui_manager = { 0 };
@@ -29,7 +31,9 @@ void create_textline(TextLine* txt, SJson* data);
 void reset_window_toggles();
 void draw_window(Window* win);
 void draw_button(Button* button, Uint8 index);
-void menu_check_input(Menu* win);
+void menu_buttonList_advance(int min, int max, Window* win);
+void menu_buttonList_go_back(int min, int max, Window* win);
+void menu_check_input(Menu* menu, int min, int max, Window* win);
 
 void ui_system_init(char* configFile) {
     SJson* config, *menu_list;
@@ -42,16 +46,19 @@ void ui_system_init(char* configFile) {
 
     ui_manager.ui_list = gfc_list_new();
 
-    ui_manager.button = gf2d_sprite_load_image(sj_object_get_string(config, "button"));
+    ui_manager.menu_button = gf2d_sprite_load_image(sj_object_get_string(config, "menu_button"));
+    ui_manager.scroll_button = gf2d_sprite_load_image(sj_object_get_string(config, "scroll_button"));
     ui_manager.window = gf2d_sprite_load_image(sj_object_get_string(config, "window"));
 
     menu_list = sj_object_get_value(config, "menu_list");
     for (i = 0; i < menu_list->v.array->count; i++) {
-        path = sj_object_get_string(sj_array_get_nth(menu_list, i), "path");
+        path = sj_get_string_value(sj_array_get_nth(menu_list, i));
         gfc_list_append(ui_manager.ui_list, create_menu(path));
     }
 
     ui_manager.active_button = 0;
+    ui_manager.button_range_index = 0;
+
     sj_free(config);
     atexit(ui_system_close);
 }
@@ -60,7 +67,8 @@ void ui_system_close() {
     gfc_list_foreach(ui_manager.ui_list, delete_menu);
     gfc_list_delete(ui_manager.ui_list);
 
-    gf2d_sprite_delete(ui_manager.button);
+    gf2d_sprite_delete(ui_manager.menu_button);
+    gf2d_sprite_delete(ui_manager.scroll_button);
     gf2d_sprite_delete(ui_manager.window);
 
     memset(&ui_manager, 0, sizeof(UIManager));
@@ -144,7 +152,17 @@ void create_button(Button* button, SJson* data) {
 
     // button
     sj_object_get_vector2d(data, "buttonOffset", &button->offset);
-    button->region = gfc_rect(button->offset.x, button->offset.y, ui_manager.button->frame_w, ui_manager.button->frame_h);
+    if (!strcmp(sj_object_get_string(data, "buttonType"), "MENU")) {
+        button->type = BUTTON_MENU;
+        button->region = gfc_rect(button->offset.x, button->offset.y, 
+                        ui_manager.menu_button->frame_w, ui_manager.menu_button->frame_h);
+    }
+    else {
+        button->type = BUTTON_SCROLL;
+        button->region = gfc_rect(button->offset.x, button->offset.y, 
+                        ui_manager.scroll_button->frame_w, ui_manager.scroll_button->frame_h);
+    }
+
     button->color = sj_object_get_color(data, "buttonColor");
 }
 
@@ -159,6 +177,8 @@ void create_bar(Bar* bar, SJson* data) {
 }
 
 void create_window(Window* window, SJson* data) {
+    SJson* ranges;
+
     if (!window || !data) {
         slog("couldn't create window");
         return;
@@ -176,16 +196,25 @@ void create_window(Window* window, SJson* data) {
 
     window->ttl_then = 0;
     window->ttl_counter = 0;
+    sj_object_get_uint8(data, "toggled", &window->toggled);
     if (!strncmp(sj_object_get_string(data, "type"), "NOTIF", 5)) {
         window->type = WINDOW_NOTIF;
         sj_object_get_int(data, "ttl", &window->ttl);
-        window->toggled = 0;
     }
     else {
         window->type = WINDOW_BLOCK;
         window->ttl = -1;
-        window->toggled = 1;
     }
+
+    ranges = sj_object_get_value(data, "button_ranges");
+    if (ranges->v.array->count) {
+        window->button_ranges_count = ranges->v.array->count;
+        window->button_ranges = gfc_allocate_array(sizeof(Uint8), window->button_ranges_count);
+        for (int i = 0; i < window->button_ranges_count; i++) {
+            sj_get_uint8_value(sj_array_nth(ranges, i), &window->button_ranges[i]);
+        }
+    }
+    else window->button_ranges = NULL;
 }
 
 void create_textline(TextLine* txt, SJson* data) {
@@ -206,6 +235,7 @@ void create_textline(TextLine* txt, SJson* data) {
             txt->size = FONT_SIZE_LARGE;
     }
     txt->color = sj_object_get_color(data, "textColor");
+    sj_object_get_vector2d(data, "textOffset", &txt->offset);
 }
 
 void delete_menu(Menu* menu) {
@@ -221,11 +251,16 @@ void delete_menu(Menu* menu) {
         }
         free(menu->barList);
     }
-    if (menu->windowMax)
+    if (menu->windowMax) {
+        for (i = 0; i < menu->windowMax; i++) {
+            if (menu->windowList[i].button_ranges_count);
+                free(menu->windowList[i].button_ranges);
+        }
         free(menu->windowList);
+    }
     
     free(menu);
-    slog("deleted menu");
+    //slog("deleted menu");
 }
 
 void toggle_window(const char* name, Uint8 toggle) {
@@ -253,6 +288,8 @@ void toggle_window(const char* name, Uint8 toggle) {
 
 void draw_window(Window* win) {
     GFC_Rect region;
+    GFC_Vector2D offset;
+    Uint8 center;
     float padding = 10.0f;
 
     if (!win) return;
@@ -261,28 +298,55 @@ void draw_window(Window* win) {
                      &win->scale, NULL, NULL, NULL, &win->color, 0);
 
     region = gfc_rect(win->offset.x + padding, win->offset.y, win->scale.x - (padding * 2.0f), win->scale.y);
-    font_display_text(
-        win->textline.text,
-        win->textline.type,
-        win->textline.size,
-        win->textline.color,
-        1,
-        NULL,
-        &region
-    );
+    center = win->textline.offset.x == -1.0f && win->textline.offset.y == -1.0f ? 1 : 0;
+    if (!center) {
+        offset = gfc_vector2d(region.x + win->textline.offset.x,
+                                region.y + win->textline.offset.y);
+
+        font_display_text(
+            win->textline.text,
+            win->textline.type,
+            win->textline.size,
+            win->textline.color,
+            0,
+            &offset,
+            NULL
+        );
+    }
+    else {
+        font_display_text(
+            win->textline.text,
+            win->textline.type,
+            win->textline.size,
+            win->textline.color,
+            1,
+            NULL,
+            &region
+        );
+    }
 }
 
 void draw_button(Button* button, Uint8 index) {
+    Sprite* b = NULL;
     GFC_Color color;
 
     if (!button) return;
 
     // draw button (change color if currently selected
     if (index == ui_manager.active_button)
-        color = gfc_color8(0, 60, 120, 255);
+        color = gfc_color8(120, 120, 120, 255);
     else color = button->color;
 
-    gf2d_sprite_draw(ui_manager.button, button->offset, 
+    switch (button->type){
+        case BUTTON_MENU:
+            b = ui_manager.menu_button;
+            break;
+        case BUTTON_SCROLL:
+            b = ui_manager.scroll_button;
+            break;
+    }
+
+    gf2d_sprite_draw(b, button->offset, 
                      NULL, NULL, NULL, NULL, &color, 0);
 
     // draw text on it
@@ -297,13 +361,25 @@ void draw_button(Button* button, Uint8 index) {
     );
 }
 
+void window_ttl_advance(Window* win) {
+    if (checkFramePass(win->ttl_then)) {
+        win->ttl_then = CURRENT_TIME;
+        win->ttl_counter++;
+    }
+
+    if (win->ttl_counter > win->ttl) {
+        win->toggled = 0;
+        win->ttl_counter = 0;
+    }
+}
+
 void reset_window_toggles() {
     Menu* menu;
     Window* win;
     int i;
 
     // find window
-    menu = (Menu*)gfc_list_nth(ui_manager.ui_list, get_world_state());
+    menu = (Menu*) gfc_list_nth(ui_manager.ui_list, get_world_state());
     for (i = 0; i < menu->windowMax; i++) {
         win = &menu->windowList[i];
         if (!win) continue;
@@ -322,16 +398,53 @@ void drawUI(Uint8 w_state) {
     Entity* enemy;
     Menu* menu;
     Window* win;
-    Button* button;
+    Button* button = NULL;
     Bar* bar;
     int i, j;
 
     world_state = (WorldState) w_state;
 
     menu = (Menu*) gfc_list_nth(ui_manager.ui_list, w_state);
-    if (world_state != WORLD_INGAME) {
+
+    if (world_state == WORLD_EDITOR) {
         gf2d_sprite_draw_image(menu->bg_sprite, menu->offset); // draw bg
-        menu_check_input(menu);
+
+        i = (int)get_level_editor_state();
+        win = &menu->windowList[i];
+
+        menu_check_input(menu,
+            win->button_ranges[0],
+            win->button_ranges[win->button_ranges_count - 1],
+            win);
+
+        for (i = 0; i < win->button_ranges_count; i++) {
+            button = &menu->buttonList[win->button_ranges[i]];
+            if (!button) continue;
+
+            draw_button(button, win->button_ranges[i]);
+            if (button && button->selected) {
+                button->selected = 0;
+                reset_window_toggles();
+
+                switch (get_level_editor_state()) {
+                    case EDITOR_ROOM_INIT:
+                        if (!strncmp(button->textline.text, "QUIT", 4)) {
+                            change_world_state(WORLD_EDITOR_CLOSE);
+                            ui_manager.active_button = 0;
+                        }
+                        else if (!strncmp(button->textline.text, "+", 1))
+                            level_editor_inc_room_count();
+                        else if (!strncmp(button->textline.text, "-", 1))
+                            level_editor_dec_room_count();
+
+                        break;
+                }
+            }
+        }
+    }
+    else if (world_state != WORLD_INGAME) {
+        gf2d_sprite_draw_image(menu->bg_sprite, menu->offset); // draw bg
+        menu_check_input(menu, 0, menu->buttonMax - 1, NULL);
         
         // draw windows
         for (i = 0; i < menu->windowMax; i++) {
@@ -341,17 +454,7 @@ void drawUI(Uint8 w_state) {
             draw_window(win);
 
             // ttl handling for notif windows
-            if (win->type == WINDOW_NOTIF) {
-                if (checkFramePass(win->ttl_then)) {
-                    win->ttl_then = CURRENT_TIME;
-                    win->ttl_counter++;
-                }
-
-                if (win->ttl_counter > win->ttl) {
-                    win->toggled = 0;
-                    win->ttl_counter = 0;
-                }
-            }
+            if (win->type == WINDOW_NOTIF) window_ttl_advance(win);
         }
 
         // draw buttons
@@ -360,14 +463,17 @@ void drawUI(Uint8 w_state) {
             draw_button(button, i);
 
             // check if button has been selected
-            if (button->selected) {
+            if (button && button->selected) {
                 button->selected = 0;
+                ui_manager.active_button = 0;
                 reset_window_toggles();
 
                 switch (world_state) {
                     case WORLD_MAINMENU:
                         if (!strncmp(button->textline.text, "PLAY", 4))
                             change_world_state(WORLD_GAMESTART);
+                        else if (!strncmp(button->textline.text, "LEVEL EDITOR", 12))
+                            change_world_state(WORLD_EDITOR_START);
                         else if (!strncmp(button->textline.text, "QUIT", 4))
                             change_world_state(WORLD_CLOSE);
 
@@ -458,7 +564,41 @@ void drawUI(Uint8 w_state) {
     }
 }
 
-void menu_check_input(Menu* menu) {
+void menu_buttonList_advance(int min, int max, Window* win) {
+    if (win) {
+        if (ui_manager.button_range_index < win->button_ranges_count - 1)
+            ++ui_manager.button_range_index;
+        else
+            ui_manager.button_range_index = 0;
+            
+        ui_manager.active_button = win->button_ranges[ui_manager.button_range_index];
+    }
+    else {
+        if (ui_manager.active_button < max)
+            ui_manager.active_button++;
+        else
+            ui_manager.active_button = min;
+    }
+}
+
+void menu_buttonList_go_back(int min, int max, Window* win) {
+    if (win) {
+        if (ui_manager.button_range_index) 
+            --ui_manager.button_range_index;
+        else
+            ui_manager.button_range_index = win->button_ranges_count - 1;
+  
+        ui_manager.active_button = win->button_ranges[ui_manager.button_range_index];
+    }
+    else {
+        if (ui_manager.active_button)
+            ui_manager.active_button--;
+        else
+            ui_manager.active_button = max;
+    }
+}
+
+void menu_check_input(Menu* menu, int min, int max, Window* win) {
     Button* active_button;
 
     if (!menu) {
@@ -469,40 +609,33 @@ void menu_check_input(Menu* menu) {
     // menu traversal
     switch (menu->button_layout) {
         case MENU_BUTTON_HORIZONTAL:
-            if (gfc_input_command_pressed("moveright")) {
-                if (ui_manager.active_button < menu->buttonMax - 1)
-                    ui_manager.active_button++;
-            }
-            else if (gfc_input_command_pressed("moveleft")) {
-                if (ui_manager.active_button)
-                    ui_manager.active_button--;
-            }
+            if (gfc_input_command_pressed("moveright"))
+                menu_buttonList_advance(min, max, win);
+            else if (gfc_input_command_pressed("moveleft"))
+                menu_buttonList_go_back(min, max, win);
 
             break;
 
         case MENU_BUTTON_VERTICAL:
-            if (gfc_input_command_pressed("moveup")) {
-                if (ui_manager.active_button) 
-                    ui_manager.active_button--;
-            }
-            else if (gfc_input_command_pressed("movedown")) {
-                if (ui_manager.active_button < menu->buttonMax - 1)
-                    ui_manager.active_button++;
-            }
+            if (gfc_input_command_pressed("moveup"))
+                menu_buttonList_go_back(min, max, win);
+            else if (gfc_input_command_pressed("movedown"))
+                menu_buttonList_advance(min, max, win);
 
             break;
 
+        /*
         case MENU_BUTTON_CARDINAL: //TODO: fix later
             if (gfc_input_command_pressed("moveup")) {
                 if (ui_manager.active_button)
                     ui_manager.active_button--;
             }
             else if (gfc_input_command_pressed("movedown")) {
-                if (ui_manager.active_button < menu->buttonMax - 1)
+                if (ui_manager.active_button < max)
                     ui_manager.active_button++;
             }
             else if (gfc_input_command_pressed("moveright")) {
-                if (ui_manager.active_button < menu->buttonMax - 1)
+                if (ui_manager.active_button < max)
                     ui_manager.active_button++;
             }
             else if (gfc_input_command_pressed("moveleft")) {
@@ -511,6 +644,7 @@ void menu_check_input(Menu* menu) {
             }
 
             break;
+        */
     }
 
     // button selection
