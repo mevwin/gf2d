@@ -4,6 +4,7 @@
 #include "gf2d_sprite.h"
 #include "gfc_input.h"
 #include "entity.h"
+#include "mouse.h"
 #include "world.h"
 #include "level.h"
 #include "ui.h"
@@ -14,10 +15,10 @@ int main(int argc, char * argv[])
     
     Sprite *sprite;
     
-    int mx,my;
+    //int mx,my;
     float mf = 0;
-    Sprite *mouse;
-    GFC_Color mouseGFC_Color = gfc_color8(255,100,255,200);
+    //Sprite *mouse;
+    //GFC_Color mouseGFC_Color = gfc_color8(255,100,255,200);
     
     /*program initializtion*/
     gfc_input_init("config/input.cfg");
@@ -37,9 +38,10 @@ int main(int argc, char * argv[])
     
     /*demo setup*/
     sprite = gf2d_sprite_load_image("images/backgrounds/bg_flat.png");
-    mouse = gf2d_sprite_load_all("images/pointer.png",32,32,16,0);
+    //mouse = gf2d_sprite_load_all("images/pointer.png",32,32,16,0);
     //slog("press [escape] to quit");
 
+    mouse_init();
     ui_system_init("config/ui_system.cfg");
     entity_system_init(MAX_ENTITY);
     world_init();
@@ -52,12 +54,9 @@ int main(int argc, char * argv[])
         SDL_PumpEvents();   // update SDL's internal event structures
 
         /*update things here*/
-        SDL_GetMouseState(&mx,&my);
         //slog("mouse: (%i, %i)", mx, my);
 
         // mouse frame update
-        mf+=0.1;
-        if (mf >= 16.0)mf = 0;
 
         gf2d_graphics_clear_screen();// clears drawing buffers
         // all drawing should happen betweem clear_screen and next_frame
@@ -67,17 +66,6 @@ int main(int argc, char * argv[])
             world_update();
 
             //UI elements last
-            //font_display_text("Testing\nBruh", FONT_STANDARD, FONT_STYLE_LARGE, gfc_vector2d(20, 20), GFC_COLOR_BLUE);
-
-            gf2d_sprite_draw(
-                mouse,
-                gfc_vector2d(mx,my),
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                &mouseGFC_Color,
-                (int)mf);
 
         gf2d_graphics_next_frame();// render current draw frame and skip to the next frame       
         //slog("Rendering at %f FPS",gf2d_graphics_get_frames_per_second());

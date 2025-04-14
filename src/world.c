@@ -2,6 +2,7 @@
 #include "gf2d_draw.h"
 #include "world.h"
 //#include "camera.h"
+#include "mouse.h"
 #include "player.h"
 #include "level.h"
 #include "level_editor.h"
@@ -10,7 +11,6 @@
 typedef struct WorldManager_S {
 	Entity*			player;
 	GFC_List*		enemy_list;
-	//GFC_List*		item_list;
 	Uint8			close_game;
 	WorldState		state;
 }WorldManager;

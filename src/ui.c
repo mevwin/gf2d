@@ -2,6 +2,7 @@
 #include "gfc_input.h"
 #include "gf2d_draw.h"
 #include "world.h"
+#include "mouse.h"
 #include "level_editor.h"
 #include "ui.h"
 #include "player.h"
@@ -332,7 +333,7 @@ void draw_button(Button* button, Uint8 index) {
 
     if (!button) return;
 
-    // draw button (change color if currently selected
+    // draw button (change color if currently selected_
     if (index == ui_manager.active_button)
         color = gfc_color8(120, 120, 120, 255);
     else color = button->color;
@@ -407,21 +408,28 @@ void drawUI(Uint8 w_state) {
     menu = (Menu*) gfc_list_nth(ui_manager.ui_list, w_state);
 
     if (world_state == WORLD_EDITOR) {
+        mouse_update_state();
+
         gf2d_sprite_draw_image(menu->bg_sprite, menu->offset); // draw bg
 
         i = (int)get_level_editor_state();
         win = &menu->windowList[i];
 
-        menu_check_input(menu,
-            win->button_ranges[0],
-            win->button_ranges[win->button_ranges_count - 1],
-            win);
+        draw_window(win);
 
         for (i = 0; i < win->button_ranges_count; i++) {
             button = &menu->buttonList[win->button_ranges[i]];
             if (!button) continue;
 
+            if (mouse_in_rect(button->region)) {
+                ui_manager.active_button = win->button_ranges[i];
+                if (mouse_button_pressed(MOUSE_LEFT_CLICK))
+                    button->selected = 1;
+            }
+            else ui_manager.active_button = -1;
+
             draw_button(button, win->button_ranges[i]);
+
             if (button && button->selected) {
                 button->selected = 0;
                 reset_window_toggles();
@@ -429,8 +437,8 @@ void drawUI(Uint8 w_state) {
                 switch (get_level_editor_state()) {
                     case EDITOR_ROOM_INIT:
                         if (!strncmp(button->textline.text, "QUIT", 4)) {
-                            change_world_state(WORLD_EDITOR_CLOSE);
                             ui_manager.active_button = 0;
+                            change_world_state(WORLD_EDITOR_CLOSE);
                         }
                         else if (!strncmp(button->textline.text, "+", 1))
                             level_editor_inc_room_count();
@@ -441,8 +449,11 @@ void drawUI(Uint8 w_state) {
                 }
             }
         }
+        draw_mouse();
     }
     else if (world_state != WORLD_INGAME) {
+        //mouse_update_state();
+
         gf2d_sprite_draw_image(menu->bg_sprite, menu->offset); // draw bg
         menu_check_input(menu, 0, menu->buttonMax - 1, NULL);
         
@@ -511,6 +522,7 @@ void drawUI(Uint8 w_state) {
                 }
             }   
         }
+        //draw_mouse();
     }
     else {
         enemy_list = get_enemy_list();

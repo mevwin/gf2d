@@ -51,7 +51,7 @@
             "scale": [690, 438],
             "color": [120, 120, 10, 120],
             "text": "HOW MANY ROOMS?",
-            "textOffset": [40, 10],
+            "textOffset": [200, 10],
             "fontType": "STANDARD",
             "fontSize": "MEDIUM",
             "textColor": [255, 255, 255, 255],
