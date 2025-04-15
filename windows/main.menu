@@ -2,8 +2,7 @@
     "menu":
     {
         "bg_sprite": "images/ui/main_menu/main_menu.png",
-        "offset": [0, 0],
-        "buttonMax": 3,
+        "buttonMax": 1,
         "buttonLayout": 1,
         "barMax": 0,
         "windowMax": 1
@@ -56,7 +55,7 @@
             "fontType": "STANDARD",
             "fontSize": "SMALL",
             "textColor": [255, 255, 255, 255],
-            "button_ranges": []
+            "buttons": []
         }
     ]
 }

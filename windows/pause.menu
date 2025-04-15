@@ -2,8 +2,7 @@
     "menu":
     {
         "bg_sprite": "images/ui/pause_menu/pause_menu.png",
-        "offset": [0, 0],
-        "buttonMax": 2,
+        "buttonMax": 1,
         "buttonLayout": 1,
         "barMax": 0,
         "windowMax": 0

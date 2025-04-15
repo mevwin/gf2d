@@ -2,7 +2,8 @@
 #define __LEVEL_EDITOR_H__
 
 typedef enum EditorState_E {
-	EDITOR_ROOM_INIT
+	EDITOR_ROOM_INIT,
+	EDITOR_ROOM_LAYOUT
 }EditorState;
 
 void level_editor_init();

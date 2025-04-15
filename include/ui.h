@@ -59,14 +59,13 @@ typedef struct Window_S {
     GFC_Vector2D    scale;
     GFC_Color       color;
 
-    Uint8           button_ranges_count;
-    Uint8*          button_ranges;
+    Uint8           button_count;
+    GFC_TextWord*   button_list;
 }Window;
 
 typedef struct Menu_S {
     GFC_TextWord    name;
     Sprite*         bg_sprite;
-    GFC_Vector2D    offset;
 
     ButtonLayout    button_layout;
     Uint8           buttonMax;

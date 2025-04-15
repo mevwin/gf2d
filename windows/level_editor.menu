@@ -2,8 +2,7 @@
     "menu":
     {
         "bg_sprite": "images/ui/level_editor/menu.png",
-        "offset": [0, 0],
-        "buttonMax": 3,
+        "buttonMax": 1,
         "buttonLayout": 0,
         "barMax": 0,
         "windowMax": 1
@@ -16,7 +15,17 @@
             "fontSize": "LARGE",
             "textOffset": [-1, -1],
             "textColor": [255, 255, 255, 255],
-            "buttonOffset": [490, 444],
+            "buttonOffset": [650, 444],
+            "buttonColor": [20, 20, 20, 255],
+            "buttonType": "MENU"
+        },
+        {
+            "text": "NEXT",
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [330, 444],
             "buttonColor": [0, 0, 120, 255],
             "buttonType": "MENU"
         },
@@ -55,7 +64,21 @@
             "fontType": "STANDARD",
             "fontSize": "MEDIUM",
             "textColor": [255, 255, 255, 255],
-            "button_ranges": [0, 1, 2]
+            "buttons": ["QUIT", "NEXT", "-", "+"]
+        },
+        {
+            "name": "ROOM_COUNT",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [295, 166],
+            "scale": [690, 438],
+            "color": [120, 120, 10, 120],
+            "text": "SET ROOM LAYOUT DIMENSIONS",
+            "textOffset": [200, 10],
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textColor": [255, 255, 255, 255],
+            "buttons": ["QUIT", "NEXT", "-", "+"]
         }
     ]
 }

@@ -12,7 +12,6 @@ typedef struct UIManager_S {
     GFC_List*       ui_list;
     //GFC_List*       window_list;
     int             active_button;
-    int             button_range_index;
     Sprite*         menu_button;
     Sprite*         scroll_button;
     Sprite*         window;
@@ -58,7 +57,6 @@ void ui_system_init(char* configFile) {
     }
 
     ui_manager.active_button = 0;
-    ui_manager.button_range_index = 0;
 
     sj_free(config);
     atexit(ui_system_close);
@@ -95,7 +93,6 @@ Menu* create_menu(const char* filename) {
     }
 
     win_data = sj_object_get_value(data, "menu");
-    sj_object_get_vector2d(win_data, "offset", &menu->offset);
 
     strcpy(buffer, sj_object_get_string(win_data, "bg_sprite"));
     if (strcmp(buffer, "no sprite")) {
@@ -107,12 +104,13 @@ Menu* create_menu(const char* filename) {
     // create buttons
     sj_object_get_uint8(win_data, "buttonMax", &menu->buttonMax);
     if (menu->buttonMax) {
+        list = sj_object_get_value(data, "buttons");
+        menu->buttonMax = list->v.array->count;
         menu->buttonList = gfc_allocate_array(sizeof(Button), menu->buttonMax);
 
         sj_object_get_int(win_data, "buttonLayout", &i);    
         menu->button_layout = (ButtonLayout) i;
 
-        list = sj_object_get_value(data, "buttons");
         for (i = 0; i < menu->buttonMax; i++) {
             create_button(&menu->buttonList[i], sj_array_get_nth(list, i));
         }
@@ -121,8 +119,10 @@ Menu* create_menu(const char* filename) {
     // create bars
     sj_object_get_uint8(win_data, "barMax", &menu->barMax);
     if (menu->barMax) {
-        menu->barList = gfc_allocate_array(sizeof(Bar), menu->barMax);
         list = sj_object_get_value(data, "bars");
+        menu->barMax = list->v.array->count;
+        menu->barList = gfc_allocate_array(sizeof(Bar), menu->barMax);
+        
         for (i = 0; i < menu->barMax; i++) {
             create_bar(&menu->barList[i], sj_array_get_nth(list, i));
         }
@@ -131,8 +131,10 @@ Menu* create_menu(const char* filename) {
     // create windows
     sj_object_get_uint8(win_data, "windowMax", &menu->windowMax);
     if (menu->windowMax) {
-        menu->windowList = gfc_allocate_array(sizeof(Window), menu->windowMax);
         list = sj_object_get_value(data, "windows");
+        menu->windowMax = list->v.array->count;
+        menu->windowList = gfc_allocate_array(sizeof(Window), menu->windowMax);
+      
         for (i = 0; i < menu->windowMax; i++) {
             create_window(&menu->windowList[i], sj_array_get_nth(list, i));
         }
@@ -178,7 +180,7 @@ void create_bar(Bar* bar, SJson* data) {
 }
 
 void create_window(Window* window, SJson* data) {
-    SJson* ranges;
+    SJson* buttons;
 
     if (!window || !data) {
         slog("couldn't create window");
@@ -207,15 +209,15 @@ void create_window(Window* window, SJson* data) {
         window->ttl = -1;
     }
 
-    ranges = sj_object_get_value(data, "button_ranges");
-    if (ranges->v.array->count) {
-        window->button_ranges_count = ranges->v.array->count;
-        window->button_ranges = gfc_allocate_array(sizeof(Uint8), window->button_ranges_count);
-        for (int i = 0; i < window->button_ranges_count; i++) {
-            sj_get_uint8_value(sj_array_nth(ranges, i), &window->button_ranges[i]);
+    buttons = sj_object_get_value(data, "buttons");
+    if (buttons->v.array->count) {
+        window->button_count = buttons->v.array->count;
+        window->button_list = gfc_allocate_array(sizeof(GFC_TextWord), window->button_count);
+        for (int i = 0; i < window->button_count; i++) {
+            strcpy(window->button_list[i], sj_get_string_value(sj_array_nth(buttons, i)));
         }
     }
-    else window->button_ranges = NULL;
+    else window->button_list = NULL;
 }
 
 void create_textline(TextLine* txt, SJson* data) {
@@ -254,8 +256,8 @@ void delete_menu(Menu* menu) {
     }
     if (menu->windowMax) {
         for (i = 0; i < menu->windowMax; i++) {
-            if (menu->windowList[i].button_ranges_count);
-                free(menu->windowList[i].button_ranges);
+            if (menu->windowList[i].button_count);
+                free(menu->windowList[i].button_list);
         }
         free(menu->windowList);
     }
@@ -410,25 +412,32 @@ void drawUI(Uint8 w_state) {
     if (world_state == WORLD_EDITOR) {
         mouse_update_state();
 
-        gf2d_sprite_draw_image(menu->bg_sprite, menu->offset); // draw bg
+        gf2d_sprite_draw_image(menu->bg_sprite, gfc_vector2d(0, 0)); // draw bg
 
-        i = (int)get_level_editor_state();
+        i = (int) get_level_editor_state();
         win = &menu->windowList[i];
 
         draw_window(win);
 
-        for (i = 0; i < win->button_ranges_count; i++) {
-            button = &menu->buttonList[win->button_ranges[i]];
+        for (i = 0; i < menu->buttonMax; i++) {
+            button = &menu->buttonList[i];
             if (!button) continue;
 
+            for (j = 0; j < win->button_count; j++) {
+                if (!strcmp(button->textline.text, win->button_list[j]))
+                    break;
+            }
+
+            if (j == win->button_count) return;
+
             if (mouse_in_rect(button->region)) {
-                ui_manager.active_button = win->button_ranges[i];
+                ui_manager.active_button = i;
                 if (mouse_button_pressed(MOUSE_LEFT_CLICK))
                     button->selected = 1;
             }
             else ui_manager.active_button = -1;
 
-            draw_button(button, win->button_ranges[i]);
+            draw_button(button, i);
 
             if (button && button->selected) {
                 button->selected = 0;
@@ -440,10 +449,18 @@ void drawUI(Uint8 w_state) {
                             ui_manager.active_button = 0;
                             change_world_state(WORLD_EDITOR_CLOSE);
                         }
+                        else if (!strncmp(button->textline.text, "QUIT", 4)) {
+                            ui_manager.active_button = 0;
+                            set_level_editor_state(EDITOR_ROOM_LAYOUT);
+                        }
                         else if (!strncmp(button->textline.text, "+", 1))
                             level_editor_inc_room_count();
                         else if (!strncmp(button->textline.text, "-", 1))
                             level_editor_dec_room_count();
+
+                        break;
+                    case EDITOR_ROOM_LAYOUT:
+
 
                         break;
                 }
@@ -454,7 +471,7 @@ void drawUI(Uint8 w_state) {
     else if (world_state != WORLD_INGAME) {
         //mouse_update_state();
 
-        gf2d_sprite_draw_image(menu->bg_sprite, menu->offset); // draw bg
+        gf2d_sprite_draw_image(menu->bg_sprite, gfc_vector2d(0, 0)); // draw bg
         menu_check_input(menu, 0, menu->buttonMax - 1, NULL);
         
         // draw windows
@@ -565,7 +582,7 @@ void drawUI(Uint8 w_state) {
 
                     bar->scale = gfc_vector2d(e_data->currHealth / e_data->maxHealth, 1);
                     bar->offset = gfc_vector2d(enemy->position.x - bar->sprite->frame_w * 0.5f,
-                        enemy->position.y - enemy->sprite->frame_h);
+                                               enemy->position.y - enemy->sprite->frame_h);
                     gf2d_sprite_draw(bar->sprite, bar->offset, &bar->scale, NULL, NULL, NULL, NULL, 0);
                 }
             }
@@ -578,12 +595,14 @@ void drawUI(Uint8 w_state) {
 
 void menu_buttonList_advance(int min, int max, Window* win) {
     if (win) {
+        /*
         if (ui_manager.button_range_index < win->button_ranges_count - 1)
             ++ui_manager.button_range_index;
         else
             ui_manager.button_range_index = 0;
             
         ui_manager.active_button = win->button_ranges[ui_manager.button_range_index];
+        */
     }
     else {
         if (ui_manager.active_button < max)
@@ -595,12 +614,14 @@ void menu_buttonList_advance(int min, int max, Window* win) {
 
 void menu_buttonList_go_back(int min, int max, Window* win) {
     if (win) {
+        /*
         if (ui_manager.button_range_index) 
             --ui_manager.button_range_index;
         else
             ui_manager.button_range_index = win->button_ranges_count - 1;
   
         ui_manager.active_button = win->button_ranges[ui_manager.button_range_index];
+        */
     }
     else {
         if (ui_manager.active_button)
@@ -620,21 +641,21 @@ void menu_check_input(Menu* menu, int min, int max, Window* win) {
 
     // menu traversal
     switch (menu->button_layout) {
-        case MENU_BUTTON_HORIZONTAL:
-            if (gfc_input_command_pressed("moveright"))
-                menu_buttonList_advance(min, max, win);
-            else if (gfc_input_command_pressed("moveleft"))
-                menu_buttonList_go_back(min, max, win);
+    case MENU_BUTTON_HORIZONTAL:
+        if (gfc_input_command_pressed("moveright"))
+            menu_buttonList_advance(min, max, win);
+        else if (gfc_input_command_pressed("moveleft"))
+            menu_buttonList_go_back(min, max, win);
 
-            break;
+        break;
 
-        case MENU_BUTTON_VERTICAL:
-            if (gfc_input_command_pressed("moveup"))
-                menu_buttonList_go_back(min, max, win);
-            else if (gfc_input_command_pressed("movedown"))
-                menu_buttonList_advance(min, max, win);
+    case MENU_BUTTON_VERTICAL:
+        if (gfc_input_command_pressed("moveup"))
+            menu_buttonList_go_back(min, max, win);
+        else if (gfc_input_command_pressed("movedown"))
+            menu_buttonList_advance(min, max, win);
 
-            break;
+        break;
 
         /*
         case MENU_BUTTON_CARDINAL: //TODO: fix later
