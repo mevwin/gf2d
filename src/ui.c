@@ -10,8 +10,9 @@
 
 typedef struct UIManager_S {
     GFC_List*       ui_list;
-    //GFC_List*       window_list;
     int             active_button;
+
+    // sprites
     Sprite*         menu_button;
     Sprite*         scroll_button;
     Sprite*         window;
@@ -30,10 +31,14 @@ void create_textline(TextLine* txt, SJson* data);
 
 void reset_window_toggles();
 void draw_window(Window* win);
+void draw_notif_windows(Menu* m);
 void draw_button(Button* button, Uint8 index);
+
+void window_ttl_advance(Window* win);
 void menu_buttonList_advance(int min, int max, Window* win);
 void menu_buttonList_go_back(int min, int max, Window* win);
 void menu_check_input(Menu* menu, int min, int max, Window* win);
+void update_button_offset(Button* b, GFC_Vector2D new);
 
 void ui_system_init(char* configFile) {
     SJson* config, *menu_list;
@@ -180,7 +185,7 @@ void create_bar(Bar* bar, SJson* data) {
 }
 
 void create_window(Window* window, SJson* data) {
-    SJson* buttons;
+    SJson* buttons, *entry;
 
     if (!window || !data) {
         slog("couldn't create window");
@@ -212,12 +217,36 @@ void create_window(Window* window, SJson* data) {
     buttons = sj_object_get_value(data, "buttons");
     if (buttons->v.array->count) {
         window->button_count = buttons->v.array->count;
-        window->button_list = gfc_allocate_array(sizeof(GFC_TextWord), window->button_count);
+        window->wbd = gfc_allocate_array(sizeof(WindowButtonData), window->button_count);
         for (int i = 0; i < window->button_count; i++) {
-            strcpy(window->button_list[i], sj_get_string_value(sj_array_nth(buttons, i)));
+            entry = sj_array_nth(buttons, i);
+            window->wbd[i].drawn = 0;
+
+            strcpy(window->wbd[i].button_name,
+                sj_get_string_value(sj_array_nth(entry, 0))
+            );
+
+            sj_value_as_vector2d(sj_array_nth(entry, 1),
+                &window->wbd[i].button_offset
+            );
+
+            if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "INC_ROOM_COUNT"))
+                window->wbd[i].effect = level_editor_inc_room_count;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "DEC_ROOM_COUNT"))
+                window->wbd[i].effect = level_editor_dec_room_count;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "INC_ROOM_LAYOUT_X"))
+                window->wbd[i].effect = level_editor_inc_room_layout_x;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "DEC_ROOM_LAYOUT_X"))
+                window->wbd[i].effect = level_editor_dec_room_layout_x;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "INC_ROOM_LAYOUT_Y"))
+                window->wbd[i].effect = level_editor_inc_room_layout_y;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "DEC_ROOM_LAYOUT_Y"))
+                window->wbd[i].effect = level_editor_dec_room_layout_y;
+            else
+                window->wbd[i].effect = NULL;
         }
     }
-    else window->button_list = NULL;
+    else window->wbd = NULL;
 }
 
 void create_textline(TextLine* txt, SJson* data) {
@@ -256,8 +285,8 @@ void delete_menu(Menu* menu) {
     }
     if (menu->windowMax) {
         for (i = 0; i < menu->windowMax; i++) {
-            if (menu->windowList[i].button_count);
-                free(menu->windowList[i].button_list);
+            if (menu->windowList[i].button_count)
+                free(menu->windowList[i].wbd);
         }
         free(menu->windowList);
     }
@@ -329,6 +358,18 @@ void draw_window(Window* win) {
     }
 }
 
+void draw_notif_windows(Menu* m) {
+    Window* win;
+
+    for (int i = 0; i < m->windowMax; i++) {
+        win = &m->windowList[i];
+        if (win->type == WINDOW_BLOCK || !win->toggled) continue;
+
+        draw_window(win);
+        window_ttl_advance(win);
+    }
+}
+
 void draw_button(Button* button, Uint8 index) {
     Sprite* b = NULL;
     GFC_Color color;
@@ -393,25 +434,41 @@ void reset_window_toggles() {
     }
 }
 
+void reset_window_wbds(Window* win) {
+    for (int i = 0; i < win->button_count; i++) {
+        win->wbd[i].drawn = 0;
+    }
+}
+
 void drawUI(Uint8 w_state) {
-    WorldState world_state;
+    // entity vars
     PlayerData* p_data;
     EnemyData* e_data;
     GFC_List* enemy_list;
     Entity* enemy;
+    
+    // UI pointer vars
     Menu* menu;
     Window* win;
+    WindowButtonData* wbd = NULL;
     Button* button = NULL;
     Bar* bar;
+
+    // helper vars
+    WorldState world_state;
+    EditorState editor_state;
+    GFC_TextBlock buffer;
+    GFC_Vector2D vec;
     int i, j;
 
     world_state = (WorldState) w_state;
 
     menu = (Menu*) gfc_list_nth(ui_manager.ui_list, w_state);
+    if (!menu) return;
 
     if (world_state == WORLD_EDITOR) {
         mouse_update_state();
-
+        editor_state = get_level_editor_state();
         gf2d_sprite_draw_image(menu->bg_sprite, gfc_vector2d(0, 0)); // draw bg
 
         i = (int) get_level_editor_state();
@@ -419,54 +476,135 @@ void drawUI(Uint8 w_state) {
 
         draw_window(win);
 
-        for (i = 0; i < menu->buttonMax; i++) {
-            button = &menu->buttonList[i];
-            if (!button) continue;
+        if (!win->button_count) return;
 
-            for (j = 0; j < win->button_count; j++) {
-                if (!strcmp(button->textline.text, win->button_list[j]))
+        // draw buttons
+        for (i = 0; i < win->button_count; i++) {
+            wbd = &win->wbd[i];
+            if (!wbd) continue;
+
+            for (j = 0; j < menu->buttonMax; j++) {
+                button = &menu->buttonList[j];
+                if (!button) continue;
+
+                if (!strcmp(button->textline.text, wbd->button_name) && !wbd->drawn) {
+                    wbd->drawn = 1;
                     break;
+                }
             }
 
-            if (j == win->button_count) return;
+            // if button was found, draw it and handle input
+            if (j < menu->buttonMax) {
+                // draw button
+                update_button_offset(button, wbd->button_offset);
 
-            if (mouse_in_rect(button->region)) {
-                ui_manager.active_button = i;
-                if (mouse_button_pressed(MOUSE_LEFT_CLICK))
-                    button->selected = 1;
-            }
-            else ui_manager.active_button = -1;
+                if (mouse_in_rect(button->region)) {
+                    ui_manager.active_button = j;
+                    if (mouse_button_pressed(MOUSE_LEFT_CLICK))
+                        button->selected = 1;
+                }
+                else ui_manager.active_button = -1;
 
-            draw_button(button, i);
+                draw_button(button, j);
 
-            if (button && button->selected) {
-                button->selected = 0;
-                reset_window_toggles();
+                // handle button inputs
+                if (button->selected) {
+                    button->selected = 0;
+                    reset_window_toggles();
 
-                switch (get_level_editor_state()) {
-                    case EDITOR_ROOM_INIT:
-                        if (!strncmp(button->textline.text, "QUIT", 4)) {
-                            ui_manager.active_button = 0;
-                            change_world_state(WORLD_EDITOR_CLOSE);
-                        }
-                        else if (!strncmp(button->textline.text, "QUIT", 4)) {
-                            ui_manager.active_button = 0;
-                            set_level_editor_state(EDITOR_ROOM_LAYOUT);
-                        }
-                        else if (!strncmp(button->textline.text, "+", 1))
-                            level_editor_inc_room_count();
-                        else if (!strncmp(button->textline.text, "-", 1))
-                            level_editor_dec_room_count();
+                    if (wbd->effect) wbd->effect();
 
-                        break;
-                    case EDITOR_ROOM_LAYOUT:
+                    switch (editor_state) {
+                        case EDITOR_ROOM_INIT:
+                            if (!strncmp(button->textline.text, "QUIT", 4)) {
+                                ui_manager.active_button = 0;
+                                change_world_state(WORLD_EDITOR_CLOSE);
+                            }
+                            else if (!strncmp(button->textline.text, "NEXT", 4)) {
+                                ui_manager.active_button = 0;
+                                predict_room_layout();
+                                set_level_editor_state(EDITOR_ROOM_LAYOUT);
+                            }
+                            /*
+                            else if (!strncmp(button->textline.text, "+", 1))
+                                level_editor_inc_room_count();
+                            else if (!strncmp(button->textline.text, "-", 1))
+                                level_editor_dec_room_count();
+                            */
 
+                            break;
 
-                        break;
+                        case EDITOR_ROOM_LAYOUT:
+                            if (!strncmp(button->textline.text, "QUIT", 4)){
+                                ui_manager.active_button = 0;
+                                change_world_state(WORLD_EDITOR_CLOSE);
+                            }
+                            else if (!strncmp(button->textline.text, "NEXT", 4)){
+                                //set_level_editor_state(EDITOR_ROOM_LAYOUT);
+                            }
+                            else if (!strncmp(button->textline.text, "GO BACK", 4)){
+                                set_level_editor_state(EDITOR_ROOM_INIT);
+                            }
+
+                            break;
+                    }
                 }
             }
         }
+
+        // draw other UI elements
+        switch (editor_state) {
+            case EDITOR_ROOM_INIT:
+                // print room count
+                gfc_block_sprintf(buffer, "%d", get_level_editor_room_count());
+                vec = gfc_vector2d(620, 270);
+
+                font_display_text(
+                    buffer,
+                    FONT_STANDARD,
+                    FONT_SIZE_LARGE,
+                    GFC_COLOR_WHITE,
+                    0,
+                    &vec,
+                    NULL);
+
+                break;
+
+            case EDITOR_ROOM_LAYOUT:
+                // draw room layout
+                vec = get_level_editor_room_layout();
+                i = (int) vec.x;
+                j = (int) vec.y;
+
+                gfc_block_sprintf(buffer, "%d", i);
+                vec = gfc_vector2d(288, 288);
+                font_display_text(
+                    buffer,
+                    FONT_STANDARD,
+                    FONT_SIZE_MEDIUM,
+                    GFC_COLOR_WHITE,
+                    0,
+                    &vec,
+                    NULL);
+
+                gfc_block_sprintf(buffer, "%d", j);
+                vec = gfc_vector2d(288, 418);
+                font_display_text(
+                    buffer,
+                    FONT_STANDARD,
+                    FONT_SIZE_MEDIUM,
+                    GFC_COLOR_WHITE,
+                    0,
+                    &vec,
+                    NULL);
+
+                break;
+        }
+
+        draw_notif_windows(menu);
         draw_mouse();
+
+        reset_window_wbds(win);
     }
     else if (world_state != WORLD_INGAME) {
         //mouse_update_state();
@@ -474,15 +612,12 @@ void drawUI(Uint8 w_state) {
         gf2d_sprite_draw_image(menu->bg_sprite, gfc_vector2d(0, 0)); // draw bg
         menu_check_input(menu, 0, menu->buttonMax - 1, NULL);
         
-        // draw windows
+        // draw BLOCK windows
         for (i = 0; i < menu->windowMax; i++) {
             win = &menu->windowList[i];
-            if (!win || !win->toggled) continue;
+            if (win->type == WINDOW_NOTIF) continue;
 
             draw_window(win);
-
-            // ttl handling for notif windows
-            if (win->type == WINDOW_NOTIF) window_ttl_advance(win);
         }
 
         // draw buttons
@@ -511,7 +646,7 @@ void drawUI(Uint8 w_state) {
                         if (!strncmp(button->textline.text, "RESUME", 6))
                             change_world_state(WORLD_INGAME);
                         else if (!strncmp(button->textline.text, "QUIT", 4))
-                            change_world_state(WORLD_GAMECLOSE);
+                            change_world_state(WORLD_GAMEPLAY_CLOSE);
 
                         break;
 
@@ -519,7 +654,7 @@ void drawUI(Uint8 w_state) {
                         if (!strncmp(button->textline.text, "NEXT", 4)) // load next level here
                             change_world_state(WORLD_LOAD_NEXT_LEVEL);
                         else if (!strncmp(button->textline.text, "QUIT", 4))
-                            change_world_state(WORLD_GAMECLOSE);
+                            change_world_state(WORLD_GAMEPLAY_CLOSE);
 
                         break;
 
@@ -527,18 +662,22 @@ void drawUI(Uint8 w_state) {
                         if (!strncmp(button->textline.text, "RESPAWN", 7)) // load next level here
                             change_world_state(WORLD_RESTART_LEVEL);
                         else if (!strncmp(button->textline.text, "QUIT", 4))
-                            change_world_state(WORLD_GAMECLOSE);
+                            change_world_state(WORLD_GAMEPLAY_CLOSE);
 
                         break;
 
                     case WORLD_GAME_COMPLETE:
                         if (!strncmp(button->textline.text, "QUIT", 4))
-                            change_world_state(WORLD_GAMECLOSE);
+                            change_world_state(WORLD_GAMEPLAY_CLOSE);
 
                         break;
                 }
             }   
         }
+
+        // draw NOTIF windows
+        draw_notif_windows(menu);
+
         //draw_mouse();
     }
     else {
@@ -685,4 +824,10 @@ void menu_check_input(Menu* menu, int min, int max, Window* win) {
         active_button = &menu->buttonList[ui_manager.active_button];
         active_button->selected = 1;
     }
+}
+
+void update_button_offset(Button* b, GFC_Vector2D new) {
+    gfc_vector2d_copy(b->offset, new);
+    b->region.x = new.x;
+    b->region.y = new.y;
 }

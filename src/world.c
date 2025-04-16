@@ -112,7 +112,7 @@ void world_update() {
 
 			break;
 
-		case WORLD_GAMECLOSE:
+		case WORLD_GAMEPLAY_CLOSE:
 			free_all_entities();
 			level_curr_close();
 			gfc_list_clear(world_manager.enemy_list);
@@ -128,8 +128,8 @@ void world_update() {
 			break;
 
 		case WORLD_EDITOR:
-			drawUI(world_manager.state);
 			level_editor_update();
+			drawUI(world_manager.state);
 
 			break;
 

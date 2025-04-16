@@ -45,22 +45,29 @@ typedef struct Bar_S {
     GFC_Vector2D    scale;
 }Bar;
 
+typedef struct WindowButtonData {
+    Uint8           drawn;
+    GFC_TextWord    button_name;
+    GFC_Vector2D    button_offset;
+    void            (*effect)();
+}WindowButtonData;
+
 typedef struct Window_S {
-    GFC_TextWord    name;
-    WindowType      type;
+    GFC_TextWord        name;
+    WindowType          type;
 
-    Uint8           toggled;
-    float           ttl_then;
-    int             ttl_counter;
-    int             ttl;                // if ttl = -1, live forever
-    TextLine        textline;
+    Uint8               toggled;
+    float               ttl_then;
+    int                 ttl_counter;
+    int                 ttl;                // if ttl = -1, live forever
+    TextLine            textline;
 
-    GFC_Vector2D    offset;
-    GFC_Vector2D    scale;
-    GFC_Color       color;
+    GFC_Vector2D        offset;
+    GFC_Vector2D        scale;
+    GFC_Color           color;
 
-    Uint8           button_count;
-    GFC_TextWord*   button_list;
+    Uint8               button_count;
+    WindowButtonData*   wbd;
 }Window;
 
 typedef struct Menu_S {
