@@ -5,7 +5,7 @@
 
 typedef enum EditorState_E {
 	EDITOR_ROOM_INIT,
-	EDITOR_ROOM_LAYOUT
+	EDITOR_EDITING
 }EditorState;
 
 void level_editor_init();

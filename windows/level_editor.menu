@@ -58,9 +58,51 @@
             "buttonOffset": [-1, -1],
             "buttonColor": [0, 0, 120, 255],
             "buttonType": "MENU"
+        },
+        {
+            "text": "NEW LEVEL",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [0, 0, 120, 255],
+            "buttonType": "MENU"
+        },
+        {
+            "text": "LOAD EXISTING LEVEL",
+            "fontType": "STANDARD",
+            "fontSize": "SMALL",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [0, 0, 120, 255],
+            "buttonType": "MENU"
         }
     ],
     "windows":
+    [
+        {
+            "name": "INIT",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [115, 148],
+            "scale": [1050, 524],
+            "color": [120, 120, 10, 120],
+            "text": "SELECT MODE",
+            "textOffset": [200, 10],
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textColor": [255, 255, 255, 255],
+            "buttons":
+            [
+                ["QUIT", [490, 527], "NONE"],
+                ["NEW LEVEL", [270, 310], "NONE"],
+                ["LOAD EXISTING LEVEL", [710, 310], "NONE"]
+            ]
+        }
+    ],
+    "example_windows":
     [
         {
             "name": "ROOM_COUNT",

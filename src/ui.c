@@ -523,7 +523,7 @@ void drawUI(Uint8 w_state) {
                             else if (!strncmp(button->textline.text, "NEXT", 4)) {
                                 ui_manager.active_button = 0;
                                 predict_room_layout();
-                                set_level_editor_state(EDITOR_ROOM_LAYOUT);
+                                set_level_editor_state(EDITOR_EDITING);
                             }
                             /*
                             else if (!strncmp(button->textline.text, "+", 1))
@@ -534,7 +534,7 @@ void drawUI(Uint8 w_state) {
 
                             break;
 
-                        case EDITOR_ROOM_LAYOUT:
+                        case EDITOR_EDITING:
                             if (!strncmp(button->textline.text, "QUIT", 4)){
                                 ui_manager.active_button = 0;
                                 change_world_state(WORLD_EDITOR_CLOSE);
@@ -542,7 +542,7 @@ void drawUI(Uint8 w_state) {
                             else if (!strncmp(button->textline.text, "NEXT", 4)){
                                 //set_level_editor_state(EDITOR_ROOM_LAYOUT);
                             }
-                            else if (!strncmp(button->textline.text, "GO BACK", 4)){
+                            else if (!strncmp(button->textline.text, "GO BACK", 7)){
                                 set_level_editor_state(EDITOR_ROOM_INIT);
                             }
 
@@ -555,6 +555,7 @@ void drawUI(Uint8 w_state) {
         // draw other UI elements
         switch (editor_state) {
             case EDITOR_ROOM_INIT:
+                /*
                 // print room count
                 gfc_block_sprintf(buffer, "%d", get_level_editor_room_count());
                 vec = gfc_vector2d(620, 270);
@@ -569,13 +570,16 @@ void drawUI(Uint8 w_state) {
                     NULL);
 
                 break;
+                */
+                break;
 
-            case EDITOR_ROOM_LAYOUT:
+            case EDITOR_EDITING:
                 // draw room layout
                 vec = get_level_editor_room_layout();
                 i = (int) vec.x;
                 j = (int) vec.y;
 
+                /*
                 gfc_block_sprintf(buffer, "%d", i);
                 vec = gfc_vector2d(288, 288);
                 font_display_text(
@@ -599,6 +603,7 @@ void drawUI(Uint8 w_state) {
                     NULL);
 
                 break;
+                */
         }
 
         draw_notif_windows(menu);
