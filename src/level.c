@@ -24,16 +24,7 @@ typedef struct LevelManager_S {
 // NOTE: ONLY ONE LEVEL LOADED AT A TIME
 // NOTE: ALL OF THE LEVEL'S ROOMS ARE LOADED IN MEMORY
 
-/**
-* SWAPPING BETWEEN ROOMS:
-*	- save item data
-*	- save enemy data
-*	- change player position
-*/
-
 static LevelManager level_manager = { 0 };
-
-void level_manager_close();
 
 void create_room(Room* room, SJson* data);
 void create_ground(Ground* ground, SJson* ground_data);
@@ -70,7 +61,6 @@ void level_manager_init(const char* filename){
 
 	// TODO: retrieve level objective descriptions and store as list
 	
-
 	level_manager.wasInit = 1;
 	sj_free(level_def);
 	atexit(level_manager_close);
@@ -78,6 +68,8 @@ void level_manager_init(const char* filename){
 
 void level_manager_close() {
 	int i;
+
+	if (!level_manager.wasInit) return;
 
 	if (level_manager.curr_level) level_curr_close();
 
@@ -822,6 +814,10 @@ Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type) {
 
 Room* get_current_room() {
 	return &level_manager.curr_level->rooms[level_manager.room_num];
+}
+
+GFC_List* get_level_paths() {
+	return level_manager.level_list;
 }
 
 /**

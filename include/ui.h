@@ -93,7 +93,23 @@ typedef struct Menu_S {
 */
 
 void ui_system_init(char* configFile);
+
+TextLine* create_textline(
+    GFC_TextLine text,
+    FontType type,
+    FontSize size,
+    GFC_Color color,
+    GFC_Vector2D offset);
+
+Button* create_button(
+    ButtonType b_type,
+    TextLine* txt,
+    GFC_Vector2D offset,
+    GFC_Color color);
+
+void draw_button(Button* button, Uint8 index);
 void drawUI(Uint8 w_state);
 void toggle_window(const char* name, Uint8 toggle);
+void update_button_offset(Button* b, GFC_Vector2D new);
 
 #endif

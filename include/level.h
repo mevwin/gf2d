@@ -107,6 +107,7 @@ typedef struct Level_S {
 }Level;
 
 void level_manager_init(const char* filename);
+void level_manager_close();
 void level_load(Uint8 index);
 
 void load_current_room();
@@ -121,6 +122,7 @@ void level_free_level_spawn(const char* name);
 
 Level* get_curr_level();
 Room* get_current_room();
+GFC_List* get_level_paths();
 Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type);
 
 #endif 

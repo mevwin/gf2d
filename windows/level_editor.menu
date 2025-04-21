@@ -83,7 +83,7 @@
     "windows":
     [
         {
-            "name": "INIT",
+            "name": "MODE_SELECT",
             "toggled": 1,
             "type": "BLOCK",
             "offset": [115, 148],
@@ -99,6 +99,26 @@
                 ["QUIT", [490, 527], "NONE"],
                 ["NEW LEVEL", [270, 310], "NONE"],
                 ["LOAD EXISTING LEVEL", [710, 310], "NONE"]
+            ]
+        },
+        {
+            "name": "DISPLAY_EXISTING_LEVELS",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [115, 148],
+            "scale": [1050, 524],
+            "color": [120, 120, 10, 120],
+            "text": "SELECT LEVEL",
+            "textOffset": [375, 10],
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textColor": [255, 255, 255, 255],
+            "buttons":
+            [
+                ["QUIT", [291, 547], "NONE"],
+                ["GO BACK", [686, 547], "NONE"],
+                ["+", [1051, 160], "NEXT_PREV_PAGE"],
+                ["-", [164, 160], "PREV_PREV_PAGE"]
             ]
         }
     ],
@@ -120,8 +140,8 @@
             [
                 ["QUIT", [650, 444], "NONE"],  
                 ["NEXT", [330, 444], "NONE"], 
-                ["-", [443, 264], "DEC_ROOM_COUNT"], 
-                ["+", [770, 264], "INC_ROOM_COUNT"]
+                ["<-", [443, 264], "DEC_ROOM_COUNT"], 
+                ["->", [770, 264], "INC_ROOM_COUNT"]
             ]
         },
         {
@@ -138,10 +158,10 @@
             "textColor": [255, 255, 255, 255],
             "buttons":
             [
-                ["-", [161, 278], "DEC_ROOM_LAYOUT_X"], 
-                ["+", [371, 278], "INC_ROOM_LAYOUT_X"],
-                ["-", [161, 406], "DEC_ROOM_LAYOUT_Y"], 
-                ["+", [371, 406], "INC_ROOM_LAYOUT_Y"],
+                ["<-", [161, 278], "DEC_ROOM_LAYOUT_X"], 
+                ["->", [371, 278], "INC_ROOM_LAYOUT_X"],
+                ["<-", [161, 406], "DEC_ROOM_LAYOUT_Y"], 
+                ["->", [371, 406], "INC_ROOM_LAYOUT_Y"],
                 ["QUIT", [154, 527], "NONE" ],
                 ["GO BACK", [490, 527], "NONE"],
                 ["NEXT", [832, 527], "NONE"]

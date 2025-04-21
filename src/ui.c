@@ -4,6 +4,7 @@
 #include "world.h"
 #include "mouse.h"
 #include "level_editor.h"
+#include "level.h"
 #include "ui.h"
 #include "player.h"
 #include "enemy.h"
@@ -24,21 +25,19 @@ void ui_system_close();
 Menu* create_menu(const char* filename);
 void delete_menu(Menu* win);
 
-void create_window(Window* window, SJson* data);
-void create_button(Button* button, SJson* data);
-void create_bar(Bar* bar, SJson* data);
-void create_textline(TextLine* txt, SJson* data);
+void create_window_from_json(Window* window, SJson* data);
+void create_button_from_json(Button* button, SJson* data);
+void create_bar_from_json(Bar* bar, SJson* data);
+void create_textline_from_json(TextLine* txt, SJson* data);
 
 void reset_window_toggles();
 void draw_window(Window* win);
 void draw_notif_windows(Menu* m);
-void draw_button(Button* button, Uint8 index);
 
 void window_ttl_advance(Window* win);
 void menu_buttonList_advance(int min, int max, Window* win);
 void menu_buttonList_go_back(int min, int max, Window* win);
 void menu_check_input(Menu* menu, int min, int max, Window* win);
-void update_button_offset(Button* b, GFC_Vector2D new);
 
 void ui_system_init(char* configFile) {
     SJson* config, *menu_list;
@@ -117,7 +116,7 @@ Menu* create_menu(const char* filename) {
         menu->button_layout = (ButtonLayout) i;
 
         for (i = 0; i < menu->buttonMax; i++) {
-            create_button(&menu->buttonList[i], sj_array_get_nth(list, i));
+            create_button_from_json(&menu->buttonList[i], sj_array_get_nth(list, i));
         }
     }
 
@@ -129,7 +128,7 @@ Menu* create_menu(const char* filename) {
         menu->barList = gfc_allocate_array(sizeof(Bar), menu->barMax);
         
         for (i = 0; i < menu->barMax; i++) {
-            create_bar(&menu->barList[i], sj_array_get_nth(list, i));
+            create_bar_from_json(&menu->barList[i], sj_array_get_nth(list, i));
         }
     }
 
@@ -141,7 +140,7 @@ Menu* create_menu(const char* filename) {
         menu->windowList = gfc_allocate_array(sizeof(Window), menu->windowMax);
       
         for (i = 0; i < menu->windowMax; i++) {
-            create_window(&menu->windowList[i], sj_array_get_nth(list, i));
+            create_window_from_json(&menu->windowList[i], sj_array_get_nth(list, i));
         }
     }
 
@@ -149,14 +148,14 @@ Menu* create_menu(const char* filename) {
     return menu;
 }
 
-void create_button(Button* button, SJson* data) {
+void create_button_from_json(Button* button, SJson* data) {
     if (!button || !data) {
         slog("couldn't create button");
         return;
     }
 
     // textline
-    create_textline(&button->textline, data);
+    create_textline_from_json(&button->textline, data);
 
     // button
     sj_object_get_vector2d(data, "buttonOffset", &button->offset);
@@ -174,7 +173,38 @@ void create_button(Button* button, SJson* data) {
     button->color = sj_object_get_color(data, "buttonColor");
 }
 
-void create_bar(Bar* bar, SJson* data) {
+Button* create_button(
+    ButtonType b_type,
+    TextLine* txt,
+    GFC_Vector2D offset,
+    GFC_Color color) 
+{
+    Button* b;
+    b = gfc_allocate_array(sizeof(Button), 1);
+    
+    b->type = b_type;
+    b->textline = *txt;
+    gfc_vector2d_copy(b->offset, offset);
+
+    switch (b->type) {
+        case BUTTON_MENU:
+            b->region = gfc_rect(b->offset.x, b->offset.y,
+                ui_manager.menu_button->frame_w, ui_manager.menu_button->frame_h);
+
+            break;
+
+        case BUTTON_SCROLL:
+            b->region = gfc_rect(b->offset.x, b->offset.y,
+                ui_manager.scroll_button->frame_w, ui_manager.scroll_button->frame_h);
+
+            break;
+    }
+    b->color = color;
+
+    return b;
+}
+
+void create_bar_from_json(Bar* bar, SJson* data) {
     if (!bar || !data) {
         slog("couldn't create bar");
         return;
@@ -184,7 +214,7 @@ void create_bar(Bar* bar, SJson* data) {
     bar->scale = gfc_vector2d(1, 1);
 }
 
-void create_window(Window* window, SJson* data) {
+void create_window_from_json(Window* window, SJson* data) {
     SJson* buttons, *entry;
 
     if (!window || !data) {
@@ -192,7 +222,7 @@ void create_window(Window* window, SJson* data) {
         return;
     }
     // textline
-    create_textline(&window->textline, data);
+    create_textline_from_json(&window->textline, data);
 
     // window
     strcpy(window->name, sj_object_get_string(data, "name"));
@@ -230,18 +260,11 @@ void create_window(Window* window, SJson* data) {
                 &window->wbd[i].button_offset
             );
 
-            if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "INC_ROOM_COUNT"))
-                window->wbd[i].effect = level_editor_inc_room_count;
-            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "DEC_ROOM_COUNT"))
-                window->wbd[i].effect = level_editor_dec_room_count;
-            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "INC_ROOM_LAYOUT_X"))
-                window->wbd[i].effect = level_editor_inc_room_layout_x;
-            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "DEC_ROOM_LAYOUT_X"))
-                window->wbd[i].effect = level_editor_dec_room_layout_x;
-            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "INC_ROOM_LAYOUT_Y"))
-                window->wbd[i].effect = level_editor_inc_room_layout_y;
-            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "DEC_ROOM_LAYOUT_Y"))
-                window->wbd[i].effect = level_editor_dec_room_layout_y;
+            // TODO: CHANGE LATER
+            if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "NEXT_PREV_PAGE"))
+                window->wbd[i].effect = level_editor_inc_level_preview_pg;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "PREV_PREV_PAGE"))
+                window->wbd[i].effect = level_editor_dec_level_preview_pg;
             else
                 window->wbd[i].effect = NULL;
         }
@@ -249,7 +272,26 @@ void create_window(Window* window, SJson* data) {
     else window->wbd = NULL;
 }
 
-void create_textline(TextLine* txt, SJson* data) {
+TextLine* create_textline(
+    GFC_TextLine text,
+    FontType type,
+    FontSize size,
+    GFC_Color color,
+    GFC_Vector2D offset) 
+{
+    TextLine* t;
+    t = gfc_allocate_array(sizeof(TextLine), 1);
+
+    strcpy(t->text, text);
+    t->type = type;
+    t->size = size;
+    t->color = color;
+    gfc_vector2d_copy(t->offset, offset);
+
+    return t;
+}
+
+void create_textline_from_json(TextLine* txt, SJson* data) {
     strcpy(txt->text, sj_object_get_string(data, "text"));
     //slog("%s", txt->text);
     
@@ -441,7 +483,7 @@ void reset_window_wbds(Window* win) {
 }
 
 void drawUI(Uint8 w_state) {
-    // entity vars
+    // struct vars
     PlayerData* p_data;
     EnemyData* e_data;
     GFC_List* enemy_list;
@@ -468,6 +510,7 @@ void drawUI(Uint8 w_state) {
 
     if (world_state == WORLD_EDITOR) {
         mouse_update_state();
+
         editor_state = get_level_editor_state();
         gf2d_sprite_draw_image(menu->bg_sprite, gfc_vector2d(0, 0)); // draw bg
 
@@ -512,18 +555,20 @@ void drawUI(Uint8 w_state) {
                     button->selected = 0;
                     reset_window_toggles();
 
-                    if (wbd->effect) wbd->effect();
-
                     switch (editor_state) {
-                        case EDITOR_ROOM_INIT:
+                        case EDITOR_SELECT_MODE:
                             if (!strncmp(button->textline.text, "QUIT", 4)) {
                                 ui_manager.active_button = 0;
                                 change_world_state(WORLD_EDITOR_CLOSE);
                             }
-                            else if (!strncmp(button->textline.text, "NEXT", 4)) {
+                            else if (!strcmp(button->textline.text, "NEW LEVEL")) {
                                 ui_manager.active_button = 0;
-                                predict_room_layout();
                                 set_level_editor_state(EDITOR_EDITING);
+                            }
+                            else if (!strcmp(button->textline.text, "LOAD EXISTING LEVEL")) {
+                                ui_manager.active_button = 0;
+                                initialize_level_previews();
+                                set_level_editor_state(EDITOR_EXISTING_LEVELS);
                             }
                             /*
                             else if (!strncmp(button->textline.text, "+", 1))
@@ -534,76 +579,46 @@ void drawUI(Uint8 w_state) {
 
                             break;
 
+                        case EDITOR_EXISTING_LEVELS:
+                            if (!strcmp(button->textline.text, "QUIT")) {
+                                ui_manager.active_button = 0;
+                                free_level_previews();
+                                change_world_state(WORLD_EDITOR_CLOSE);
+                            }
+                            else if (!strcmp(button->textline.text, "GO BACK")) {
+                                free_level_previews();
+                                set_level_editor_state(EDITOR_SELECT_MODE);
+                            }
+                            else if (!strcmp(button->textline.text, "+")) {
+                                //level_editor_inc_room_count();
+                            }
+                            else if (!strcmp(button->textline.text, "-")) {
+                                //level_editor_dec_room_count();
+                            }
+
+                            break;
+
                         case EDITOR_EDITING:
                             if (!strncmp(button->textline.text, "QUIT", 4)){
                                 ui_manager.active_button = 0;
                                 change_world_state(WORLD_EDITOR_CLOSE);
                             }
-                            else if (!strncmp(button->textline.text, "NEXT", 4)){
-                                //set_level_editor_state(EDITOR_ROOM_LAYOUT);
-                            }
-                            else if (!strncmp(button->textline.text, "GO BACK", 7)){
-                                set_level_editor_state(EDITOR_ROOM_INIT);
-                            }
 
                             break;
                     }
+
+                    if (wbd->effect) wbd->effect();
                 }
             }
         }
 
         // draw other UI elements
         switch (editor_state) {
-            case EDITOR_ROOM_INIT:
-                /*
-                // print room count
-                gfc_block_sprintf(buffer, "%d", get_level_editor_room_count());
-                vec = gfc_vector2d(620, 270);
-
-                font_display_text(
-                    buffer,
-                    FONT_STANDARD,
-                    FONT_SIZE_LARGE,
-                    GFC_COLOR_WHITE,
-                    0,
-                    &vec,
-                    NULL);
+            case EDITOR_EXISTING_LEVELS:
+                // draw level buttons
+                level_editor_draw_level_previews();
 
                 break;
-                */
-                break;
-
-            case EDITOR_EDITING:
-                // draw room layout
-                vec = get_level_editor_room_layout();
-                i = (int) vec.x;
-                j = (int) vec.y;
-
-                /*
-                gfc_block_sprintf(buffer, "%d", i);
-                vec = gfc_vector2d(288, 288);
-                font_display_text(
-                    buffer,
-                    FONT_STANDARD,
-                    FONT_SIZE_MEDIUM,
-                    GFC_COLOR_WHITE,
-                    0,
-                    &vec,
-                    NULL);
-
-                gfc_block_sprintf(buffer, "%d", j);
-                vec = gfc_vector2d(288, 418);
-                font_display_text(
-                    buffer,
-                    FONT_STANDARD,
-                    FONT_SIZE_MEDIUM,
-                    GFC_COLOR_WHITE,
-                    0,
-                    &vec,
-                    NULL);
-
-                break;
-                */
         }
 
         draw_notif_windows(menu);
@@ -785,21 +800,21 @@ void menu_check_input(Menu* menu, int min, int max, Window* win) {
 
     // menu traversal
     switch (menu->button_layout) {
-    case MENU_BUTTON_HORIZONTAL:
-        if (gfc_input_command_pressed("moveright"))
-            menu_buttonList_advance(min, max, win);
-        else if (gfc_input_command_pressed("moveleft"))
-            menu_buttonList_go_back(min, max, win);
+        case MENU_BUTTON_HORIZONTAL:
+            if (gfc_input_command_pressed("moveright"))
+                menu_buttonList_advance(min, max, win);
+            else if (gfc_input_command_pressed("moveleft"))
+                menu_buttonList_go_back(min, max, win);
 
-        break;
+            break;
 
-    case MENU_BUTTON_VERTICAL:
-        if (gfc_input_command_pressed("moveup"))
-            menu_buttonList_go_back(min, max, win);
-        else if (gfc_input_command_pressed("movedown"))
-            menu_buttonList_advance(min, max, win);
+        case MENU_BUTTON_VERTICAL:
+            if (gfc_input_command_pressed("moveup"))
+                menu_buttonList_go_back(min, max, win);
+            else if (gfc_input_command_pressed("movedown"))
+                menu_buttonList_advance(min, max, win);
 
-        break;
+            break;
 
         /*
         case MENU_BUTTON_CARDINAL: //TODO: fix later

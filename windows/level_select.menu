@@ -1,7 +1,7 @@
 {
     "menu":
     {
-        "bg_sprite": "no sprite",
+        "bg_sprite": "images/ui/level_editor/menu.png",
         "buttonMax": 1,
         "buttonLayout": 0,
         "barMax": 0,
