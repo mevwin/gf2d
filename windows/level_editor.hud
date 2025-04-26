@@ -1,10 +1,147 @@
 {
     "menu":
     {
+        "name": "EDITOR_HUD",
         "bg_sprite": "no sprite",
         "buttonMax": 1,
         "buttonLayout": 0,
         "barMax": 0,
         "windowMax": 1
-    }
+    },
+    "buttons":
+    [
+        {
+            "text": "QUIT",
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [20, 20, 20, 255],
+            "buttonType": "MENU"
+        },
+        {
+            "text": "SAVE",
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [20, 20, 100, 255],
+            "buttonType": "MENU"
+        },
+        {
+            "text": "-",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [120, 0, 0, 255],
+            "buttonType": "SCROLL"
+        },
+        {
+            "text": "+",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [0, 120, 0, 255],
+            "buttonType": "SCROLL"
+        }
+    ],
+    "windows":
+    [
+        {
+            "name": "TOP_MENU",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [0, 0],
+            "scale": [980, 150],
+            "color": [120, 120, 10, 170],
+            "hasText": 0,
+            "buttons":
+            [
+                
+            ]
+        },
+        {
+            "name": "SIDE_MENU",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [980, 0],
+            "scale": [300, 720],
+            "color": [0, 120, 10, 170],
+            "hasText": 0,
+            "buttons":
+            [
+                ["SAVE", [980, 470], "NONE"],
+                ["QUIT", [980, 600], "NONE"],
+                ["-", [980, 360], "PREV_ENT"],
+                ["+", [1200, 360], "NEXT_ENT"]
+            ]
+        },
+        {
+            "name": "ENTITY_MODE",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [1070, 360],
+            "scale": [120, 80],
+            "color": [120, 120, 10, 170],
+            "hasText": 1,
+            "text": "TEST",
+            "textOffset": [0, 25],
+            "fontType": "STANDARD",
+            "fontSize": "SMALL",
+            "textColor": [255, 255, 255, 255],
+            "buttons": []
+        }
+    ],
+    "example_windows":
+    [
+        {
+            "name": "ROOM_COUNT",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [295, 166],
+            "scale": [690, 438],
+            "color": [120, 120, 10, 120],
+            "text": "HOW MANY ROOMS?",
+            "textOffset": [200, 10],
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textColor": [255, 255, 255, 255],
+            "buttons": 
+            [
+                ["QUIT", [650, 444], "NONE"],  
+                ["NEXT", [330, 444], "NONE"], 
+                ["<-", [443, 264], "DEC_ROOM_COUNT"], 
+                ["->", [770, 264], "INC_ROOM_COUNT"]
+            ]
+        },
+        {
+            "name": "ROOM_LAYOUT",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [115, 148],
+            "scale": [1050, 524],
+            "color": [120, 120, 10, 120],
+            "text": "CREATE ROOM LAYOUT",
+            "textOffset": [160, 10],
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textColor": [255, 255, 255, 255],
+            "buttons":
+            [
+                ["<-", [161, 278], "DEC_ROOM_LAYOUT_X"], 
+                ["->", [371, 278], "INC_ROOM_LAYOUT_X"],
+                ["<-", [161, 406], "DEC_ROOM_LAYOUT_Y"], 
+                ["->", [371, 406], "INC_ROOM_LAYOUT_Y"],
+                ["QUIT", [154, 527], "NONE" ],
+                ["GO BACK", [490, 527], "NONE"],
+                ["NEXT", [832, 527], "NONE"]
+            ]
+        }
+    ]
 }

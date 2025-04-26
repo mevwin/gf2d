@@ -60,6 +60,7 @@ typedef struct Window_S {
     float               ttl_then;
     int                 ttl_counter;
     int                 ttl;                // if ttl = -1, live forever
+    Uint8               hasText;
     TextLine            textline;
 
     GFC_Vector2D        offset;

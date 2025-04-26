@@ -1,6 +1,7 @@
 {
     "menu":
     {
+        "name": "PAUSE_MENU",
         "bg_sprite": "images/ui/pause_menu/pause_menu.png",
         "buttonMax": 1,
         "buttonLayout": 1,

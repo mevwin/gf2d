@@ -10,8 +10,8 @@ typedef enum EntityType_S{
     PLAYER,
     ENEMY,
     ITEM,
-    PROJECTILE,
-    HAZARD
+    HAZARD,
+    PROJECTILE
 }EntityType;
 
 typedef enum EntitySearchType_E {

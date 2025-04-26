@@ -1,6 +1,7 @@
 {
     "menu":
     {
+        "name": "MAIN_MENU",
         "bg_sprite": "images/ui/main_menu/main_menu.png",
         "buttonMax": 1,
         "buttonLayout": 1,

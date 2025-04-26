@@ -1,6 +1,7 @@
 {
     "menu":
     {
+        "name": "LEVEL_COMPLETE",
         "bg_sprite": "images/ui/level_complete/level_complete.png",
         "buttonMax": 1,
         "buttonLayout": 1,

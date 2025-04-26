@@ -1,6 +1,7 @@
 {
     "menu":
     {
+        "name": "PLAYER_DEAD",
         "bg_sprite": "images/ui/player_dead/player_dead.png",
         "buttonMax": 1,
         "buttonLayout": 1,

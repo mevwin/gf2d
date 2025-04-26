@@ -1,6 +1,7 @@
 {
     "menu":
     {
+        "name": "GAME_COMPLETE",
         "bg_sprite": "images/ui/game_complete/game_complete.png",
         "buttonMax": 1,
         "buttonLayout": 1,

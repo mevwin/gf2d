@@ -1,6 +1,7 @@
 {
     "menu":
     {
+        "name": "PLAYER_HUD",
         "bg_sprite": "no sprite",
         "buttonMax": 0,
         "barMax": 1,
