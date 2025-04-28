@@ -13,6 +13,7 @@
 
 typedef struct EditorManager_S {
     EditorState     state;
+    EditorDrawMode  draw_mode;
 
     int             room_count;
     GFC_Vector2D    room_layout;
@@ -39,6 +40,7 @@ typedef struct EditorManager_S {
     // flags
     Uint8           toggle_hud;
     Uint8           holding_entity;
+    EditorDrawMode  drawMode;
 }EditorManager;
 
 static EditorManager editor = { 0 };
@@ -91,6 +93,7 @@ void level_editor_init(){
     editor.room_count = 1;
     editor.room_layout = gfc_vector2d(0, 0);
     editor.toggle_hud = 1;
+    editor.drawMode = EDITOR_DRAW_ENTITY;
 
     sj_free(config);
 }
@@ -208,8 +211,6 @@ void initialize_level_editor_entity_previews() {
 
     ent = (Entity*)gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
     if (ent) ent->draw_flag = 1;
-
-    //slog("%i", editor.entity_preview_list->count);
 }
 
 void change_level_editor_list_type(EntityType new) {

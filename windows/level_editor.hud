@@ -78,17 +78,17 @@
             [
                 ["SAVE", [980, 470], "NONE"],
                 ["QUIT", [980, 600], "NONE"],
-                ["-", [980, 360], "PREV_ENT_LIST"],
-                ["+", [1200, 360], "NEXT_ENT_LIST"],
-                ["-", [980, 240], "PREV_ENT"],
-                ["+", [1200, 240], "NEXT_ENT"]
+                ["-", [984, 365], "PREV_ENT_LIST"],
+                ["+", [1196, 365], "NEXT_ENT_LIST"],
+                ["-", [984, 245], "PREV_ENT"],
+                ["+", [1196, 245], "NEXT_ENT"]
             ]
         },
         {
             "name": "ENTITY_MODE",
             "toggled": 1,
             "type": "BLOCK",
-            "offset": [1070, 360],
+            "offset": [1070, 365],
             "scale": [120, 80],
             "color": [120, 120, 10, 170],
             "hasText": 1,

@@ -10,6 +10,11 @@ typedef enum EditorState_E {
 	EDITOR_EDITING
 }EditorState;
 
+typedef enum EditorDrawMode_E {
+	EDITOR_DRAW_ENTITY,
+	EDITOR_DRAW_TERRAIN
+}EditorDrawMode;
+
 void level_editor_init();
 void level_editor_update();
 void level_editor_close();
