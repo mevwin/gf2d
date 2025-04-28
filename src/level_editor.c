@@ -203,11 +203,13 @@ void initialize_level_editor_entity_previews() {
         ent = (Entity*) gfc_list_nth(editor.all_entities, i);
         if (!ent || ent->type != editor.entity_preview_type) continue;
 
-        if (editor.entity_preview_index == i)
-            ent->draw_flag = 1;
-
         gfc_list_append(editor.entity_preview_list, ent);
     }
+
+    ent = (Entity*)gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
+    if (ent) ent->draw_flag = 1;
+
+    //slog("%i", editor.entity_preview_list->count);
 }
 
 void change_level_editor_list_type(EntityType new) {
@@ -218,6 +220,8 @@ void change_level_editor_list_type(EntityType new) {
     // reset draw flag for entity being drawn from preview list
     ent = (Entity*) gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
     if (ent) ent->draw_flag = 0;
+
+    editor.entity_preview_index = 0;
 
     // change list contents
     gfc_list_clear(editor.entity_preview_list);
@@ -270,6 +274,7 @@ void level_editor_draw_level_previews() {
 void level_editor_draw_entity_preview_region() {
     Entity* ent;
     ItemData* i_data;
+    GFC_TextWord text;
 
     gf2d_draw_rect_filled(editor.entity_preview_region, gfc_color8(120, 120, 120, 120));
     
@@ -336,11 +341,37 @@ void level_editor_prev_list_type() {
 }
 
 void level_editor_next_ent() {
+    Entity* ent;
 
+    ent = (Entity*)gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
+    if (ent) ent->draw_flag = 0;
+
+    if (editor.entity_preview_index < editor.entity_preview_list->count - 1)
+        editor.entity_preview_index++;
+    else
+        editor.entity_preview_index = 0;
+
+    ent = (Entity*) gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
+    if (ent) ent->draw_flag = 1;
+
+    //slog("%i", editor.entity_preview_index);
 }
 
 void level_editor_prev_ent() {
+    Entity* ent;
 
+    ent = (Entity*)gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
+    if (ent) ent->draw_flag = 0;
+
+    if (editor.entity_preview_index)
+        editor.entity_preview_index--;
+    else
+        editor.entity_preview_index = editor.entity_preview_list->count - 1;
+
+    ent = (Entity*) gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
+    if (ent) ent->draw_flag = 1;
+
+    //slog("%i", editor.entity_preview_index);
 }
 
 EditorState get_level_editor_state() {

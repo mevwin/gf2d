@@ -279,12 +279,10 @@ void create_window_from_json(Window* window, SJson* data) {
                 window->wbd[i].effect = level_editor_next_list_type;
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "PREV_ENT_LIST"))
                 window->wbd[i].effect = level_editor_prev_list_type;
-
-            // TODO NOW: EDIT THIS
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "NEXT_ENT"))
-                window->wbd[i].effect = level_editor_next_list_type;
+                window->wbd[i].effect = level_editor_next_ent;
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "PREV_ENT"))
-                window->wbd[i].effect = level_editor_prev_list_type;
+                window->wbd[i].effect = level_editor_prev_ent;
             else
                 window->wbd[i].effect = NULL;
         }

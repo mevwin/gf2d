@@ -37,9 +37,6 @@ void level_editor_next_list_type();
 void level_editor_prev_list_type();
 void level_editor_next_ent();
 void level_editor_prev_ent();
-//
-//
-
 
 EditorState get_level_editor_state();
 int get_level_editor_room_count();

@@ -142,6 +142,7 @@ Entity* item_dummy_spawn(SJson* data, ItemType i_type, GFC_Vector2D position) {
 
 		case ITEM_HEALTH_PICKUP:
 			sj_object_get_int(data, "effect_value", &i_data->effect_value.num);
+			gfc_word_cpy(i_data->effect_value.text, sj_object_get_string(data, "effect_value_name"));
 			//slog("%i", i_data->effect_value.num);
 			break;
 	}

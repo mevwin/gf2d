@@ -33,7 +33,7 @@
                 "max_velocity": [3.0, 13.0],
                 "#accel": "[horiz_accel, fast fall accel]",
                 "accel": [0.1, 3.0],
-                "sprite": "sprites/enemy/coke.png"
+                "sprite": "sprites/enemy/chaser.png"
             },
             "enemy_data":
             {

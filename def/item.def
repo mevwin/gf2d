@@ -47,7 +47,8 @@
             "interact_type": 1,
             "grav_flag": 0,
             "sprite": "sprites/item/bash.png",
-            "effect_value": 30
+            "effect_value": 30,
+            "effect_value_name": "HEALTH"
         }
     ]
 }
