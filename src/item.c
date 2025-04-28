@@ -20,7 +20,7 @@ Entity* item_spawn(const char* item_name, GFC_Vector2D position) {
 
 	item = entity_new();
 	if (!item) {
-		slog("failed to initialize enemy");
+		slog("failed to initialize item");
 		return;
 	}
 	item->type = ITEM;
@@ -67,7 +67,7 @@ Entity* item_spawn(const char* item_name, GFC_Vector2D position) {
 		return;
 	}
 
-	sj_object_get_uint8(init_data, "grav_flag", &i_data->active);
+	sj_object_get_uint8(init_data, "grav_flag", &item->grav_flag);
 
 	sj_object_get_int(init_data, "interact_type", &i);
 	i_data->interactType = (ItemInteractType) i;
@@ -88,6 +88,65 @@ Entity* item_spawn(const char* item_name, GFC_Vector2D position) {
 
 	item->sprite = gf2d_sprite_load_image(sj_object_get_string(init_data, "sprite"));
 	
+	update_hurtbox(item);
+	update_boundbox(item);
+
+	return item;
+}
+
+Entity* item_dummy_spawn(SJson* data, ItemType i_type, GFC_Vector2D position) {
+	ItemData* i_data;
+	Entity* item;
+	int i;
+
+	if (!data) return;
+
+	item = entity_new();
+	if (!item) {
+		slog("failed to initialize item");
+		return;
+	}
+	item->type = ITEM;
+	gfc_vector2d_copy(item->position, position);
+	item->draw_flag = 0;
+
+	item->think = item_think;
+	item->update = item_update;
+	item->grav = item_gravity;
+	item->free = item_free;
+
+	i_data = gfc_allocate_array(sizeof(ItemData), 1);
+	if (!i_data) {
+		slog("couldn't allocate space for item");
+		entity_free(item);
+		free(i_data);
+		return;
+	}
+	item->data = i_data;
+	i_data->active = 0;
+
+	gfc_word_cpy(item->name, sj_object_get_string(data, "name"));
+	sj_object_get_int(data, "type", &i);
+	i_data->type = (ItemType) i;
+
+	sj_object_get_int(data, "interact_type", &i);
+	i_data->interactType = (ItemInteractType)i;
+
+	sj_object_get_uint8(data, "grav_flag", &item->grav_flag);
+
+	switch (i_data->type) {
+		case ITEM_ABILITY_UNLOCK:
+			gfc_word_cpy(i_data->effect_value.text, sj_object_get_string(data, "effect_value"));
+			//slog("%s", i_data->effect_value.text);
+			break;
+
+		case ITEM_HEALTH_PICKUP:
+			sj_object_get_int(data, "effect_value", &i_data->effect_value.num);
+			//slog("%i", i_data->effect_value.num);
+			break;
+	}
+
+	item->sprite = gf2d_sprite_load_image(sj_object_get_string(data, "sprite"));
 
 	update_hurtbox(item);
 	update_boundbox(item);
@@ -113,21 +172,21 @@ void item_think(Entity* self) {
 	// check interaction
 	if (!i_data->active) {
 		switch (i_data->interactType) {
-		case ITEM_INTERACT_PICK_UP:
-			if (gfc_input_command_pressed("interact") && gfc_rect_overlap(player->boundbox.s.r, self->boundbox.s.r)) {
-				i_data->active = 1;
-				item_activate(self, i_data->type);
-			}
+			case ITEM_INTERACT_PICK_UP:
+				if (gfc_input_command_pressed("interact") && gfc_rect_overlap(player->boundbox.s.r, self->boundbox.s.r)) {
+					i_data->active = 1;
+					item_activate(self, i_data->type);
+				}
 
-			break;
+				break;
 
-		case ITEM_INTERACT_ATTRACT:
+			case ITEM_INTERACT_ATTRACT:
 
-			break;
+				break;
 
-		default: //ITEM_INTERACT_STATIONARY
+			default: //ITEM_INTERACT_STATIONARY
 
-			break;
+				break;
 		}
 
 	}

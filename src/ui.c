@@ -275,6 +275,12 @@ void create_window_from_json(Window* window, SJson* data) {
                 window->wbd[i].effect = level_editor_inc_level_preview_pg;
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "PREV_PREV_PAGE"))
                 window->wbd[i].effect = level_editor_dec_level_preview_pg;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "NEXT_ENT_LIST"))
+                window->wbd[i].effect = level_editor_next_list_type;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "PREV_ENT_LIST"))
+                window->wbd[i].effect = level_editor_prev_list_type;
+
+            // TODO NOW: EDIT THIS
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "NEXT_ENT"))
                 window->wbd[i].effect = level_editor_next_list_type;
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "PREV_ENT"))
@@ -583,45 +589,45 @@ void draw_world_menu(Menu* menu, WorldState world_state) {
             reset_window_toggles();
 
             switch (world_state) {
-            case WORLD_MAINMENU:
-                if (!strncmp(button->textline.text, "PLAY", 4))
-                    change_world_state(WORLD_GAMESTART);
-                else if (!strncmp(button->textline.text, "LEVEL EDITOR", 12))
-                    change_world_state(WORLD_EDITOR_START);
-                else if (!strncmp(button->textline.text, "QUIT", 4))
-                    change_world_state(WORLD_CLOSE);
+                case WORLD_MAINMENU:
+                    if (!strncmp(button->textline.text, "PLAY", 4))
+                        change_world_state(WORLD_GAMESTART);
+                    else if (!strncmp(button->textline.text, "LEVEL EDITOR", 12))
+                        change_world_state(WORLD_EDITOR_START);
+                    else if (!strncmp(button->textline.text, "QUIT", 4))
+                        change_world_state(WORLD_CLOSE);
 
-                break;
+                    break;
 
-            case WORLD_PAUSEMENU:
-                if (!strncmp(button->textline.text, "RESUME", 6))
-                    change_world_state(WORLD_INGAME);
-                else if (!strncmp(button->textline.text, "QUIT", 4))
-                    change_world_state(WORLD_GAMEPLAY_CLOSE);
+                case WORLD_PAUSEMENU:
+                    if (!strncmp(button->textline.text, "RESUME", 6))
+                        change_world_state(WORLD_INGAME);
+                    else if (!strncmp(button->textline.text, "QUIT", 4))
+                        change_world_state(WORLD_GAMEPLAY_CLOSE);
 
-                break;
+                    break;
 
-            case WORLD_LEVELCOMPLETE:
-                if (!strncmp(button->textline.text, "NEXT", 4)) // load next level here
-                    change_world_state(WORLD_LOAD_NEXT_LEVEL);
-                else if (!strncmp(button->textline.text, "QUIT", 4))
-                    change_world_state(WORLD_GAMEPLAY_CLOSE);
+                case WORLD_LEVELCOMPLETE:
+                    if (!strncmp(button->textline.text, "NEXT", 4)) // load next level here
+                        change_world_state(WORLD_LOAD_NEXT_LEVEL);
+                    else if (!strncmp(button->textline.text, "QUIT", 4))
+                        change_world_state(WORLD_GAMEPLAY_CLOSE);
 
-                break;
+                    break;
 
-            case WORLD_PLAYERDEAD:
-                if (!strncmp(button->textline.text, "RESPAWN", 7)) // load next level here
-                    change_world_state(WORLD_RESTART_LEVEL);
-                else if (!strncmp(button->textline.text, "QUIT", 4))
-                    change_world_state(WORLD_GAMEPLAY_CLOSE);
+                case WORLD_PLAYERDEAD:
+                    if (!strncmp(button->textline.text, "RESPAWN", 7)) // load next level here
+                        change_world_state(WORLD_RESTART_LEVEL);
+                    else if (!strncmp(button->textline.text, "QUIT", 4))
+                        change_world_state(WORLD_GAMEPLAY_CLOSE);
 
-                break;
+                    break;
 
-            case WORLD_GAME_COMPLETE:
-                if (!strncmp(button->textline.text, "QUIT", 4))
-                    change_world_state(WORLD_GAMEPLAY_CLOSE);
+                case WORLD_GAME_COMPLETE:
+                    if (!strncmp(button->textline.text, "QUIT", 4))
+                        change_world_state(WORLD_GAMEPLAY_CLOSE);
 
-                break;
+                    break;
             }
         }
     }
@@ -693,15 +699,20 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
                         if (!strncmp(button->textline.text, "QUIT", 4)) {
                             ui_manager.active_button = 0;
                             change_world_state(WORLD_EDITOR_CLOSE);
+                            return;
                         }
                         else if (!strcmp(button->textline.text, "NEW LEVEL")) {
                             ui_manager.active_button = 0;
+                            initialize_level_editor_all_entities();
+                            initialize_level_editor_entity_previews();
                             set_level_editor_state(EDITOR_EDITING);
+                            return;
                         }
                         else if (!strcmp(button->textline.text, "LOAD EXISTING LEVEL")) {
                             ui_manager.active_button = 0;
                             initialize_level_previews();
                             set_level_editor_state(EDITOR_EXISTING_LEVELS);
+                            return;
                         }
 
                         break;
@@ -711,10 +722,12 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
                             ui_manager.active_button = 0;
                             free_level_previews();
                             change_world_state(WORLD_EDITOR_CLOSE);
+                            return;
                         }
                         else if (!strcmp(button->textline.text, "GO BACK")) {
                             free_level_previews();
                             set_level_editor_state(EDITOR_SELECT_MODE);
+                            return;
                         }
                         else if (!strcmp(button->textline.text, "+")) {
                             //level_editor_inc_room_count();
@@ -798,6 +811,7 @@ void draw_editor_hud(Menu* menu) {
                         if (!strcmp(button->textline.text, "QUIT")) {
                             ui_manager.active_button = 0;
                             change_world_state(WORLD_EDITOR_CLOSE);
+                            return;
                         }
 
                         if (wbd->effect) wbd->effect();
@@ -805,12 +819,15 @@ void draw_editor_hud(Menu* menu) {
                 }
             }
 
-            // TODO: draw other elements
-
             reset_window_wbds(win);
         }
+        
+        // TODO: draw other elements
+        level_editor_draw_entity_preview_region();
+
         draw_notif_windows(menu);
     }
+    entity_draw_all();
     draw_mouse();
 }
 

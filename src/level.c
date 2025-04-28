@@ -505,6 +505,7 @@ LevelSpawn* find_level_spawn(const char* name) {
 	int i;
 
 	room = get_current_room();
+	if (!room) return;
 
 	for (i = 0; i < room->level_spawns->count; i++) {
 		l_spawn = (LevelSpawn*)gfc_list_nth(room->level_spawns, i);
@@ -524,6 +525,7 @@ void level_free_level_spawn(const char* name) {
 	if (level_manager.transitioning) return;
 
 	room = get_current_room();
+	if (!room) return;
 
 	l_spawn = find_level_spawn(name);
 	if (l_spawn) {
@@ -531,7 +533,6 @@ void level_free_level_spawn(const char* name) {
 		gfc_list_delete_data(room->level_spawns, l_spawn);
 		if (l_spawn->data_copy) free(l_spawn->data_copy);
 		free(l_spawn);
-		return;
 	}
 }
 
@@ -813,7 +814,10 @@ Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type) {
 }
 
 Room* get_current_room() {
-	return &level_manager.curr_level->rooms[level_manager.room_num];
+	if (!level_manager.curr_level) 
+		return NULL;
+	else
+		return &level_manager.curr_level->rooms[level_manager.room_num];
 }
 
 GFC_List* get_level_paths() {

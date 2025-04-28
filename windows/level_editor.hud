@@ -78,8 +78,10 @@
             [
                 ["SAVE", [980, 470], "NONE"],
                 ["QUIT", [980, 600], "NONE"],
-                ["-", [980, 360], "PREV_ENT"],
-                ["+", [1200, 360], "NEXT_ENT"]
+                ["-", [980, 360], "PREV_ENT_LIST"],
+                ["+", [1200, 360], "NEXT_ENT_LIST"],
+                ["-", [980, 240], "PREV_ENT"],
+                ["+", [1200, 240], "NEXT_ENT"]
             ]
         },
         {
@@ -90,7 +92,7 @@
             "scale": [120, 80],
             "color": [120, 120, 10, 170],
             "hasText": 1,
-            "text": "TEST",
+            "text": "BLANK",
             "textOffset": [0, 25],
             "fontType": "STANDARD",
             "fontSize": "SMALL",

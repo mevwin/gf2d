@@ -32,5 +32,6 @@ typedef struct EnemyData_S{
 }EnemyData;
 
 Entity* enemy_spawn(int type, const char* name, GFC_Vector2D position, SJson* sprouter_spawns);
+Entity* enemy_dummy_spawn(SJson* data, EnemyType e_type, GFC_Vector2D position);
 
 #endif

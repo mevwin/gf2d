@@ -31,6 +31,7 @@ typedef struct Entity_S{
     Uint8           grav_flag;      // apply gravity to entity?
     Uint8           plat_flag;      // let entity pass through plat?
     Uint8           bash_flag;      // currently being bashed
+    Uint8           draw_flag;      // draw entity?
 
     Uint8           canBeDamaged;   // let entity be damaged?
     Uint8           canBeBashed;

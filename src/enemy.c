@@ -96,6 +96,56 @@ Entity* enemy_spawn(int type, const char* name, GFC_Vector2D position, SJson* sp
 	return enemy;
 }
 
+Entity* enemy_dummy_spawn(SJson* data, EnemyType e_type, GFC_Vector2D position) {
+	SJson* init_data;
+	EnemyData* e_data;
+	Entity* enemy;
+
+	if (!data) return;
+
+	enemy = entity_new();
+	if (!enemy) {
+		slog("failed to initialize enemy");
+		return;
+	}
+
+	init_data = sj_object_get_value(data, "entity_data");
+
+	enemy->type = ENEMY;
+	gfc_vector2d_copy(enemy->position, position);
+	enemy->velocity = gfc_vector2d(0, 0);
+	enemy->draw_flag = 0;
+	gfc_word_cpy(enemy->name, sj_object_get_string(data, "#name"));
+
+	sj_object_get_vector2d(init_data, "max_velocity", &enemy->max_velocity);
+	sj_object_get_vector2d(init_data, "accel", &enemy->max_velocity);
+	enemy->sprite = gf2d_sprite_load_image(sj_object_get_string(init_data, "sprite"));
+	enemy->frame = 0;
+
+	enemy->think = enemy_think;
+	enemy->update = enemy_update;
+	enemy->grav = enemy_gravity;
+	enemy->free = enemy_free;
+
+	enemy->scale = gfc_vector2d(1, 1);
+	enemy->dir = gfc_vector2d(0, 0);
+
+	enemy->data = enemy_data_init(sj_object_get_value(data, "enemy_data"), e_type);
+	e_data = enemy->data;
+	e_data->sprouter_spawns = NULL;
+	if (e_data->type == SPROUTER || e_data->type == CHASER)
+		enemy->grav_flag = 0;
+	else
+		enemy->grav_flag = 1;
+
+	//enemy->canBeBashed = 1;
+
+	update_hurtbox(enemy);
+	update_boundbox(enemy);
+
+	return enemy;
+}
+
 EnemyData* enemy_data_init(SJson* data, EnemyType type) {
 	EnemyData* e_data;
 
