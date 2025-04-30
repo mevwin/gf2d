@@ -49,31 +49,43 @@
             "buttonOffset": [-1, -1],
             "buttonColor": [0, 120, 0, 255],
             "buttonType": "SCROLL"
+        },
+        {
+            "text": "GND",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [20, 20, 100, 255],
+            "buttonType": "SCROLL"
+        },
+        {
+            "text": "PLT",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [20, 20, 100, 255],
+            "buttonType": "SCROLL"
         }
     ],
     "windows":
     [
         {
-            "name": "TOP_MENU",
-            "toggled": 1,
-            "type": "BLOCK",
-            "offset": [0, 0],
-            "scale": [980, 150],
-            "color": [120, 120, 10, 170],
-            "hasText": 0,
-            "buttons":
-            [
-                
-            ]
-        },
-        {
-            "name": "SIDE_MENU",
+            "name": "ENTITY_SIDE_MENU",
             "toggled": 1,
             "type": "BLOCK",
             "offset": [980, 0],
             "scale": [300, 720],
             "color": [0, 120, 10, 170],
-            "hasText": 0,
+            "hasText": 1,
+            "text": "DRAW ENTITIES",
+            "textOffset": [30, 150],
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textColor": [255, 255, 255, 255],
             "buttons":
             [
                 ["SAVE", [980, 470], "NONE"],
@@ -98,10 +110,44 @@
             "fontSize": "SMALL",
             "textColor": [255, 255, 255, 255],
             "buttons": []
+        },
+        {
+            "name": "TRN_SIDE_MENU",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [980, 0],
+            "scale": [300, 720],
+            "color": [120, 0, 10, 170],
+            "hasText": 1,
+            "text": "DRAW TERRAIN",
+            "textOffset": [30, 200],
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textColor": [255, 255, 255, 255],
+            "buttons":
+            [
+                ["SAVE", [980, 470], "NONE"],
+                ["QUIT", [980, 600], "NONE"],
+                ["GND", [1090, 270], "NONE"],
+                ["PLT", [1090, 370], "NONE"]
+            ]
         }
     ],
     "example_windows":
     [
+        {
+            "name": "TOP_MENU",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [0, 0],
+            "scale": [980, 150],
+            "color": [120, 120, 10, 170],
+            "hasText": 0,
+            "buttons":
+            [
+                
+            ]
+        },
         {
             "name": "ROOM_COUNT",
             "toggled": 1,

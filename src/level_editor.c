@@ -13,7 +13,6 @@
 
 typedef struct EditorManager_S {
     EditorState     state;
-    EditorDrawMode  draw_mode;
 
     int             room_count;
     GFC_Vector2D    room_layout;
@@ -41,9 +40,12 @@ typedef struct EditorManager_S {
     Uint8           toggle_hud;
     Uint8           holding_entity;
     EditorDrawMode  drawMode;
+    EditorTrnMode   trnMode;
 }EditorManager;
 
 static EditorManager editor = { 0 };
+
+void reset_level_editor_entity_previews();
 
 void level_editor_init(){
     SJson* config, *entry;
@@ -94,6 +96,7 @@ void level_editor_init(){
     editor.room_layout = gfc_vector2d(0, 0);
     editor.toggle_hud = 1;
     editor.drawMode = EDITOR_DRAW_ENTITY;
+    editor.trnMode = EDITOR_TRN_GROUND;
 
     sj_free(config);
 }
@@ -209,24 +212,26 @@ void initialize_level_editor_entity_previews() {
         gfc_list_append(editor.entity_preview_list, ent);
     }
 
-    ent = (Entity*)gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
+    ent = (Entity*) gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
     if (ent) ent->draw_flag = 1;
 }
 
 void change_level_editor_list_type(EntityType new) {
-    Entity* ent;
-    
     editor.entity_preview_type = new;
-    
+    reset_level_editor_entity_previews();
+    editor.entity_preview_index = 0;
+    initialize_level_editor_entity_previews();
+}
+
+void reset_level_editor_entity_previews() {
+    Entity* ent;
+
     // reset draw flag for entity being drawn from preview list
-    ent = (Entity*) gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
+    ent = (Entity*)gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
     if (ent) ent->draw_flag = 0;
 
-    editor.entity_preview_index = 0;
-
-    // change list contents
+    // clear list contents
     gfc_list_clear(editor.entity_preview_list);
-    initialize_level_editor_entity_previews();
 }
 
 void free_level_previews() {
@@ -246,8 +251,27 @@ void level_editor_update() {
         case EDITOR_EDITING:
             // input checks
             if (gfc_input_command_pressed("display")) {
-                if (editor.toggle_hud) editor.toggle_hud = 0;
-                else editor.toggle_hud = 1;
+                if (editor.toggle_hud) {
+                    if (editor.drawMode == EDITOR_DRAW_ENTITY)
+                        reset_level_editor_entity_previews();
+                    editor.toggle_hud = 0;
+                }
+                else {
+                    if (editor.drawMode == EDITOR_DRAW_ENTITY)
+                        initialize_level_editor_entity_previews();
+                    editor.toggle_hud = 1;
+                }
+            }
+
+            if (gfc_input_command_pressed("change_draw_mode") && editor.toggle_hud) {
+                if (editor.drawMode == EDITOR_DRAW_ENTITY) {
+                    reset_level_editor_entity_previews();
+                    editor.drawMode = EDITOR_DRAW_TERRAIN;
+                }
+                else if (editor.drawMode == EDITOR_DRAW_TERRAIN){
+                    initialize_level_editor_entity_previews();
+                    editor.drawMode = EDITOR_DRAW_ENTITY;
+                }
             }
 
             break;
@@ -399,10 +423,26 @@ GFC_TextWord* get_level_editor_ent_strings() {
     return editor.ent_strings;
 }
 
-void set_level_editor_state(EditorState state) {
-    editor.state = state;
+EditorDrawMode get_level_editor_draw_mode() {
+    return editor.drawMode;
+}
+
+EditorTrnMode get_level_editor_trn_mode() {
+    return editor.trnMode;
 }
 
 void toggle_level_editor_hud(Uint8 toggle) {
     editor.toggle_hud = toggle;
+}
+
+void set_level_editor_state(EditorState state) {
+    editor.state = state;
+}
+
+void set_level_editor_draw_mode(EditorDrawMode mode) {
+    editor.drawMode = mode;
+}
+
+void set_level_editor_trn_mode(EditorTrnMode mode) {
+    editor.trnMode = mode;
 }

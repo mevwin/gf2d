@@ -38,8 +38,10 @@ void draw_player_hud(Menu* menu, GFC_List* enemy_list, PlayerData* p_data);
 void draw_world_menu(Menu* menu, WorldState world_state);
 void draw_editor_menu(Menu* menu, EditorState editor_state);
 void draw_editor_hud(Menu* menu);
+void draw_editor_hud_buttons(Menu* menu, Window* win);
 
 Uint32 find_button_index_from_wbd(Menu* menu, WindowButtonData* wbd);
+Window* get_window_by_name(Window* list, Uint32 count, const char* name);
 
 void window_ttl_advance(Window* win);
 void menu_buttonList_advance(int min, int max, Window* win);
@@ -651,6 +653,21 @@ Uint32 find_button_index_from_wbd(Menu* menu, WindowButtonData* wbd) {
     }
 }
 
+Window* get_window_by_name(Window* list, Uint32 count, const char* name) {
+    Window* win;
+    
+    if (!list) return NULL;
+
+    for (int i = 0; i < count; i++) {
+        win = &list[i];
+        if (!win) continue;
+
+        if (!gfc_word_cmp(win->name, name))
+            return win;
+    }
+    return NULL;
+}
+
 void draw_editor_menu(Menu* menu, EditorState editor_state) {
     Window* win;
     WindowButtonData* wbd = NULL;
@@ -757,71 +774,104 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
     reset_window_wbds(win);
 }
 
+void draw_editor_hud_buttons(Menu* menu, Window* win) {
+    EditorDrawMode drawMode;
+    EditorTrnMode trnMode;
+    WindowButtonData* wbd;
+    Button* button;
+    int i, j;
+
+    drawMode = get_level_editor_draw_mode();
+    trnMode = get_level_editor_trn_mode();
+    for (i = 0; i < win->button_count; i++) {
+        wbd = &win->wbd[i];
+        if (!wbd) continue;
+
+        j = find_button_index_from_wbd(menu, wbd);
+
+        // if button was found, draw it and handle input
+        if (j < menu->buttonMax) {
+            // draw button
+            button = &menu->buttonList[j];
+            update_button_offset(button, wbd->button_offset);
+
+            if (mouse_in_rect(button->region)) {
+                ui_manager.active_button = j;
+                if (mouse_button_pressed(MOUSE_LEFT_CLICK))
+                    button->selected = 1;
+            }
+            else ui_manager.active_button = -1;
+
+            if ((!strcmp(button->textline.text, "GND") && trnMode == EDITOR_TRN_GROUND)
+                || (!strcmp(button->textline.text, "PLT") && trnMode == EDITOR_TRN_PLAT))
+            {
+                ui_manager.active_button = j;
+            }
+
+            draw_button(button, j);
+
+            // handle button inputs
+            if (button->selected) {
+                button->selected = 0;
+                reset_window_toggles();
+
+                if (!strcmp(button->textline.text, "QUIT")) {
+                    ui_manager.active_button = 0;
+                    change_world_state(WORLD_EDITOR_CLOSE);
+                    return;
+                }
+                else if (!strcmp(button->textline.text, "GND")) {
+                    ui_manager.active_button = 0;
+                    set_level_editor_trn_mode(EDITOR_TRN_GROUND);
+                }
+                else if (!strcmp(button->textline.text, "PLT")) {
+                    ui_manager.active_button = 0;
+                    set_level_editor_trn_mode(EDITOR_TRN_PLAT);
+                }
+
+                if (wbd->effect) wbd->effect();
+            }
+        }
+        reset_window_wbds(win);
+    }
+}
+
 void draw_editor_hud(Menu* menu) {
     Window* win;
-    WindowButtonData* wbd = NULL;
-    Button* button = NULL;
     GFC_TextWord* strings;
-    int i, j, k;
+    int i;
 
     if (get_level_editor_hud_toggle()) { // draw all windows if hud is toggled
-        for (i = 0; i < menu->windowMax; i++) {
-            win = &menu->windowList[i];
-            if (!win) continue;
-
-            // modify text for last window (current entity type)
-            if (i == menu->windowMax - 1) {
-                strings = get_level_editor_ent_strings();
-                strcpy(win->textline.text, strings[get_level_editor_list_type() - 1]);
-            }
+        if (get_level_editor_draw_mode() == EDITOR_DRAW_TERRAIN) {
+            win = get_window_by_name(menu->windowList, menu->windowMax, "TRN_SIDE_MENU");
+            if (!win) return;
 
             draw_window(win);
-            if (!win->button_count) continue;
-            //slog("%s", win->name);
 
             // draw buttons
-            for (j = 0; j < win->button_count; j++) {
-                wbd = &win->wbd[j];
-                if (!wbd) continue;
-
-                k = find_button_index_from_wbd(menu, wbd);
-
-                // if button was found, draw it and handle input
-                if (k < menu->buttonMax) {
-                    // draw button
-                    button = &menu->buttonList[k];
-                    update_button_offset(button, wbd->button_offset);
-
-                    if (mouse_in_rect(button->region)) {
-                        ui_manager.active_button = k;
-                        if (mouse_button_pressed(MOUSE_LEFT_CLICK))
-                            button->selected = 1;
-                    }
-                    else ui_manager.active_button = -1;
-
-                    draw_button(button, k);
-
-                    // handle button inputs
-                    if (button->selected) {
-                        button->selected = 0;
-                        reset_window_toggles();
-
-                        if (!strcmp(button->textline.text, "QUIT")) {
-                            ui_manager.active_button = 0;
-                            change_world_state(WORLD_EDITOR_CLOSE);
-                            return;
-                        }
-
-                        if (wbd->effect) wbd->effect();
-                    }
-                }
-            }
-
-            reset_window_wbds(win);
+            draw_editor_hud_buttons(menu, win);
         }
-        
-        // TODO: draw other elements
-        level_editor_draw_entity_preview_region();
+        else { // ENTITY_DRAW_ENTITY
+            for (i = 0; i < menu->windowMax - 1; i++) {
+                win = &menu->windowList[i];
+                if (!win) continue;
+
+                // modify text for last window (current entity type)
+                if (i == menu->windowMax - 2) {
+                    strings = get_level_editor_ent_strings();
+                    strcpy(win->textline.text, strings[get_level_editor_list_type() - 1]);
+                }
+
+                draw_window(win);
+                if (!win->button_count) continue;
+
+                // draw buttons
+                draw_editor_hud_buttons(menu, win);
+            } 
+
+            // TODO: draw other elements
+            level_editor_draw_entity_preview_region();
+        }
 
         draw_notif_windows(menu);
     }

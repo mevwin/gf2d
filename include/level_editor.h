@@ -15,6 +15,11 @@ typedef enum EditorDrawMode_E {
 	EDITOR_DRAW_TERRAIN
 }EditorDrawMode;
 
+typedef enum EditorTrnMode_E {
+	EDITOR_TRN_GROUND,
+	EDITOR_TRN_PLAT
+}EditorTrnMode;
+
 void level_editor_init();
 void level_editor_update();
 void level_editor_close();
@@ -49,9 +54,12 @@ GFC_Vector2D get_level_editor_room_layout();
 Uint8 get_level_editor_hud_toggle();
 EntityType get_level_editor_list_type();
 GFC_TextWord* get_level_editor_ent_strings();
+EditorDrawMode get_level_editor_draw_mode();
+EditorTrnMode get_level_editor_trn_mode();
 
 void toggle_level_editor_hud(Uint8 toggle);
 void set_level_editor_state(EditorState state);
-
+void set_level_editor_draw_mode(EditorDrawMode mode);
+void set_level_editor_trn_mode(EditorTrnMode mode);
 
 #endif
