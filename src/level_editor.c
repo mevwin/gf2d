@@ -14,9 +14,6 @@
 typedef struct EditorManager_S {
     EditorState     state;
 
-    int             room_count;
-    GFC_Vector2D    room_layout;
-
     // entity previews
     Uint8           ent_type_count;
     GFC_TextWord*   ent_strings;
@@ -41,6 +38,11 @@ typedef struct EditorManager_S {
     Uint8           holding_entity;
     EditorDrawMode  drawMode;
     EditorTrnMode   trnMode;
+
+    // level data
+    Level*          level;
+    Uint8			room_index;
+    GFC_Vector2D    room_layout;
 }EditorManager;
 
 static EditorManager editor = { 0 };
@@ -84,6 +86,12 @@ void level_editor_init(){
     editor.entity_preview_list = gfc_list_new();
     editor.all_entities = gfc_list_new();
     editor.entity_preview_index = 0;
+
+    // pre-emptively generate a blank level (must free if player chooses to load an existing level)
+    editor.level = gfc_allocate_array(sizeof(Level), 1);
+
+    // LAST WORK SESSION: working on initializing dummy level to make
+
     
     // other values
     sj_object_get_vector2d(config, "entity_name_offset", &editor.entity_name_offset);
@@ -92,10 +100,10 @@ void level_editor_init(){
     editor.entity_preview_region = gfc_rect_from_vector4(vec);
 
     editor.state = EDITOR_SELECT_MODE;
-    editor.room_count = 1;
+    editor.room_index = 1;
     editor.room_layout = gfc_vector2d(0, 0);
     editor.toggle_hud = 1;
-    editor.drawMode = EDITOR_DRAW_ENTITY;
+    editor.drawMode = EDITOR_DRAW_TERRAIN;
     editor.trnMode = EDITOR_TRN_GROUND;
 
     sj_free(config);
@@ -161,6 +169,18 @@ void initialize_level_previews() {
 
         sj_free(file);
     }
+}
+
+void free_level_previews() {
+    Button* b;
+
+    for (int i = 0; i < editor.level_preview_buttons->count; i++) {
+        b = (Button*)gfc_list_nth(editor.level_preview_buttons, i);
+        if (!b) continue;
+        free(b);
+    }
+
+    gfc_list_clear(editor.level_preview_buttons);
 }
 
 void initialize_level_editor_all_entities() {
@@ -232,18 +252,6 @@ void reset_level_editor_entity_previews() {
 
     // clear list contents
     gfc_list_clear(editor.entity_preview_list);
-}
-
-void free_level_previews() {
-    Button* b;
-
-    for (int i = 0; i < editor.level_preview_buttons->count; i++) {
-        b = (Button*)gfc_list_nth(editor.level_preview_buttons, i);
-        if (!b) continue;
-        free(b);
-    }
-
-    gfc_list_clear(editor.level_preview_buttons);
 }
 
 void level_editor_update() {
@@ -401,10 +409,6 @@ void level_editor_prev_ent() {
 
 EditorState get_level_editor_state() {
     return editor.state;
-}
-
-int get_level_editor_room_count() {
-    return editor.room_count;
 }
 
 GFC_Vector2D get_level_editor_room_layout() {

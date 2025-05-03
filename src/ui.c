@@ -719,7 +719,6 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
                         else if (!strcmp(button->textline.text, "NEW LEVEL")) {
                             ui_manager.active_button = 0;
                             initialize_level_editor_all_entities();
-                            initialize_level_editor_entity_previews();
                             set_level_editor_state(EDITOR_EDITING);
                             return;
                         }
@@ -820,13 +819,22 @@ void draw_editor_hud_buttons(Menu* menu, Window* win) {
                     change_world_state(WORLD_EDITOR_CLOSE);
                     return;
                 }
-                else if (!strcmp(button->textline.text, "GND")) {
-                    ui_manager.active_button = 0;
-                    set_level_editor_trn_mode(EDITOR_TRN_GROUND);
-                }
-                else if (!strcmp(button->textline.text, "PLT")) {
-                    ui_manager.active_button = 0;
-                    set_level_editor_trn_mode(EDITOR_TRN_PLAT);
+
+                switch (drawMode) {
+                    case EDITOR_DRAW_ENTITY:
+
+
+                        break;
+
+                    case EDITOR_DRAW_TERRAIN:
+                        if (!strcmp(button->textline.text, "GND")) {
+                            ui_manager.active_button = 0;
+                            set_level_editor_trn_mode(EDITOR_TRN_GROUND);
+                        }
+                        else if (!strcmp(button->textline.text, "PLT")) {
+                            ui_manager.active_button = 0;
+                            set_level_editor_trn_mode(EDITOR_TRN_PLAT);
+                        }
                 }
 
                 if (wbd->effect) wbd->effect();

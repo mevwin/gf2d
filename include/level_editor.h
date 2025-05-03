@@ -24,7 +24,6 @@ void level_editor_init();
 void level_editor_update();
 void level_editor_close();
 
-//void level_editor_create_new_level();
 //void level_editor_load_existing_level();
 
 void initialize_level_previews();
@@ -49,7 +48,6 @@ void level_editor_next_ent();
 void level_editor_prev_ent();
 
 EditorState get_level_editor_state();
-int get_level_editor_room_count();
 GFC_Vector2D get_level_editor_room_layout();
 Uint8 get_level_editor_hud_toggle();
 EntityType get_level_editor_list_type();

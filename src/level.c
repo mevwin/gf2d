@@ -82,56 +82,45 @@ void level_manager_close() {
 	memset(&level_manager, 0, sizeof(LevelManager));
 }
 
-void level_load(Uint8 index) {
-	Level* level;
-	SJson *level_obj, *level_data, *layout, *row, *column;
+void create_level_from_json(Level* level, SJson* data) {
 	GFC_Vector2D layout_dimen;
 	GFC_TextLine room_path;
+	SJson* layout, *row, *column;
 	int i, j, check;
 
-	level = gfc_allocate_array(sizeof(Level), 1);
-	if (!level) {
-		slog("failed to allocate space for level");
+	if (!level || !data) {
+		slog("data or level is null");
 		return;
 	}
-
-	level_obj = sj_load(gfc_list_nth(level_manager.level_list, index));
-	if (!level_obj) {
-		slog("level not found");
-		change_world_state(WORLD_CLOSE);
-		return;
-	}
-
-	level_data = sj_object_get_value(level_obj, "level");
 
 	// get name
-	gfc_word_cpy(level->name, sj_object_get_string(level_data, "name"));
+	gfc_word_cpy(level->name, sj_object_get_string(data, "name"));
 
 	// get type
-	sj_object_get_value_as_int(level_data, "type", &i);
-	level->level_type = (LvlType) i;
+	sj_object_get_value_as_int(data, "type", &i);
+	level->level_type = (LvlType)i;
 
 	// get level objective
-	sj_object_get_value_as_int(level_data, "obj", &i);
+	sj_object_get_value_as_int(data, "obj", &i);
 	level->objective = (LvlObjective)i;
 
 	/* generate room layout */
-	sj_object_get_value_as_uint8(level_data, "start_room", &level->start_room);
+	sj_object_get_value_as_uint8(data, "start_room", &level->start_room);
 	level_manager.room_num = level->start_room - 1;
 
-	sj_object_get_value_as_uint8(level_data, "room_count", &level->room_count);
+	sj_object_get_value_as_uint8(data, "room_count", &level->room_count);
 	level->rooms = gfc_allocate_array(sizeof(Room), level->room_count);
 
 	// load all the rooms
-	sj_object_get_vector2d(level_data, "layout_dimen", &layout_dimen);
-	layout = sj_object_get_value(level_data, "layout");
+	sj_object_get_vector2d(data, "layout_dimen", &layout_dimen);
+	layout = sj_object_get_value(data, "layout");
 	for (i = 0; i < layout_dimen.y; i++) {
 		row = sj_array_get_nth(layout, i);
 		if (!row) continue;
 
 		for (j = 0; j < layout_dimen.x; j++) {
 			column = sj_array_get_nth(row, j);
-			if (!column) continue;		
+			if (!column) continue;
 
 			sj_get_integer_value(column, &check);
 			if (!check) continue;
@@ -141,7 +130,7 @@ void level_load(Uint8 index) {
 			create_room(&level->rooms[check - 1], sj_load(room_path));
 		}
 	}
-	
+
 	/*
 	// level objective
 	sj_object_get_uint8(level_data, "obj", &i);
@@ -162,6 +151,28 @@ void level_load(Uint8 index) {
 	}
 
 	*/
+}
+
+void level_load(Uint8 index) {
+	Level *level;
+	SJson *level_obj, *level_data;
+
+	level = gfc_allocate_array(sizeof(Level), 1);
+	if (!level) {
+		slog("failed to allocate space for level");
+		return;
+	}
+
+	level_obj = sj_load(gfc_list_nth(level_manager.level_list, index));
+	if (!level_obj) {
+		slog("level not found");
+		change_world_state(WORLD_CLOSE);
+		return;
+	}
+
+	level_data = sj_object_get_value(level_obj, "level");
+	create_level_from_json(level, level_data);
+
 	level_manager.curr_level = level;
 	sj_free(level_obj);
 }

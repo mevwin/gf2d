@@ -109,6 +109,7 @@ typedef struct Level_S {
 void level_manager_init(const char* filename);
 void level_manager_close();
 void level_load(Uint8 index);
+void create_level_from_json(Level* level, SJson* data);
 
 void load_current_room();
 void load_next_level(void* p);
