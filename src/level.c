@@ -26,12 +26,6 @@ typedef struct LevelManager_S {
 
 static LevelManager level_manager = { 0 };
 
-void create_room(Room* room, SJson* data);
-void create_ground(Ground* ground, SJson* ground_data);
-void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type);
-void create_platform(Platform* platform, SJson* plat_data);
-void create_room_transition(RoomTransition* t, SJson* t_data);
-
 LevelSpawn* find_level_spawn(const char* name);
 void clear_current_room(Uint8 save_data);
 void change_rooms(Uint8 new_room, GFC_Vector2D new_player_pos);
@@ -82,6 +76,30 @@ void level_manager_close() {
 	memset(&level_manager, 0, sizeof(LevelManager));
 }
 
+void level_load(Uint8 index) {
+	Level* level;
+	SJson* level_obj, * level_data;
+
+	level = gfc_allocate_array(sizeof(Level), 1);
+	if (!level) {
+		slog("failed to allocate space for level");
+		return;
+	}
+
+	level_obj = sj_load(gfc_list_nth(level_manager.level_list, index));
+	if (!level_obj) {
+		slog("level not found");
+		change_world_state(WORLD_CLOSE);
+		return;
+	}
+
+	level_data = sj_object_get_value(level_obj, "level");
+	create_level_from_json(level, level_data);
+
+	level_manager.curr_level = level;
+	sj_free(level_obj);
+}
+
 void create_level_from_json(Level* level, SJson* data) {
 	GFC_Vector2D layout_dimen;
 	GFC_TextLine room_path;
@@ -127,7 +145,7 @@ void create_level_from_json(Level* level, SJson* data) {
 
 			// create room
 			gfc_line_sprintf(room_path, "levels/%s/room%d.def", level->name, check);
-			create_room(&level->rooms[check - 1], sj_load(room_path));
+			create_room_from_json(&level->rooms[check - 1], sj_load(room_path));
 		}
 	}
 
@@ -153,31 +171,7 @@ void create_level_from_json(Level* level, SJson* data) {
 	*/
 }
 
-void level_load(Uint8 index) {
-	Level *level;
-	SJson *level_obj, *level_data;
-
-	level = gfc_allocate_array(sizeof(Level), 1);
-	if (!level) {
-		slog("failed to allocate space for level");
-		return;
-	}
-
-	level_obj = sj_load(gfc_list_nth(level_manager.level_list, index));
-	if (!level_obj) {
-		slog("level not found");
-		change_world_state(WORLD_CLOSE);
-		return;
-	}
-
-	level_data = sj_object_get_value(level_obj, "level");
-	create_level_from_json(level, level_data);
-
-	level_manager.curr_level = level;
-	sj_free(level_obj);
-}
-
-void create_room(Room* room, SJson* data) {
+void create_room_from_json(Room* room, SJson* data) {
 	SJson* room_data, *list, *entry, *e_data;
 	LevelSpawn *l_spawn, *rand_spawns;
 	int i, random;
@@ -204,7 +198,7 @@ void create_room(Room* room, SJson* data) {
 			entry = sj_array_get_nth(list, i);
 			if (!entry) continue;
 
-			create_ground(&room->grounds[i], entry);
+			create_ground_from_json(&room->grounds[i], entry);
 		}
 	}
 
@@ -224,7 +218,7 @@ void create_room(Room* room, SJson* data) {
 			entry = sj_array_get_nth(list, i);
 			if (!entry) continue;
 
-			create_platform(&room->platforms[i], entry);
+			create_platform_from_json(&room->platforms[i], entry);
 		}
 	}
 
@@ -307,7 +301,7 @@ void create_room(Room* room, SJson* data) {
 					continue;
 				}
 
-				create_room_transition(&room->transitions[i], entry);
+				create_room_transition_from_json(&room->transitions[i], entry);
 			}
 		}
 	}
@@ -316,7 +310,34 @@ void create_room(Room* room, SJson* data) {
 	sj_free(data);
 }
 
-void create_ground(Ground* ground, SJson* ground_data) {
+Ground* create_ground(
+	GFC_Rect d,
+	GFC_Vector2D r,
+	GFC_Color c,
+	Uint8 ceil_flag,
+	Uint8 wall_flag
+) 
+{
+	Ground* g;
+
+	g = gfc_allocate_array(sizeof(Ground), 1);
+	gfc_rect_copy(g->dimensions, d);
+	gfc_vector2d_copy(g->region, r);
+	gfc_color_copy(g->color, c);
+	g->ceil_flag = ceil_flag;
+	g->wall_flag = wall_flag;
+	if (wall_flag) {
+		// create left wall
+		create_wall(&g->walls[0], get_edge_from_rect(g->dimensions, 3), 0);
+
+		// create right wall
+		create_wall(&g->walls[1], get_edge_from_rect(g->dimensions, 2), 1);
+	}
+	
+	return g;
+}
+
+void create_ground_from_json(Ground* ground, SJson* ground_data) {
 	GFC_Vector4D rec_buf;
 
 	if (!ground || !ground_data) return;
@@ -350,7 +371,7 @@ void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type) {
 	//wall->wjumpable = 1;
 }
 
-void create_platform(Platform* platform, SJson* plat_data){
+void create_platform_from_json(Platform* platform, SJson* plat_data){
 	GFC_Vector4D rec_buf;
 	GFC_Rect dimen;
 	Uint8 i;
@@ -378,7 +399,7 @@ void create_platform(Platform* platform, SJson* plat_data){
 	}
 }
 
-void create_room_transition(RoomTransition* t, SJson* t_data) {
+void create_room_transition_from_json(RoomTransition* t, SJson* t_data) {
 	GFC_Vector4D rec_buf;
 
 	if (!t | !t_data) return;

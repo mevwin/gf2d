@@ -20,13 +20,30 @@ typedef enum EditorTrnMode_E {
 	EDITOR_TRN_PLAT
 }EditorTrnMode;
 
+// replica of Room from level.h that allows for dynamic number of level elements
+typedef struct EditorRoom_S {
+	Uint8				_inuse;
+	Uint8				entered;
+
+	GFC_TextWord		name;
+	GFC_Vector2D		player_spawn;
+
+	GFC_List*			grounds;
+	GFC_List*			platforms;
+	GFC_List*			level_spawns;
+	GFC_List*			transitions;
+}EditorRoom;
+
 void level_editor_init();
 void level_editor_update();
 void level_editor_close();
 
 //void level_editor_load_existing_level();
+void initialize_dummy_level();
+void free_editor_level();
 
 void initialize_level_previews();
+void free_level_previews();
 
 /**
 * @brief pre-load all entities in their default states
@@ -34,8 +51,6 @@ void initialize_level_previews();
 void initialize_level_editor_all_entities();
 void initialize_level_editor_entity_previews();
 void change_level_editor_list_type(EntityType new);
-
-void free_level_previews();
 
 void level_editor_draw_level_previews();
 void level_editor_draw_entity_preview_region();
@@ -54,6 +69,7 @@ EntityType get_level_editor_list_type();
 GFC_TextWord* get_level_editor_ent_strings();
 EditorDrawMode get_level_editor_draw_mode();
 EditorTrnMode get_level_editor_trn_mode();
+Uint8 get_level_editor_show_controls();
 
 void toggle_level_editor_hud(Uint8 toggle);
 void set_level_editor_state(EditorState state);

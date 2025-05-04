@@ -395,7 +395,7 @@ void draw_window(Window* win) {
 
     region = gfc_rect(win->offset.x + padding, win->offset.y, win->scale.x - (padding * 2.0f), win->scale.y);
     center = win->textline.offset.x == -1.0f && win->textline.offset.y == -1.0f ? 1 : 0;
-    if (!center) {
+    if (!center) { // not centered
         offset = gfc_vector2d(region.x + win->textline.offset.x,
                                 region.y + win->textline.offset.y);
 
@@ -503,6 +503,36 @@ void reset_window_wbds(Window* win) {
     for (int i = 0; i < win->button_count; i++) {
         win->wbd[i].drawn = 0;
     }
+}
+
+Uint32 find_button_index_from_wbd(Menu* menu, WindowButtonData* wbd) {
+    Button* button;
+    Uint32 i;
+
+    for (i = 0; i < menu->buttonMax; i++) {
+        button = &menu->buttonList[i];
+        if (!button) continue;
+
+        if (!strcmp(button->textline.text, wbd->button_name) && !wbd->drawn) {
+            wbd->drawn = 1;
+            return i;
+        }
+    }
+}
+
+Window* get_window_by_name(Window* list, Uint32 count, const char* name) {
+    Window* win;
+
+    if (!list) return NULL;
+
+    for (int i = 0; i < count; i++) {
+        win = &list[i];
+        if (!win) continue;
+
+        if (!gfc_word_cmp(win->name, name))
+            return win;
+    }
+    return NULL;
 }
 
 void draw_player_hud(Menu* menu, GFC_List* enemy_list, PlayerData* p_data) {
@@ -638,36 +668,6 @@ void draw_world_menu(Menu* menu, WorldState world_state) {
     //draw_mouse();
 }
 
-Uint32 find_button_index_from_wbd(Menu* menu, WindowButtonData* wbd) {
-    Button* button;
-    Uint32 i;
-
-    for (i = 0; i < menu->buttonMax; i++) {
-        button = &menu->buttonList[i];
-        if (!button) continue;
-
-        if (!strcmp(button->textline.text, wbd->button_name) && !wbd->drawn) {
-            wbd->drawn = 1;
-            return i;
-        }
-    }
-}
-
-Window* get_window_by_name(Window* list, Uint32 count, const char* name) {
-    Window* win;
-    
-    if (!list) return NULL;
-
-    for (int i = 0; i < count; i++) {
-        win = &list[i];
-        if (!win) continue;
-
-        if (!gfc_word_cmp(win->name, name))
-            return win;
-    }
-    return NULL;
-}
-
 void draw_editor_menu(Menu* menu, EditorState editor_state) {
     Window* win;
     WindowButtonData* wbd = NULL;
@@ -718,6 +718,7 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
                         }
                         else if (!strcmp(button->textline.text, "NEW LEVEL")) {
                             ui_manager.active_button = 0;
+                            initialize_dummy_level();
                             initialize_level_editor_all_entities();
                             set_level_editor_state(EDITOR_EDITING);
                             return;
@@ -815,8 +816,9 @@ void draw_editor_hud_buttons(Menu* menu, Window* win) {
                 reset_window_toggles();
 
                 if (!strcmp(button->textline.text, "QUIT")) {
-                    ui_manager.active_button = 0;
                     change_world_state(WORLD_EDITOR_CLOSE);
+                    ui_manager.active_button = 0;
+                    free_editor_level();
                     return;
                 }
 
@@ -860,12 +862,12 @@ void draw_editor_hud(Menu* menu) {
             draw_editor_hud_buttons(menu, win);
         }
         else { // ENTITY_DRAW_ENTITY
-            for (i = 0; i < menu->windowMax - 1; i++) {
+            for (i = 0; i < menu->windowMax - 2; i++) {
                 win = &menu->windowList[i];
                 if (!win) continue;
 
                 // modify text for last window (current entity type)
-                if (i == menu->windowMax - 2) {
+                if (i == menu->windowMax - 3) {
                     strings = get_level_editor_ent_strings();
                     strcpy(win->textline.text, strings[get_level_editor_list_type() - 1]);
                 }
@@ -881,9 +883,13 @@ void draw_editor_hud(Menu* menu) {
             level_editor_draw_entity_preview_region();
         }
 
+        if (get_level_editor_show_controls()) {
+            win = get_window_by_name(menu->windowList, menu->windowMax, "CONTROLS");
+            draw_window(win);
+        }
+
         draw_notif_windows(menu);
     }
-    entity_draw_all();
     draw_mouse();
 }
 

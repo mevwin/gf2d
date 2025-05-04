@@ -131,6 +131,21 @@
                 ["GND", [1090, 270], "NONE"],
                 ["PLT", [1090, 370], "NONE"]
             ]
+        },
+        {
+            "name": "CONTROLS",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [0, 0],
+            "scale": [200, 170],
+            "color": [10, 10, 150, 120],
+            "hasText": 1,
+            "text": "CONTROLS:                  F: toggle controls T: toggle display    R: switch draw mode",
+            "textOffset": [-1, -1],
+            "fontType": "STANDARD",
+            "fontSize": "SMALL",
+            "textColor": [255, 255, 255, 255],
+            "buttons": []
         }
     ],
     "example_windows":

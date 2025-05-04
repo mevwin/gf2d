@@ -111,6 +111,20 @@ void level_manager_close();
 void level_load(Uint8 index);
 void create_level_from_json(Level* level, SJson* data);
 
+Ground* create_ground(
+	GFC_Rect d,
+	GFC_Vector2D r,
+	GFC_Color c,
+	Uint8 ceil_flag,
+	Uint8 wall_flag
+);
+
+void create_room_from_json(Room* room, SJson* data);
+void create_ground_from_json(Ground* ground, SJson* ground_data);
+void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type);
+void create_platform_from_json(Platform* platform, SJson* plat_data);
+void create_room_transition_from_json(RoomTransition* t, SJson* t_data);
+
 void load_current_room();
 void load_next_level(void* p);
 void restart_level(void* p);

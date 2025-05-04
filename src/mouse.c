@@ -101,3 +101,7 @@ void mouse_close() {
 	gf2d_sprite_delete(mouse.sprite);
 	memset(&mouse, 0, sizeof(Mouse));
 }
+
+GFC_Vector2D get_mouse_position() {
+	return gfc_vector2d(mouse.pos_x, mouse.pos_y);
+}

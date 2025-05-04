@@ -115,6 +115,8 @@ Entity *entity_new();
  */
 void entity_free(Entity* self);
 
+void entity_draw(Entity* self);
+
 void free_all_entities();
 
 void free_all_level_entities();
