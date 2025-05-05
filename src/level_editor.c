@@ -143,6 +143,10 @@ void level_editor_close() {
     memset(&editor, 0, sizeof(EditorManager));
 }
 
+void level_editor_save_new_level() {
+    // LAST SESSION: save a new level
+}
+
 EditorRoom* create_empty_room() {
     EditorRoom* r;
     int i;
@@ -328,6 +332,24 @@ void reset_level_editor_entity_previews() {
     gfc_list_clear(editor.entity_preview_list);
 }
 
+void draw_level_editor_entities(GFC_List* list, GFC_Vector2D m_pos) {
+    Entity* ent;
+
+    for (int i = 0; i < list->count; i++) {
+        ent = (Entity*)gfc_list_nth(list, i);
+        if (!ent) continue;
+
+        entity_draw(ent);
+        update_hurtbox(ent);
+        update_boundbox(ent);
+
+        // move around an entity
+        if (!editor.toggle_hud && mouse_in_rect(ent->hurtbox.s.r) && mouse_button_held(MOUSE_LEFT_CLICK)) {
+            gfc_vector2d_copy(ent->position, m_pos);
+        }
+    }
+}
+
 void level_editor_update() {
     Ground* g;
     EditorRoom* room;
@@ -411,31 +433,8 @@ void level_editor_update() {
                 }
             }
 
-            // move around an entity
-            for (int i = 0; i < editor.enemy_list->count; i++) {
-                ent = (Entity*) gfc_list_nth(editor.enemy_list, i);
-                if (!ent) continue;
-
-                entity_draw(ent);
-                update_hurtbox(ent);
-                update_boundbox(ent);
-                if (!editor.toggle_hud && mouse_in_rect(ent->hurtbox.s.r) && mouse_button_held(MOUSE_LEFT_CLICK)) {
-                    gfc_vector2d_copy(ent->position, m_pos);
-                }
-            }
-
-            for (int i = 0; i < editor.item_list->count; i++) {
-                ent = (Entity*)gfc_list_nth(editor.item_list, i);
-                if (!ent) continue;
-
-                entity_draw(ent);
-                update_hurtbox(ent);
-                update_boundbox(ent);
-                if (!editor.toggle_hud && mouse_in_rect(ent->hurtbox.s.r) && mouse_button_held(MOUSE_LEFT_CLICK)) {
-                    gfc_vector2d_copy(ent->position, m_pos);
-                }
-            }
-
+            draw_level_editor_entities(editor.enemy_list, m_pos);
+            draw_level_editor_entities(editor.item_list, m_pos);
 
             break;
 

@@ -38,9 +38,13 @@ void level_editor_init();
 void level_editor_update();
 void level_editor_close();
 
+void level_editor_save_new_level();
+
 //void level_editor_load_existing_level();
 void initialize_dummy_level();
 void free_editor_level();
+
+
 
 void initialize_level_previews();
 void free_level_previews();
