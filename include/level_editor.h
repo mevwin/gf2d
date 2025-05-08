@@ -61,8 +61,9 @@ void free_editor_level();
 void initialize_level_editor_all_entities();
 void initialize_level_editor_entity_previews();
 void change_level_editor_list_type(EntityType new);
-
 void level_editor_draw_entity_preview_region();
+
+void level_editor_set_player_spawn();
 
 void level_editor_next_list_type();
 void level_editor_prev_list_type();

@@ -545,6 +545,8 @@ void draw_player_hud(Menu* menu, GFC_List* enemy_list, PlayerData* p_data) {
     Entity* enemy;
     EnemyData* e_data;
     Bar* bar;
+    Level* l;
+    GFC_Rect rect;
     int i, j;
 
     if (!enemy_list) {
@@ -593,6 +595,21 @@ void draw_player_hud(Menu* menu, GFC_List* enemy_list, PlayerData* p_data) {
             // draw other bars
         }
     }
+
+    // display level name
+    l = get_curr_level();
+    rect = gfc_rect(1130, 10, 150, 90);
+
+    gf2d_draw_rect_filled(rect, gfc_color8(120, 0, 0, 120));
+    font_display_text(
+        l->name,
+        FONT_STANDARD,
+        FONT_SIZE_MEDIUM,
+        GFC_COLOR_WHITE,
+        1,
+        NULL,
+        &rect
+    );
 }
 
 void draw_world_menu(Menu* menu, WorldState world_state) {
@@ -600,8 +617,6 @@ void draw_world_menu(Menu* menu, WorldState world_state) {
     Button* button;
     WindowButtonData* wbd;
     int i, j;
-
-    //mouse_update_state();
 
     gf2d_sprite_draw_image(menu->bg_sprite, gfc_vector2d(0, 0)); // draw bg
     menu_check_input(menu, 0, menu->buttonMax - 1, NULL);
@@ -877,15 +892,17 @@ void draw_editor_hud_buttons(Menu* menu, Window* win) {
                 if (!strcmp(button->textline.text, "QUIT")) {
                     change_world_state(WORLD_EDITOR_CLOSE);
                     ui_manager.active_button = 0;
-                    free_editor_level();
                     return;
                 }
                 else if (!strcmp(button->textline.text, "SAVE")) {
                     //level_editor_save_new_level();
                     change_world_state(WORLD_EDITOR_CLOSE);
                     ui_manager.active_button = 0;
-                    free_editor_level();
                     return;
+                }
+                else if (!strcmp(button->textline.text, "P-SPWN")) {
+                    // spawn player
+                    level_editor_set_player_spawn();
                 }
 
                 switch (drawMode) {

@@ -21,9 +21,9 @@ void player_data_init(Entity* self, PlayerData* p_data, SJson* data);
 
 void player_die(Entity* self, PlayerData* p_data);
 
-Entity* player_spawn(GFC_Vector2D position, SJson* data) {
+Entity* player_spawn(GFC_Vector2D position) {
 	Entity* player;
-	SJson* curr_entry;
+	SJson *data, *curr_entry;
 
 	player = entity_new();
 	if (!player) {
@@ -34,6 +34,12 @@ Entity* player_spawn(GFC_Vector2D position, SJson* data) {
 	player->type = PLAYER;
 	gfc_word_cpy(player->name, "Player");	// change later
 
+	data = sj_load("def/player_data_init.def");
+	if (!data) {
+		slog("def file not found");
+		change_world_state(WORLD_CLOSE);
+		return;
+	}
 	curr_entry = sj_object_get_value(data, "entity_data");
 
 	gfc_vector2d_copy(player->position, position);
@@ -64,6 +70,7 @@ Entity* player_spawn(GFC_Vector2D position, SJson* data) {
 
 	player_atk_system_init(sj_object_get_value(data, "player_attacks"));
 
+	sj_free(data);
 	return player;
 }
 

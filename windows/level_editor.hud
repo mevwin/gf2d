@@ -134,8 +134,7 @@
                 ["+", [1196, 365], "NEXT_ENT_LIST"],
                 ["-", [984, 245], "PREV_ENT"],
                 ["+", [1196, 245], "NEXT_ENT"],
-                ["P-SPWN", [1040, 25], "NONE"],
-                ["ROOM", [1140, 25], "NONE"]
+                ["P-SPWN", [1040, 25], "NONE"]
             ]
         },
         {
@@ -171,9 +170,7 @@
                 ["SAVE", [980, 470], "NONE"],
                 ["QUIT", [980, 600], "NONE"],
                 ["GND", [1090, 270], "NONE"],
-                ["PLT", [1090, 370], "NONE"],         
-                ["P-SPWN", [1040, 25], "NONE"],
-                ["ROOM", [1140, 25], "NONE"]
+                ["PLT", [1090, 370], "NONE"]
             ]
         },
         {
@@ -184,7 +181,7 @@
             "scale": [200, 170],
             "color": [10, 10, 150, 120],
             "hasText": 1,
-            "text": "CONTROLS:                  F: toggle controls T: toggle display    R: switch draw mode",
+            "text": "CONTROLS:                  F: toggle controls T: toggle display    R: switch draw mode E: show rooms",
             "textOffset": [-1, -1],
             "fontType": "STANDARD",
             "fontSize": "SMALL",

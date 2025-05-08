@@ -28,6 +28,7 @@ typedef struct EditorManager_S {
     GFC_Rect        entity_preview_region;
 
     // flags
+    Uint8           player_spawn_set;
     Uint8           show_controls;
     Uint8           toggle_hud;
     Uint8           holding;
@@ -45,6 +46,7 @@ typedef struct EditorManager_S {
     GFC_List*       room_buffer;
     Uint8			room_index;
     GFC_Vector2D    room_layout;
+    Entity*         player;
 }EditorManager;
 
 static EditorManager editor = { 0 };
@@ -105,6 +107,8 @@ void level_editor_init(){
     editor.trnMode = EDITOR_TRN_GROUND;
     editor.show_controls = 1;
     editor.trn_preview = gfc_rect(0, 0, 0, 0);
+    editor.player_spawn_set = 0;
+    editor.player = NULL;
 
     sj_free(config);
 }
@@ -296,12 +300,28 @@ void draw_level_editor_entities(GFC_List* list, GFC_Vector2D m_pos) {
         if (!ent) continue;
 
         entity_draw(ent);
+        gf2d_draw_rect(ent->hurtbox.s.r, GFC_COLOR_RED);
         update_hurtbox(ent);
         update_boundbox(ent);
+    }
+}
+
+void handle_level_editor_mouse_input(GFC_List* list, GFC_Vector2D m_pos) {
+    Entity* ent;
+
+    for (int i = 0; i < list->count; i++) {
+        ent = (Entity*)gfc_list_nth(list, i);
+        if (!ent) continue;
 
         // move around an entity
-        if (!editor.toggle_hud && mouse_in_rect(ent->hurtbox.s.r) && mouse_button_held(MOUSE_LEFT_CLICK)) {
-            gfc_vector2d_copy(ent->position, m_pos);
+        if (!editor.toggle_hud && mouse_in_rect(ent->hurtbox.s.r)) {
+            if (mouse_button_held(MOUSE_LEFT_CLICK))
+                gfc_vector2d_copy(ent->position, m_pos);
+            else if (mouse_button_held(MOUSE_MIDDLE_CLICK)) {
+                gfc_list_delete_data(list, ent);
+                entity_free(ent);
+                return;
+            }
         }
     }
 }
@@ -351,6 +371,13 @@ void level_editor_draw_entity_preview_region() {
     }
 
     entity_draw(ent);
+}
+
+void level_editor_set_player_spawn() {
+    if (editor.player_spawn_set) return;
+
+    editor.player = player_spawn(gfc_vector2d(640, 300));
+    editor.player_spawn_set = 1;
 }
 
 void level_editor_update() {
@@ -421,34 +448,48 @@ void level_editor_update() {
 
                         // copy entity data
                         switch (ent->type) {
-                        case ENEMY:
-                            e_data = ent->data;
+                            case ENEMY:
+                                e_data = ent->data;
 
-                            gfc_word_sprintf(name, "enemy%i", room->enemy_list->count + 1);
-                            new_ent = enemy_spawn(e_data->type, name, gfc_vector2d(640, 360), NULL);
+                                gfc_word_sprintf(name, "enemy%i", room->enemy_list->count + 1);
+                                new_ent = enemy_spawn(e_data->type, name, gfc_vector2d(640, 360), NULL);
 
-                            gfc_list_append(room->enemy_list, new_ent);
+                                gfc_list_append(room->enemy_list, new_ent);
 
-                            break;
+                                break;
 
-                        case ITEM:
-                            i_data = ent->data;
+                            case ITEM:
+                                i_data = ent->data;
 
-                            new_ent = item_spawn(ent->name, gfc_vector2d(640, 360));
-                            gfc_list_append(room->item_list, new_ent);
+                                new_ent = item_spawn(ent->name, gfc_vector2d(640, 360));
+                                gfc_list_append(room->item_list, new_ent);
 
-                            break;
+                                break;
 
-                        case HAZARD:
+                            case HAZARD:
 
-                            break;
+                                break;
                         }
                     }
                 }
 
-                draw_level_editor_entities(room->enemy_list, m_pos);
-                draw_level_editor_entities(room->item_list, m_pos);
-                // draw_level_editor_entities(room->hazard_last, m_pos);
+                // handle mouse inputs for entities
+                handle_level_editor_mouse_input(room->enemy_list, m_pos);
+                handle_level_editor_mouse_input(room->item_list, m_pos);
+                // handle_level_editor_mouse_input(room->hazard_last, m_pos);
+
+                if (editor.player && !editor.toggle_hud && mouse_in_rect(editor.player->hurtbox.s.r)) {
+                    if (mouse_button_held(MOUSE_LEFT_CLICK)) {
+                        gfc_vector2d_copy(editor.player->position, m_pos);
+                        update_hurtbox(editor.player);
+                        update_boundbox(editor.player);
+                    }
+                    else if (mouse_button_held(MOUSE_MIDDLE_CLICK)) {
+                        entity_free(editor.player);
+                        editor.player = NULL;
+                        editor.player_spawn_set = 0;
+                    }
+                }
 
                 break;
 
@@ -493,20 +534,20 @@ void level_editor_update() {
 
                         // create terrain
                         switch (editor.trnMode) {
-                        case EDITOR_TRN_GROUND:
-                            g = create_ground(
-                                editor.trn_preview,
-                                gfc_vector2d(editor.trn_preview.x, editor.trn_preview.y),
-                                gfc_color(gfc_random(), gfc_random(), gfc_random(), 1),
-                                1,
-                                1);
+                            case EDITOR_TRN_GROUND:
+                                g = create_ground(
+                                    editor.trn_preview,
+                                    gfc_vector2d(editor.trn_preview.x, editor.trn_preview.y),
+                                    gfc_color(gfc_random(), gfc_random(), gfc_random(), 1),
+                                    1,
+                                    1);
 
-                            gfc_list_append(room->grounds, g);
+                                gfc_list_append(room->grounds, g);
 
-                            break;
-                        case EDITOR_TRN_PLAT:
+                                break;
+                            case EDITOR_TRN_PLAT:
 
-                            break;
+                                break;
                         }
 
                         editor.drawing_trn = 0;
@@ -516,6 +557,14 @@ void level_editor_update() {
                 break;
         }
 
+        // draw entities
+        draw_level_editor_entities(room->enemy_list, m_pos);
+        draw_level_editor_entities(room->item_list, m_pos);
+        if (editor.player) {
+            entity_draw(editor.player);
+            gf2d_draw_rect(editor.player->hurtbox.s.r, GFC_COLOR_GREEN);
+        }
+
         // draw level and check each level element
         for (int i = 0; i < room->grounds->count; i++) {
             g = (Ground*)gfc_list_nth(room->grounds, i);
@@ -523,7 +572,7 @@ void level_editor_update() {
 
             gf2d_draw_rect_filled(g->dimensions, g->color);
 
-            if (!editor.toggle_hud && mouse_in_rect(g->dimensions)) {
+            if (!editor.toggle_hud && mouse_in_rect(g->dimensions) && editor.drawMode == EDITOR_DRAW_TERRAIN) {
                 if (mouse_button_pressed(MOUSE_MIDDLE_CLICK)) {
                     gfc_list_delete_data(room->grounds, g);
                     free(g);

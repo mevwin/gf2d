@@ -33,10 +33,9 @@ void world_init() {
 
 void world_gamestart() {
 	Room* room;
-	SJson* data;
 
-	// load first level
-	level_load(0);
+	// load selected level
+	level_load(get_curr_level_index());
 
 	room = get_current_room();
 	if (!room) {
@@ -46,15 +45,7 @@ void world_gamestart() {
 	}
 
 	// load player
-	data = sj_load("def/player_data_init.def");
-	if (!data) {
-		slog("def file not found");
-		world_manager.close_game = 1;
-		return;
-	}
-
-	world_manager.player = player_spawn(room->player_spawn, data);
-	sj_free(data);
+	world_manager.player = player_spawn(room->player_spawn);
 	if (!world_manager.player) {
 		world_manager.close_game = 1;
 		return;
@@ -133,6 +124,7 @@ void world_update() {
 			break;
 
 		case WORLD_EDITOR_CLOSE:
+			free_editor_level();
 			level_editor_close();
 			world_manager.state = WORLD_MAINMENU;
 

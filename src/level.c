@@ -138,6 +138,7 @@ void initialize_level_previews() {
 }
 
 void draw_level_previews() {
+	WorldState w_state = get_world_state();
 	Button* b;
 	int i, j;
 
@@ -147,10 +148,19 @@ void draw_level_previews() {
 
 		draw_button(b, -2);
 
-		// TODO: handle input by loading level from json
 		if (mouse_in_rect(b->region) && mouse_button_pressed(MOUSE_LEFT_CLICK)) {
+			if (w_state == WORLD_LEVEL_SELECT) {
+				set_curr_level_index(i);
+				change_world_state(WORLD_GAMESTART);
+			}
+			else if (w_state == WORLD_EDITOR) {
+				set_curr_level_index(i);
 
-			//editor.state = EDITOR_EDITING;
+				// TODO: handle input by loading level from json
+
+			}
+
+			return;
 		}
 	}
 }
@@ -934,6 +944,14 @@ Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type) {
 	if (e_edge.y1 + self->velocity.y >= screen_edge.y1 - offset)
 		return 0;
 	*/
+}
+
+Uint8 get_curr_level_index() {
+	return level_manager.curr_level_index;
+}
+
+void set_curr_level_index(Uint8 index) {
+	level_manager.curr_level_index = index;
 }
 
 Room* get_current_room() {

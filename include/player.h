@@ -64,7 +64,7 @@ typedef struct PlayerData_S{
 * @param data: pointer to json data to initialize data from
 * @note: SPAWN ONLY ONE PLAYER
 */
-Entity* player_spawn(GFC_Vector2D position, SJson* data);
+Entity* player_spawn(GFC_Vector2D position);
 
 void player_respawn(Entity* self, PlayerData* p_data);
 

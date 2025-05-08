@@ -139,6 +139,8 @@ void level_curr_close();
 
 void level_free_level_spawn(const char* name);
 
+Uint8 get_curr_level_index();
+void set_curr_level_index(Uint8 index);
 Level* get_curr_level();
 Room* get_current_room();
 GFC_List* get_level_paths();
