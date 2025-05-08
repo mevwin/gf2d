@@ -81,7 +81,7 @@
             "buttonType": "SCROLL"
         },
         {
-            "text": "ROOM",
+            "text": "TRS",
             "fontType": "STANDARD",
             "fontSize": "SMALL",
             "textOffset": [-1, -1],

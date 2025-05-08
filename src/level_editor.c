@@ -125,8 +125,31 @@ void level_editor_close() {
 }
 
 void level_editor_save_new_level() {
-    // LAST SESSION: save a new level
+    EditorRoom* room;
+    int i;
+    
+    // check if level have enough data in them
+    if (!editor.player_spawn_set){
+        slog("player_spawn never set for level");
+        return;
+    }
 
+    for (i = 0; i < editor.room_buffer->count; i++) {
+        room = (EditorRoom*) gfc_list_nth(editor.room_buffer, i);
+        if (!room) continue;
+
+        // check if there is at least one ground
+        if (room->grounds->count == 0) {
+            slog("%s must have at least 1 ground", room->name);
+            return;
+        }
+    }
+
+    // save level
+
+    // LAST SESSION: ADD LEVEL TRANSITIONS AND SAVING LEVEL TO JSON
+
+    change_world_state(WORLD_EDITOR_CLOSE);
 }
 
 EditorRoom* create_empty_room() {
@@ -175,7 +198,7 @@ void level_editor_remove_room() {
 }
 
 void initialize_dummy_level() {
-    // generate a blank level
+    // generate a blank level (TODO: change later)
     editor.level = gfc_allocate_array(sizeof(Level), 1);
     gfc_word_cpy(editor.level->name, "new_level");
     editor.level->level_type = LEVEL_TYPE_REGULAR;
@@ -374,9 +397,12 @@ void level_editor_draw_entity_preview_region() {
 }
 
 void level_editor_set_player_spawn() {
-    if (editor.player_spawn_set) return;
+    EditorRoom *room = get_current_editor_room();
 
+    if (editor.player_spawn_set) return;
+    
     editor.player = player_spawn(gfc_vector2d(640, 300));
+    gfc_vector2d_copy(room->player_spawn, editor.player->position);
     editor.player_spawn_set = 1;
 }
 
@@ -481,6 +507,7 @@ void level_editor_update() {
                 if (editor.player && !editor.toggle_hud && mouse_in_rect(editor.player->hurtbox.s.r)) {
                     if (mouse_button_held(MOUSE_LEFT_CLICK)) {
                         gfc_vector2d_copy(editor.player->position, m_pos);
+                        gfc_vector2d_copy(room->player_spawn, editor.player->position);
                         update_hurtbox(editor.player);
                         update_boundbox(editor.player);
                     }

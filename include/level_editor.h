@@ -23,9 +23,6 @@ typedef enum EditorTrnMode_E {
 
 // replica of Room from level.h that allows for dynamic number of level elements
 typedef struct EditorRoom_S {
-	Uint8				_inuse;
-	Uint8				entered;
-
 	GFC_TextWord		name;
 	GFC_Vector2D		player_spawn;
 

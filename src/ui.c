@@ -895,8 +895,7 @@ void draw_editor_hud_buttons(Menu* menu, Window* win) {
                     return;
                 }
                 else if (!strcmp(button->textline.text, "SAVE")) {
-                    //level_editor_save_new_level();
-                    change_world_state(WORLD_EDITOR_CLOSE);
+                    level_editor_save_new_level();
                     ui_manager.active_button = 0;
                     return;
                 }
