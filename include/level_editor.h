@@ -51,8 +51,9 @@ void level_editor_create_new_room();
 void level_editor_remove_room();
 void free_editor_level();
 
-void initialize_level_previews();
-void free_level_previews();
+//void initialize_level_editor_previews();
+//void level_editor_draw_level_previews();
+//void free_level_editor_previews();
 
 /**
 * @brief pre-load all entities in their default states
@@ -61,11 +62,8 @@ void initialize_level_editor_all_entities();
 void initialize_level_editor_entity_previews();
 void change_level_editor_list_type(EntityType new);
 
-void level_editor_draw_level_previews();
 void level_editor_draw_entity_preview_region();
 
-void level_editor_inc_level_preview_pg();
-void level_editor_dec_level_preview_pg();
 void level_editor_next_list_type();
 void level_editor_prev_list_type();
 void level_editor_next_ent();

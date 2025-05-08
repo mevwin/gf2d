@@ -36,7 +36,6 @@ void world_gamestart() {
 	SJson* data;
 
 	// load first level
-	level_manager_init("config/levels.cfg");
 	level_load(0);
 
 	room = get_current_room();

@@ -125,6 +125,10 @@ void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type);
 void create_platform_from_json(Platform* platform, SJson* plat_data);
 void create_room_transition_from_json(RoomTransition* t, SJson* t_data);
 
+void initialize_level_previews();
+void draw_level_previews();
+void free_level_previews();
+
 void load_current_room();
 void load_next_level(void* p);
 void restart_level(void* p);
@@ -139,5 +143,8 @@ Level* get_curr_level();
 Room* get_current_room();
 GFC_List* get_level_paths();
 Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type);
+
+void inc_level_preview_pg();
+void dec_level_preview_pg();
 
 #endif 

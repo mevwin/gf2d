@@ -1,10 +1,67 @@
 {
     "menu":
     {
-        "bg_sprite": "images/ui/level_editor/menu.png",
+        "name": "LEVEL_SELECT",
+        "bg_sprite": "no sprite",
         "buttonMax": 1,
         "buttonLayout": 0,
         "barMax": 0,
         "windowMax": 1
-    }
+    },
+    "buttons":
+    [
+        {
+            "text": "-",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [120, 0, 0, 255],
+            "buttonType": "SCROLL"
+        },
+        {
+            "text": "+",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [0, 120, 0, 255],
+            "buttonType": "SCROLL"
+        },        
+        {
+            "text": "GO BACK",
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [0, 0, 120, 255],
+            "buttonType": "MENU"
+        }
+    ],
+    "windows":
+    [
+        {
+            "name": "DISPLAY_EXISTING_LEVELS",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [115, 148],
+            "scale": [1050, 524],
+            "color": [120, 120, 10, 120],
+            "hasText": 1,
+            "text": "SELECT LEVEL",
+            "textOffset": [375, 10],
+            "fontType": "STANDARD",
+            "fontSize": "LARGE",
+            "textColor": [255, 255, 255, 255],
+            "buttons":
+            [
+                ["GO BACK", [490, 547], "NONE"],
+                ["+", [1051, 160], "NEXT_PREV_PAGE"],
+                ["-", [164, 160], "PREV_PREV_PAGE"]
+            ]
+        }
+    ]
 }

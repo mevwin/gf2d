@@ -27,12 +27,6 @@ typedef struct EditorManager_S {
     GFC_Vector2D    entity_preview_offset;
     GFC_Rect        entity_preview_region;
 
-    // level previews
-    Uint8           preview_pos_count;
-    GFC_Vector2D*   level_preview_positions;
-    GFC_List*       level_preview_buttons;
-    Uint8           preview_pos_page;
-
     // flags
     Uint8           show_controls;
     Uint8           toggle_hud;
@@ -74,6 +68,7 @@ void level_editor_init(){
     level_manager_init("config/levels.cfg");
 
     // level preview set up
+    /*
     editor.preview_pos_page = 0;
     editor.level_preview_buttons = gfc_list_new();
 
@@ -83,6 +78,7 @@ void level_editor_init(){
     for (i = 0; i < editor.preview_pos_count; i++) {
         sj_value_as_vector2d(sj_array_nth(entry, i), &editor.level_preview_positions[i]);
     }
+    */
 
     // entity type strings
     entry = sj_object_get_value(config, "entity_types");
@@ -117,10 +113,6 @@ void level_editor_close() {
     level_manager_close();
 
     free(editor.ent_strings);
-    free(editor.level_preview_positions);
-
-    free_level_previews();
-    gfc_list_delete(editor.level_preview_buttons);
 
     gfc_list_delete(editor.entity_preview_list);
     gfc_list_delete(editor.all_entities);
@@ -225,58 +217,6 @@ void free_editor_level() {
     free(editor.level);
 }
 
-void initialize_level_previews() {
-    GFC_List* level_paths;
-    GFC_TextLine buffer;
-    TextLine* txt;
-    Button* button;
-    SJson* file, *level;
-    int i, j;
-
-    // init level select buttons
-    level_paths = get_level_paths();
-    for (i = 0, j = 0; i < level_paths->count; i++, j++) {
-        if (j == 6) j = 0;
-
-        strcpy(buffer, (const char*)gfc_list_nth(level_paths, i));
-        file = sj_load(buffer);
-        if (!file) continue;
-        level = sj_object_get_value(file, "level");
-
-        //level_editor_level_preview(file);
-        txt = create_textline(
-            sj_object_get_string(level, "name"),
-            FONT_STANDARD,
-            FONT_SIZE_MEDIUM,
-            GFC_COLOR_WHITE,
-            gfc_vector2d(-1, -1)
-        );
-
-        button = create_button(
-            BUTTON_MENU,
-            txt,
-            editor.level_preview_positions[j],
-            gfc_color8(0, 120, 0, 240)
-        );
-
-        gfc_list_append(editor.level_preview_buttons, button);
-
-        sj_free(file);
-    }
-}
-
-void free_level_previews() {
-    Button* b;
-
-    for (int i = 0; i < editor.level_preview_buttons->count; i++) {
-        b = (Button*)gfc_list_nth(editor.level_preview_buttons, i);
-        if (!b) continue;
-        free(b);
-    }
-
-    gfc_list_clear(editor.level_preview_buttons);
-}
-
 void initialize_level_editor_all_entities() {
     SJson* def, *list, *entry;
     int i;
@@ -364,6 +304,53 @@ void draw_level_editor_entities(GFC_List* list, GFC_Vector2D m_pos) {
             gfc_vector2d_copy(ent->position, m_pos);
         }
     }
+}
+
+void level_editor_draw_entity_preview_region() {
+    Entity* ent;
+    ItemData* i_data;
+    GFC_TextWord text;
+
+    gf2d_draw_rect_filled(editor.entity_preview_region, gfc_color8(120, 120, 120, 120));
+
+    // print entity name
+    ent = (Entity*)gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
+    if (!ent) return;
+
+    switch (ent->type) {
+        case ENEMY:
+            font_display_text(ent->name,
+                FONT_STANDARD,
+                FONT_SIZE_SMALL,
+                GFC_COLOR_WHITE,
+                0,
+                &editor.entity_name_offset,
+                NULL
+            );
+
+            break;
+
+        case HAZARD:
+
+            break;
+
+        case ITEM:
+            i_data = ent->data;
+
+            font_display_text(
+                i_data->effect_value.text,
+                FONT_STANDARD,
+                FONT_SIZE_SMALL,
+                GFC_COLOR_WHITE,
+                0,
+                &editor.entity_name_offset,
+                NULL
+            );
+
+            break;
+    }
+
+    entity_draw(ent);
 }
 
 void level_editor_update() {
@@ -549,81 +536,6 @@ void level_editor_update() {
             }
         }
     }
-}
-
-void level_editor_draw_level_previews() {
-    Button* b;
-    int i, j;
-
-    for (i = 0, j = editor.preview_pos_page * 6; i < 6; i++, j++) {
-        b = (Button*) gfc_list_nth(editor.level_preview_buttons, j);
-        if (!b) continue;
-
-        draw_button(b, -2);
-
-        // TODO: handle input by loading level from json
-        if (mouse_in_rect(b->region) && mouse_button_pressed(MOUSE_LEFT_CLICK)){
-            
-            //editor.state = EDITOR_EDITING;
-        }
-    }
-}
-
-void level_editor_draw_entity_preview_region() {
-    Entity* ent;
-    ItemData* i_data;
-    GFC_TextWord text;
-
-    gf2d_draw_rect_filled(editor.entity_preview_region, gfc_color8(120, 120, 120, 120));
-    
-    // print entity name
-    ent = (Entity*)gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
-    if (!ent) return;
-
-    switch (ent->type) {
-        case ENEMY:
-            font_display_text(ent->name,
-                FONT_STANDARD,
-                FONT_SIZE_SMALL,
-                GFC_COLOR_WHITE,
-                0,
-                &editor.entity_name_offset,
-                NULL
-            );
-
-            break;
-
-        case HAZARD:
-
-            break;
-
-        case ITEM:
-            i_data = ent->data;
-
-            font_display_text(
-                i_data->effect_value.text,
-                FONT_STANDARD,
-                FONT_SIZE_SMALL,
-                GFC_COLOR_WHITE,
-                0,
-                &editor.entity_name_offset,
-                NULL
-            );
-
-            break;
-    }
-
-    entity_draw(ent);
-}
-
-void level_editor_inc_level_preview_pg() {
-    if (editor.preview_pos_page * 6 <= editor.level_preview_buttons->count)
-        editor.preview_pos_page++;
-}
-
-void level_editor_dec_level_preview_pg() {
-    if (editor.preview_pos_page)
-        editor.preview_pos_page--;
 }
 
 void level_editor_next_list_type() {

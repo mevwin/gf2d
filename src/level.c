@@ -1,7 +1,9 @@
 #include "simple_logger.h"
 #include "gf2d_draw.h"
 #include "gfc_types.h"
+#include "mouse.h"
 #include "world.h"
+#include "ui.h"
 #include "player_attack.h"
 #include "collisions.h"
 #include "item.h"
@@ -15,6 +17,12 @@ typedef struct LevelManager_S {
 
 	Uint32			curr_level_index;
 	Uint8			room_num;
+
+	// level previews
+	Uint8           preview_pos_count;
+	GFC_Vector2D*	level_preview_positions;
+	GFC_List*		level_preview_buttons;
+	Uint8           preview_pos_page;
 
 	// flags
 	Uint8			respawning;
@@ -34,7 +42,7 @@ void update_platforms();
 void move_platform(Platform* plat);
 
 void level_manager_init(const char* filename){	
-	SJson* level_def, *level_list;
+	SJson* config, *level_list, *entry;
 	GFC_TextLine *path;
 	int i;
 
@@ -42,8 +50,8 @@ void level_manager_init(const char* filename){
 	
 	// load level list
 	level_manager.level_list = gfc_list_new();
-	level_def = sj_load(filename);
-	level_list = sj_object_get_value(level_def, "list");
+	config = sj_load(filename);
+	level_list = sj_object_get_value(config, "list");
 
 	for (i = 0; i < level_list->v.array->count; i++) {
 		path = gfc_allocate_array(sizeof(GFC_TextLine), 1);
@@ -55,8 +63,19 @@ void level_manager_init(const char* filename){
 
 	// TODO: retrieve level objective descriptions and store as list
 	
+	level_manager.preview_pos_page = 0;
+	level_manager.level_preview_buttons = gfc_list_new();
+
+	// initialize level_previews
+	entry = sj_object_get_value(config, "level_preview_positions");
+	level_manager.preview_pos_count = entry->v.array->count;
+	level_manager.level_preview_positions = gfc_allocate_array(sizeof(GFC_Vector2D), level_manager.preview_pos_count);
+	for (i = 0; i < level_manager.preview_pos_count; i++) {
+		sj_value_as_vector2d(sj_array_nth(entry, i), &level_manager.level_preview_positions[i]);
+	}
+
 	level_manager.wasInit = 1;
-	sj_free(level_def);
+	sj_free(config);
 	atexit(level_manager_close);
 }
 
@@ -72,8 +91,80 @@ void level_manager_close() {
 	}
 
 	gfc_list_delete(level_manager.level_list);
+
+	free_level_previews();
+	gfc_list_delete(level_manager.level_preview_buttons);
+	free(level_manager.level_preview_positions);
 	
 	memset(&level_manager, 0, sizeof(LevelManager));
+}
+
+void initialize_level_previews() {
+	GFC_TextLine buffer;
+	TextLine* txt;
+	Button* button;
+	SJson* file, * level;
+	int i, j;
+
+	// init level select buttons
+	for (i = 0, j = 0; i < level_manager.level_list->count; i++, j++) {
+		if (j == level_manager.preview_pos_count) j = 0;
+
+		strcpy(buffer, (const char*) gfc_list_nth(level_manager.level_list, i));
+		file = sj_load(buffer);
+		if (!file) continue;
+		level = sj_object_get_value(file, "level");
+
+		//level_editor_level_preview(file);
+		txt = create_textline(
+			sj_object_get_string(level, "name"),
+			FONT_STANDARD,
+			FONT_SIZE_MEDIUM,
+			GFC_COLOR_WHITE,
+			gfc_vector2d(-1, -1)
+		);
+
+		button = create_button(
+			BUTTON_MENU,
+			txt,
+			level_manager.level_preview_positions[j],
+			gfc_color8(0, 120, 0, 240)
+		);
+
+		gfc_list_append(level_manager.level_preview_buttons, button);
+
+		sj_free(file);
+	}
+}
+
+void draw_level_previews() {
+	Button* b;
+	int i, j;
+
+	for (i = 0, j = level_manager.preview_pos_page * 6; i < 6; i++, j++) {
+		b = (Button*) gfc_list_nth(level_manager.level_preview_buttons, j);
+		if (!b) continue;
+
+		draw_button(b, -2);
+
+		// TODO: handle input by loading level from json
+		if (mouse_in_rect(b->region) && mouse_button_pressed(MOUSE_LEFT_CLICK)) {
+
+			//editor.state = EDITOR_EDITING;
+		}
+	}
+}
+
+void free_level_previews() {
+	Button* b;
+
+	for (int i = 0; i < level_manager.level_preview_buttons->count; i++) {
+		b = (Button*) gfc_list_nth(level_manager.level_preview_buttons, i);
+		if (!b) continue;
+		free(b);
+	}
+
+	gfc_list_clear(level_manager.level_preview_buttons);
 }
 
 void level_load(Uint8 index) {
@@ -854,6 +945,16 @@ Room* get_current_room() {
 
 GFC_List* get_level_paths() {
 	return level_manager.level_list;
+}
+
+void inc_level_preview_pg() {
+	if (level_manager.preview_pos_page * 6 <= level_manager.level_preview_buttons->count)
+		level_manager.preview_pos_page++;
+}
+
+void dec_level_preview_pg() {
+	if (level_manager.preview_pos_page)
+		level_manager.preview_pos_page--;
 }
 
 /**

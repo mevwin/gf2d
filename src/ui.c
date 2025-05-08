@@ -275,9 +275,9 @@ void create_window_from_json(Window* window, SJson* data) {
 
             // TODO: CHANGE LATER
             if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "NEXT_PREV_PAGE"))
-                window->wbd[i].effect = level_editor_inc_level_preview_pg;
+                window->wbd[i].effect = inc_level_preview_pg;
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "PREV_PREV_PAGE"))
-                window->wbd[i].effect = level_editor_dec_level_preview_pg;
+                window->wbd[i].effect = dec_level_preview_pg;
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "NEXT_ENT_LIST"))
                 window->wbd[i].effect = level_editor_next_list_type;
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "PREV_ENT_LIST"))
@@ -598,78 +598,140 @@ void draw_player_hud(Menu* menu, GFC_List* enemy_list, PlayerData* p_data) {
 void draw_world_menu(Menu* menu, WorldState world_state) {
     Window* win;
     Button* button;
-    int i;
+    WindowButtonData* wbd;
+    int i, j;
 
     //mouse_update_state();
 
     gf2d_sprite_draw_image(menu->bg_sprite, gfc_vector2d(0, 0)); // draw bg
     menu_check_input(menu, 0, menu->buttonMax - 1, NULL);
 
-    // draw BLOCK windows
-    for (i = 0; i < menu->windowMax; i++) {
-        win = &menu->windowList[i];
-        if (win->type == WINDOW_NOTIF) continue;
+    if (world_state == WORLD_LEVEL_SELECT) {
+        mouse_update_state();
+
+        win = &menu->windowList[0];
+        if (!win) {
+            change_world_state(WORLD_MAINMENU);
+            slog("no window found");
+            return;
+        }
 
         draw_window(win);
-    }
+        for (i = 0; i < win->button_count; i++) {
+            wbd = &win->wbd[i];
+            if (!wbd) continue;
 
-    // draw buttons
-    for (i = 0; i < menu->buttonMax; i++) {
-        button = &menu->buttonList[i];
-        draw_button(button, i);
+            j = find_button_index_from_wbd(menu, wbd);
 
-        // check if button has been selected
-        if (button && button->selected) {
-            button->selected = 0;
-            ui_manager.active_button = 0;
-            reset_window_toggles();
+            // if button was found, draw it, and handle input
+            if (j < menu->buttonMax) {
+                // draw button
+                button = &menu->buttonList[j];
+                update_button_offset(button, wbd->button_offset);
 
-            switch (world_state) {
-                case WORLD_MAINMENU:
-                    if (!strncmp(button->textline.text, "PLAY", 4))
-                        change_world_state(WORLD_GAMESTART);
-                    else if (!strncmp(button->textline.text, "LEVEL EDITOR", 12))
-                        change_world_state(WORLD_EDITOR_START);
-                    else if (!strncmp(button->textline.text, "QUIT", 4))
-                        change_world_state(WORLD_CLOSE);
+                if (mouse_in_rect(button->region)) {
+                    ui_manager.active_button = j;
+                    if (mouse_button_pressed(MOUSE_LEFT_CLICK))
+                        button->selected = 1;
+                }
+                else ui_manager.active_button = -1;
 
-                    break;
+                draw_button(button, j);
 
-                case WORLD_PAUSEMENU:
-                    if (!strncmp(button->textline.text, "RESUME", 6))
-                        change_world_state(WORLD_INGAME);
-                    else if (!strncmp(button->textline.text, "QUIT", 4))
-                        change_world_state(WORLD_GAMEPLAY_CLOSE);
+                // handle button inputs
+                if (button->selected) {
+                    button->selected = 0;
+                    reset_window_toggles();
 
-                    break;
+                    if (!strcmp(button->textline.text, "GO BACK")) {
+                        ui_manager.active_button = 0;
+                        free_level_previews();
+                        change_world_state(WORLD_MAINMENU);
+                        return;
+                    }
 
-                case WORLD_LEVELCOMPLETE:
-                    if (!strncmp(button->textline.text, "NEXT", 4)) // load next level here
-                        change_world_state(WORLD_LOAD_NEXT_LEVEL);
-                    else if (!strncmp(button->textline.text, "QUIT", 4))
-                        change_world_state(WORLD_GAMEPLAY_CLOSE);
-
-                    break;
-
-                case WORLD_PLAYERDEAD:
-                    if (!strncmp(button->textline.text, "RESPAWN", 7)) // load next level here
-                        change_world_state(WORLD_RESTART_LEVEL);
-                    else if (!strncmp(button->textline.text, "QUIT", 4))
-                        change_world_state(WORLD_GAMEPLAY_CLOSE);
-
-                    break;
-
-                case WORLD_GAME_COMPLETE:
-                    if (!strncmp(button->textline.text, "QUIT", 4))
-                        change_world_state(WORLD_GAMEPLAY_CLOSE);
-
-                    break;
+                    if (wbd->effect) wbd->effect();
+                }
             }
         }
-    }
 
-    // draw NOTIF windows
-    draw_notif_windows(menu);
+        draw_level_previews();
+        draw_notif_windows(menu);
+        draw_mouse();
+
+        reset_window_wbds(win);
+    }
+    else { // draw as normal
+        // draw BLOCK windows
+        for (i = 0; i < menu->windowMax; i++) {
+            win = &menu->windowList[i];
+            if (win->type == WINDOW_NOTIF) continue;
+
+            draw_window(win);
+        }
+
+        // draw buttons
+        for (i = 0; i < menu->buttonMax; i++) {
+            button = &menu->buttonList[i];
+            draw_button(button, i);
+
+            // check if button has been selected
+            if (button && button->selected) {
+                button->selected = 0;
+                ui_manager.active_button = 0;
+                reset_window_toggles();
+
+                switch (world_state) {
+                    case WORLD_MAINMENU:
+                        if (!strncmp(button->textline.text, "PLAY", 4)) {
+                            level_manager_init("config/levels.cfg");
+                            initialize_level_previews();
+                            change_world_state(WORLD_LEVEL_SELECT);
+                            return;
+                        }
+                        else if (!strncmp(button->textline.text, "LEVEL EDITOR", 12))
+                            change_world_state(WORLD_EDITOR_START);
+                        else if (!strncmp(button->textline.text, "QUIT", 4))
+                            change_world_state(WORLD_CLOSE);
+
+                        break;
+
+                    case WORLD_PAUSEMENU:
+                        if (!strncmp(button->textline.text, "RESUME", 6))
+                            change_world_state(WORLD_INGAME);
+                        else if (!strncmp(button->textline.text, "QUIT", 4))
+                            change_world_state(WORLD_GAMEPLAY_CLOSE);
+
+                        break;
+
+                    case WORLD_LEVELCOMPLETE:
+                        if (!strncmp(button->textline.text, "NEXT", 4)) // load next level here
+                            change_world_state(WORLD_LOAD_NEXT_LEVEL);
+                        else if (!strncmp(button->textline.text, "QUIT", 4))
+                            change_world_state(WORLD_GAMEPLAY_CLOSE);
+
+                        break;
+
+                    case WORLD_PLAYERDEAD:
+                        if (!strncmp(button->textline.text, "RESPAWN", 7)) // load next level here
+                            change_world_state(WORLD_RESTART_LEVEL);
+                        else if (!strncmp(button->textline.text, "QUIT", 4))
+                            change_world_state(WORLD_GAMEPLAY_CLOSE);
+
+                        break;
+
+                    case WORLD_GAME_COMPLETE:
+                        if (!strncmp(button->textline.text, "QUIT", 4))
+                            change_world_state(WORLD_GAMEPLAY_CLOSE);
+
+                        break;
+                }
+            }
+        }
+
+        // draw NOTIF windows
+        draw_notif_windows(menu);
+    }
 
     //draw_mouse();
 }
@@ -750,12 +812,6 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
                             set_level_editor_state(EDITOR_SELECT_MODE);
                             return;
                         }
-                        else if (!strcmp(button->textline.text, "+")) {
-                            //level_editor_inc_room_count();
-                        }
-                        else if (!strcmp(button->textline.text, "-")) {
-                            //level_editor_dec_room_count();
-                        }
 
                         break;
                     }
@@ -766,12 +822,9 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
     }
 
     // draw other UI elements
-    switch (editor_state) {
-        case EDITOR_EXISTING_LEVELS:
-            // draw level buttons
-            level_editor_draw_level_previews();
-
-            break;
+    if (editor_state == EDITOR_EXISTING_LEVELS){
+        // draw level buttons
+        draw_level_previews();
     }
 
     draw_notif_windows(menu);
