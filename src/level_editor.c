@@ -51,10 +51,6 @@ typedef struct EditorManager_S {
     GFC_List*       room_buffer;
     Uint8			room_index;
     GFC_Vector2D    room_layout;
-
-    GFC_List*       enemy_list;
-    GFC_List*       item_list;
-    GFC_List*       hazard_list;
 }EditorManager;
 
 static EditorManager editor = { 0 };
@@ -101,11 +97,6 @@ void level_editor_init(){
     editor.all_entities = gfc_list_new();
     editor.entity_preview_index = 0;
 
-    // initialize entity lists
-    editor.enemy_list = gfc_list_new();
-    editor.item_list = gfc_list_new();
-    editor.hazard_list = gfc_list_new();
-
     // other values
     sj_object_get_vector2d(config, "entity_name_offset", &editor.entity_name_offset);
     sj_object_get_vector2d(config, "entity_preview_offset", &editor.entity_preview_offset);
@@ -133,18 +124,13 @@ void level_editor_close() {
 
     gfc_list_delete(editor.entity_preview_list);
     gfc_list_delete(editor.all_entities);
-
-    gfc_list_delete(editor.enemy_list);
-    gfc_list_delete(editor.item_list);
-    gfc_list_delete(editor.hazard_list);
-
-    free_all_entities();
     
     memset(&editor, 0, sizeof(EditorManager));
 }
 
 void level_editor_save_new_level() {
     // LAST SESSION: save a new level
+
 }
 
 EditorRoom* create_empty_room() {
@@ -152,8 +138,8 @@ EditorRoom* create_empty_room() {
     int i;
 
     r = gfc_allocate_array(sizeof(EditorRoom), 1);
-    i = editor.room_buffer->count + 1;
-    gfc_word_sprintf(r->name, "room%d", i);
+    i = 100 + gfc_random_int(899);
+    gfc_word_sprintf(r->name, "ROOM #%d", i);
     r->player_spawn = gfc_vector2d(-1, -1);
 
     r->grounds = gfc_list_new();
@@ -161,12 +147,38 @@ EditorRoom* create_empty_room() {
     r->level_spawns = gfc_list_new();
     r->transitions = gfc_list_new();
 
+    r->enemy_list = gfc_list_new();
+    r->item_list = gfc_list_new();
+    r->hazard_list = gfc_list_new();
+
     return r;
 }
 
-void initialize_dummy_level() {
+void level_editor_create_new_room() {
     EditorRoom* r;
 
+    r = create_empty_room();
+    gfc_list_append(editor.room_buffer, r);
+}
+
+void level_editor_remove_room() {
+    EditorRoom* r;
+
+    if (editor.room_buffer->count == 1) {
+        slog("must have at least one room");
+        return;
+    }
+
+    r = (EditorRoom*) gfc_list_nth(editor.room_buffer, editor.room_index - 1);
+    if (!r) return;
+
+    gfc_list_delete_data(editor.room_buffer, r);
+    free(r);
+
+    editor.room_index = 1;
+}
+
+void initialize_dummy_level() {
     // generate a blank level
     editor.level = gfc_allocate_array(sizeof(Level), 1);
     gfc_word_cpy(editor.level->name, "new_level");
@@ -178,8 +190,7 @@ void initialize_dummy_level() {
     // initialize a default room
     editor.room_index = 1;
     editor.room_layout = gfc_vector2d(1, 1);
-    r = create_empty_room();
-    gfc_list_append(editor.room_buffer, r);
+    level_editor_create_new_room();
 }
 
 void free_editor_level() {
@@ -187,6 +198,7 @@ void free_editor_level() {
     Ground* g;
     int j;
 
+    free_all_entities();
     for (int i = 0; i < editor.room_buffer->count; i++) {
         room = (EditorRoom*) gfc_list_nth(editor.room_buffer, i);
         if (!room) continue;
@@ -200,6 +212,10 @@ void free_editor_level() {
         gfc_list_delete(room->platforms);
         gfc_list_delete(room->level_spawns);
         gfc_list_delete(room->transitions);
+
+        gfc_list_delete(room->enemy_list);
+        gfc_list_delete(room->item_list);
+        gfc_list_delete(room->hazard_list);
 
         free(room);
     }
@@ -359,62 +375,72 @@ void level_editor_update() {
     ItemData* i_data;
     GFC_TextWord name;
 
-    if (editor.state != EDITOR_EDITING) return;
+    if (editor.state == EDITOR_ROOMS_MENU){
+        if (gfc_input_command_pressed("rooms_menu")) {
+            editor.state = EDITOR_EDITING;
+            return;
+        }
+    }
+    else if (editor.state == EDITOR_EDITING) {
+        room = get_current_editor_room();
+        m_pos = get_mouse_position();
 
-    room = get_current_editor_room();
-    m_pos = get_mouse_position();
+        // input checks
+        if (gfc_input_command_pressed("display")) {
+            if (editor.toggle_hud) {
+                if (editor.drawMode == EDITOR_DRAW_ENTITY)
+                    reset_level_editor_entity_previews();
+                editor.toggle_hud = 0;
+            }
+            else {
+                if (editor.drawMode == EDITOR_DRAW_ENTITY)
+                    initialize_level_editor_entity_previews();
+                editor.toggle_hud = 1;
+            }
+        }
 
-    // input checks
-    if (gfc_input_command_pressed("display")) {
-        if (editor.toggle_hud) {
-            if (editor.drawMode == EDITOR_DRAW_ENTITY)
+        if (gfc_input_command_pressed("change_draw_mode") && editor.toggle_hud) {
+            if (editor.drawMode == EDITOR_DRAW_ENTITY) {
                 reset_level_editor_entity_previews();
-            editor.toggle_hud = 0;
-        }
-        else {
-            if (editor.drawMode == EDITOR_DRAW_ENTITY)
+                editor.drawMode = EDITOR_DRAW_TERRAIN;
+            }
+            else if (editor.drawMode == EDITOR_DRAW_TERRAIN) {
                 initialize_level_editor_entity_previews();
-            editor.toggle_hud = 1;
+                editor.drawMode = EDITOR_DRAW_ENTITY;
+            }
         }
-    }
 
-    if (gfc_input_command_pressed("change_draw_mode") && editor.toggle_hud) {
-        if (editor.drawMode == EDITOR_DRAW_ENTITY) {
-            reset_level_editor_entity_previews();
-            editor.drawMode = EDITOR_DRAW_TERRAIN;
+        if (gfc_input_command_pressed("show_controls") && editor.toggle_hud) {
+            if (editor.show_controls)
+                editor.show_controls = 0;
+            else
+                editor.show_controls = 1;
         }
-        else if (editor.drawMode == EDITOR_DRAW_TERRAIN){
-            initialize_level_editor_entity_previews();
-            editor.drawMode = EDITOR_DRAW_ENTITY;
+
+        if (gfc_input_command_pressed("rooms_menu") && editor.toggle_hud) {
+            editor.state = EDITOR_ROOMS_MENU;
+            return;
         }
-    }
 
-    if (gfc_input_command_pressed("show_controls") && editor.toggle_hud) {
-        if (editor.show_controls)
-            editor.show_controls = 0;
-        else 
-            editor.show_controls = 1;
-    }
+        // draw checks/logic
+        switch (editor.drawMode) {
+            case EDITOR_DRAW_ENTITY:
+                // create selected entity
+                if (editor.toggle_hud && mouse_button_pressed(MOUSE_LEFT_CLICK) && mouse_in_rect(editor.entity_preview_region)) {
+                    ent = (Entity*)gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
 
-    // draw checks/logic
-    switch (editor.drawMode) {
-        case EDITOR_DRAW_ENTITY:
-            // create selected entity
-            if (editor.toggle_hud && mouse_button_pressed(MOUSE_LEFT_CLICK) && mouse_in_rect(editor.entity_preview_region)) {
-                ent = (Entity*) gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
-                
-                if (ent) {
-                    //slog("spawned entity");
-                    
-                    // copy entity data
-                    switch (ent->type) {
+                    if (ent) {
+                        //slog("spawned entity");
+
+                        // copy entity data
+                        switch (ent->type) {
                         case ENEMY:
                             e_data = ent->data;
 
-                            gfc_word_sprintf(name, "enemy%i", editor.enemy_list->count + 1);
+                            gfc_word_sprintf(name, "enemy%i", room->enemy_list->count + 1);
                             new_ent = enemy_spawn(e_data->type, name, gfc_vector2d(640, 360), NULL);
 
-                            gfc_list_append(editor.enemy_list, new_ent);
+                            gfc_list_append(room->enemy_list, new_ent);
 
                             break;
 
@@ -422,63 +448,64 @@ void level_editor_update() {
                             i_data = ent->data;
 
                             new_ent = item_spawn(ent->name, gfc_vector2d(640, 360));
-                            gfc_list_append(editor.item_list, new_ent);
+                            gfc_list_append(room->item_list, new_ent);
 
                             break;
 
                         case HAZARD:
 
                             break;
-                    }                    
-                }
-            }
-
-            draw_level_editor_entities(editor.enemy_list, m_pos);
-            draw_level_editor_entities(editor.item_list, m_pos);
-
-            break;
-
-        case EDITOR_DRAW_TERRAIN:
-            if (!editor.toggle_hud && mouse_button_pressed(MOUSE_LEFT_CLICK) && !editor.drawing_trn) {
-                editor.drawing_trn = 1;
-                editor.draw_trn_start = get_mouse_position();
-                //slog("%f, %f", editor.draw_trn_start.x, editor.draw_trn_start.y);
-            }
-                    
-            if (editor.drawing_trn) {
-                if (mouse_button_held(MOUSE_LEFT_CLICK)) {
-                    editor.draw_trn_end = get_mouse_position();
-
-                    editor.trn_preview = gfc_rect(editor.draw_trn_start.x,
-                        editor.draw_trn_start.y,
-                        editor.draw_trn_end.x - editor.draw_trn_start.x,
-                        editor.draw_trn_end.y - editor.draw_trn_start.y
-                    );
-
-                    gf2d_draw_rect_filled(editor.trn_preview, gfc_color8(0, 120, 0, 120));
-                }
-                else {
-                    //slog("%f, %f", editor.draw_trn_end.x, editor.draw_trn_end.y);
-                    editor.draw_trn_end = get_mouse_position();
-                    editor.trn_preview = gfc_rect(editor.draw_trn_start.x,
-                        editor.draw_trn_start.y,
-                        editor.draw_trn_end.x - editor.draw_trn_start.x,
-                        editor.draw_trn_end.y - editor.draw_trn_start.y
-                    );
-
-                    // arrange rect values for positive offset/dimensions
-                    if (editor.draw_trn_end.x < editor.draw_trn_start.x) {
-                        editor.trn_preview.x = editor.draw_trn_end.x;
-                        editor.trn_preview.w *= -1;
+                        }
                     }
+                }
 
-                    if (editor.draw_trn_end.y < editor.draw_trn_start.y) {
-                        editor.trn_preview.y = editor.draw_trn_end.y;
-                        editor.trn_preview.h *= -1;
+                draw_level_editor_entities(room->enemy_list, m_pos);
+                draw_level_editor_entities(room->item_list, m_pos);
+                // draw_level_editor_entities(room->hazard_last, m_pos);
+
+                break;
+
+            case EDITOR_DRAW_TERRAIN:
+                if (!editor.toggle_hud && mouse_button_pressed(MOUSE_LEFT_CLICK) && !editor.drawing_trn) {
+                    editor.drawing_trn = 1;
+                    editor.draw_trn_start = get_mouse_position();
+                    //slog("%f, %f", editor.draw_trn_start.x, editor.draw_trn_start.y);
+                }
+
+                if (editor.drawing_trn) {
+                    if (mouse_button_held(MOUSE_LEFT_CLICK)) {
+                        editor.draw_trn_end = get_mouse_position();
+
+                        editor.trn_preview = gfc_rect(editor.draw_trn_start.x,
+                            editor.draw_trn_start.y,
+                            editor.draw_trn_end.x - editor.draw_trn_start.x,
+                            editor.draw_trn_end.y - editor.draw_trn_start.y
+                        );
+
+                        gf2d_draw_rect_filled(editor.trn_preview, gfc_color8(0, 120, 0, 120));
                     }
+                    else {
+                        //slog("%f, %f", editor.draw_trn_end.x, editor.draw_trn_end.y);
+                        editor.draw_trn_end = get_mouse_position();
+                        editor.trn_preview = gfc_rect(editor.draw_trn_start.x,
+                            editor.draw_trn_start.y,
+                            editor.draw_trn_end.x - editor.draw_trn_start.x,
+                            editor.draw_trn_end.y - editor.draw_trn_start.y
+                        );
 
-                    // create terrain
-                    switch (editor.trnMode) {
+                        // arrange rect values for positive offset/dimensions
+                        if (editor.draw_trn_end.x < editor.draw_trn_start.x) {
+                            editor.trn_preview.x = editor.draw_trn_end.x;
+                            editor.trn_preview.w *= -1;
+                        }
+
+                        if (editor.draw_trn_end.y < editor.draw_trn_start.y) {
+                            editor.trn_preview.y = editor.draw_trn_end.y;
+                            editor.trn_preview.h *= -1;
+                        }
+
+                        // create terrain
+                        switch (editor.trnMode) {
                         case EDITOR_TRN_GROUND:
                             g = create_ground(
                                 editor.trn_preview,
@@ -493,31 +520,32 @@ void level_editor_update() {
                         case EDITOR_TRN_PLAT:
 
                             break;
+                        }
+
+                        editor.drawing_trn = 0;
                     }
-                    
-                    editor.drawing_trn = 0;
                 }
-            }
-                    
-            break;
-    }
 
-    // draw level and check each level element
-    for (int i = 0; i < room->grounds->count; i++) {
-        g = (Ground*) gfc_list_nth(room->grounds, i);
-        if (!g) continue;
+                break;
+        }
 
-        gf2d_draw_rect_filled(g->dimensions, g->color);
+        // draw level and check each level element
+        for (int i = 0; i < room->grounds->count; i++) {
+            g = (Ground*)gfc_list_nth(room->grounds, i);
+            if (!g) continue;
 
-        if (!editor.toggle_hud && mouse_in_rect(g->dimensions)) {
-            if (mouse_button_pressed(MOUSE_MIDDLE_CLICK)) {
-                gfc_list_delete_data(room->grounds, g);
-                free(g);
-            }
-            else if (mouse_button_held(MOUSE_RIGHT_CLICK)) {
-                // reposition ground offset (TODO: FIX MULTIPLE GROUNDS BEING SELECTED)
-                g->dimensions.x = m_pos.x - (g->dimensions.w * 0.5f);
-                g->dimensions.y = m_pos.y - (g->dimensions.h * 0.5f);
+            gf2d_draw_rect_filled(g->dimensions, g->color);
+
+            if (!editor.toggle_hud && mouse_in_rect(g->dimensions)) {
+                if (mouse_button_pressed(MOUSE_MIDDLE_CLICK)) {
+                    gfc_list_delete_data(room->grounds, g);
+                    free(g);
+                }
+                else if (mouse_button_held(MOUSE_RIGHT_CLICK)) {
+                    // reposition ground offset (TODO: FIX MULTIPLE GROUNDS BEING SELECTED)
+                    g->dimensions.x = m_pos.x - (g->dimensions.w * 0.5f);
+                    g->dimensions.y = m_pos.y - (g->dimensions.h * 0.5f);
+                }
             }
         }
     }
@@ -644,6 +672,17 @@ void level_editor_prev_ent() {
     if (ent) ent->draw_flag = 1;
 
     //slog("%i", editor.entity_preview_index);
+}
+
+void level_editor_inc_room_index() {
+    if (editor.room_index < editor.room_buffer->count) {
+        editor.room_index++;
+    }
+}
+
+void level_editor_dec_room_index() {
+    if (editor.room_index > 1)
+        editor.room_index--;
 }
 
 EditorState get_level_editor_state() {

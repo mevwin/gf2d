@@ -7,7 +7,8 @@
 typedef enum EditorState_E {
 	EDITOR_SELECT_MODE,
 	EDITOR_EXISTING_LEVELS,
-	EDITOR_EDITING
+	EDITOR_EDITING,
+	EDITOR_ROOMS_MENU
 }EditorState;
 
 typedef enum EditorDrawMode_E {
@@ -32,6 +33,10 @@ typedef struct EditorRoom_S {
 	GFC_List*			platforms;
 	GFC_List*			level_spawns;
 	GFC_List*			transitions;
+
+	GFC_List*			enemy_list;
+	GFC_List*			item_list;
+	GFC_List*			hazard_list;
 }EditorRoom;
 
 void level_editor_init();
@@ -42,9 +47,9 @@ void level_editor_save_new_level();
 
 //void level_editor_load_existing_level();
 void initialize_dummy_level();
+void level_editor_create_new_room();
+void level_editor_remove_room();
 void free_editor_level();
-
-
 
 void initialize_level_previews();
 void free_level_previews();
@@ -65,6 +70,8 @@ void level_editor_next_list_type();
 void level_editor_prev_list_type();
 void level_editor_next_ent();
 void level_editor_prev_ent();
+void level_editor_inc_room_index();
+void level_editor_dec_room_index();
 
 EditorState get_level_editor_state();
 GFC_Vector2D get_level_editor_room_layout();
@@ -74,6 +81,7 @@ GFC_TextWord* get_level_editor_ent_strings();
 EditorDrawMode get_level_editor_draw_mode();
 EditorTrnMode get_level_editor_trn_mode();
 Uint8 get_level_editor_show_controls();
+EditorRoom* get_current_editor_room();
 
 void toggle_level_editor_hud(Uint8 toggle);
 void set_level_editor_state(EditorState state);

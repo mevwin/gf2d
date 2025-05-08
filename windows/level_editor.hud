@@ -69,6 +69,46 @@
             "buttonOffset": [-1, -1],
             "buttonColor": [20, 20, 100, 255],
             "buttonType": "SCROLL"
+        },
+        {
+            "text": "P-SPWN",
+            "fontType": "STANDARD",
+            "fontSize": "SMALL",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [20, 20, 100, 255],
+            "buttonType": "SCROLL"
+        },
+        {
+            "text": "ROOM",
+            "fontType": "STANDARD",
+            "fontSize": "SMALL",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [20, 20, 100, 255],
+            "buttonType": "SCROLL"
+        },
+        {
+            "text": "ADD ROOM",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [20, 20, 100, 255],
+            "buttonType": "MENU"
+        },
+        {
+            "text": "RMV ROOM",
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textOffset": [-1, -1],
+            "textColor": [255, 255, 255, 255],
+            "buttonOffset": [-1, -1],
+            "buttonColor": [20, 20, 100, 255],
+            "buttonType": "MENU"
         }
     ],
     "windows":
@@ -93,7 +133,9 @@
                 ["-", [984, 365], "PREV_ENT_LIST"],
                 ["+", [1196, 365], "NEXT_ENT_LIST"],
                 ["-", [984, 245], "PREV_ENT"],
-                ["+", [1196, 245], "NEXT_ENT"]
+                ["+", [1196, 245], "NEXT_ENT"],
+                ["P-SPWN", [1040, 25], "NONE"],
+                ["ROOM", [1140, 25], "NONE"]
             ]
         },
         {
@@ -129,7 +171,9 @@
                 ["SAVE", [980, 470], "NONE"],
                 ["QUIT", [980, 600], "NONE"],
                 ["GND", [1090, 270], "NONE"],
-                ["PLT", [1090, 370], "NONE"]
+                ["PLT", [1090, 370], "NONE"],         
+                ["P-SPWN", [1040, 25], "NONE"],
+                ["ROOM", [1140, 25], "NONE"]
             ]
         },
         {
@@ -146,6 +190,27 @@
             "fontSize": "SMALL",
             "textColor": [255, 255, 255, 255],
             "buttons": []
+        },
+        {
+            "name": "ROOM_PROP",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [222, 126],
+            "scale": [834, 402],
+            "color": [10, 150, 150, 120],
+            "hasText": 1,
+            "text": "SELECT ROOM TO EDIT",
+            "textOffset": [250, 40],
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textColor": [255, 255, 255, 255],
+            "buttons": 
+            [
+                ["-", [450, 250], "ROOM_IDEC"],
+                ["+", [750, 250], "ROOM_IINC"],
+                ["ADD ROOM", [318, 380], "NONE"],
+                ["RMV ROOM", [660, 380], "NONE"]
+            ]
         }
     ],
     "example_windows":
