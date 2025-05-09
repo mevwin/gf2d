@@ -119,6 +119,13 @@ Ground* create_ground(
 	Uint8 wall_flag
 );
 
+RoomTransition* create_room_transition(
+	GFC_Rect region,
+	GFC_Vector2D player_repo,
+	Uint8 room_num,
+	Uint8 locked
+);
+
 void create_room_from_json(Room* room, SJson* data);
 void create_ground_from_json(Ground* ground, SJson* ground_data);
 void create_wall(Wall* wall, GFC_Edge2D dimen, Uint8 type);

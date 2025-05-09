@@ -39,7 +39,7 @@ void draw_world_menu(Menu* menu, WorldState world_state);
 void draw_editor_menu(Menu* menu, EditorState editor_state);
 void draw_editor_hud(Menu* menu);
 void draw_editor_hud_buttons(Menu* menu, Window* win);
-void draw_editor_rooms_menu(Menu* menu);
+void draw_editor_hud_special_menu(Menu* menu);
 
 Uint32 find_button_index_from_wbd(Menu* menu, WindowButtonData* wbd);
 Window* get_window_by_name(Window* list, Uint32 count, const char* name);
@@ -290,6 +290,10 @@ void create_window_from_json(Window* window, SJson* data) {
                 window->wbd[i].effect = level_editor_inc_room_index;
             else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "ROOM_IDEC"))
                 window->wbd[i].effect = level_editor_dec_room_index;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "ROOM_TR_INC"))
+                window->wbd[i].effect = level_editor_inc_room_tr_index;
+            else if (!strcmp(sj_get_string_value(sj_array_nth(entry, 2)), "ROOM_TR_DEC"))
+                window->wbd[i].effect = level_editor_dec_room_tr_index;
             else
                 window->wbd[i].effect = NULL;
         }
@@ -790,24 +794,22 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
             // handle button inputs
             if (button->selected) {
                 button->selected = 0;
+                ui_manager.active_button = 0;
                 reset_window_toggles();
 
                 switch (editor_state) {
                     case EDITOR_SELECT_MODE:
                         if (!strncmp(button->textline.text, "QUIT", 4)) {
-                            ui_manager.active_button = 0;
                             change_world_state(WORLD_EDITOR_CLOSE);
                             return;
                         }
                         else if (!strcmp(button->textline.text, "NEW LEVEL")) {
-                            ui_manager.active_button = 0;
                             initialize_dummy_level();
                             initialize_level_editor_all_entities();
                             set_level_editor_state(EDITOR_EDITING);
                             return;
                         }
                         else if (!strcmp(button->textline.text, "LOAD EXISTING LEVEL")) {
-                            ui_manager.active_button = 0;
                             initialize_level_previews();
                             set_level_editor_state(EDITOR_EXISTING_LEVELS);
                             return;
@@ -817,7 +819,6 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
 
                     case EDITOR_EXISTING_LEVELS:
                         if (!strcmp(button->textline.text, "QUIT")) {
-                            ui_manager.active_button = 0;
                             free_level_previews();
                             change_world_state(WORLD_EDITOR_CLOSE);
                             return;
@@ -829,7 +830,7 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
                         }
 
                         break;
-                    }
+                }
 
                 if (wbd->effect) wbd->effect();
             }
@@ -887,37 +888,35 @@ void draw_editor_hud_buttons(Menu* menu, Window* win) {
             // handle button inputs
             if (button->selected) {
                 button->selected = 0;
+                ui_manager.active_button = 0;
                 reset_window_toggles();
 
                 if (!strcmp(button->textline.text, "QUIT")) {
                     change_world_state(WORLD_EDITOR_CLOSE);
-                    ui_manager.active_button = 0;
                     return;
                 }
                 else if (!strcmp(button->textline.text, "SAVE")) {
                     level_editor_save_new_level();
-                    ui_manager.active_button = 0;
                     return;
-                }
-                else if (!strcmp(button->textline.text, "P-SPWN")) {
-                    // spawn player
-                    level_editor_set_player_spawn();
                 }
 
                 switch (drawMode) {
                     case EDITOR_DRAW_ENTITY:
-
+                        if (!strcmp(button->textline.text, "P-SPWN")) {
+                            // spawn player
+                            level_editor_set_player_spawn();
+                        }
 
                         break;
 
                     case EDITOR_DRAW_TERRAIN:
-                        if (!strcmp(button->textline.text, "GND")) {
-                            ui_manager.active_button = 0;
+                        if (!strcmp(button->textline.text, "GND")) 
                             set_level_editor_trn_mode(EDITOR_TRN_GROUND);
-                        }
-                        else if (!strcmp(button->textline.text, "PLT")) {
-                            ui_manager.active_button = 0;
+                        else if (!strcmp(button->textline.text, "PLT"))
                             set_level_editor_trn_mode(EDITOR_TRN_PLAT);
+                        else if (!strcmp(button->textline.text, "TRANSITIONS") && level_editor_room_transition_enough_rooms()) {
+                            // load menu for making room transitions
+                            set_level_editor_state(EDITOR_TRANSITIONS_MENU);
                         }
                 }
 
@@ -992,18 +991,27 @@ void draw_editor_hud(Menu* menu) {
     draw_mouse();
 }
 
-void draw_editor_rooms_menu(Menu* menu) {
-    Window* win;
+void draw_editor_hud_special_menu(Menu* menu) {
+    EditorState editor_state = get_level_editor_state();
+    Window* win = NULL;
     WindowButtonData* wbd;
     Button* button;
     GFC_Vector2D room_in_pos;
     int i, j;
 
-    win = get_window_by_name(menu->windowList, menu->windowMax, "ROOM_PROP");
+    if (editor_state == EDITOR_ROOMS_MENU) {
+        win = get_window_by_name(menu->windowList, menu->windowMax, "ROOM_PROP");
+        room_in_pos = gfc_vector2d(550, 250);
+    }
+    else if (editor_state == EDITOR_TRANSITIONS_MENU) {
+        win = get_window_by_name(menu->windowList, menu->windowMax, "RM_TRANS");
+        room_in_pos = gfc_vector2d(350, 300);
+    }
+
+    if (!win) return;
     draw_window(win);
 
     // draw current room name
-    room_in_pos = gfc_vector2d(550, 250);
     font_display_text(
         get_current_editor_room()->name,
         FONT_STANDARD,
@@ -1014,6 +1022,10 @@ void draw_editor_rooms_menu(Menu* menu) {
         NULL
     );
 
+    // draw other room names for transition menu
+    if (editor_state == EDITOR_TRANSITIONS_MENU)
+        level_editor_display_room_transition_name();
+   
     // draw buttons
     for (i = 0; i < win->button_count; i++) {
         wbd = &win->wbd[i];
@@ -1038,15 +1050,31 @@ void draw_editor_rooms_menu(Menu* menu) {
             // handle button inputs
             if (button->selected) {
                 button->selected = 0;
-                if (!strcmp(button->textline.text, "ADD ROOM")) {
-                    ui_manager.active_button = 0;
-                    level_editor_create_new_room();
-                    //set_level_editor_trn_mode(EDITOR_TRN_GROUND);
-                }
-                else if (!strcmp(button->textline.text, "RMV ROOM")) {
-                    ui_manager.active_button = 0;
-                    level_editor_remove_room();
-                    //set_level_editor_trn_mode(EDITOR_TRN_GROUND);
+                ui_manager.active_button = 0;
+                reset_window_toggles();
+
+                switch (editor_state) {
+                    case EDITOR_ROOMS_MENU:
+                        if (!strcmp(button->textline.text, "ADD ROOM"))
+                            level_editor_create_new_room();
+                        else if (!strcmp(button->textline.text, "RMV ROOM"))
+                            level_editor_remove_room(); 
+                    
+                    break;
+
+                    case EDITOR_TRANSITIONS_MENU:
+                        if (!strcmp(button->textline.text, "QUIT")) {
+                            set_level_editor_state(EDITOR_EDITING);
+                            return;
+                        }
+                        else if (!strcmp(button->textline.text, "SAVE")) {
+                            // create or change room transition for both rooms
+                            level_editor_create_room_transition();
+                            set_level_editor_state(EDITOR_EDITING);
+                            return;
+                        }
+                      
+                    break;
                 }
 
                 if (wbd->effect) wbd->effect();
@@ -1061,30 +1089,26 @@ void draw_editor_rooms_menu(Menu* menu) {
 
 void drawUI(Uint8 w_state) {    
     Menu* menu;
-    WorldState world_state;
-    EditorState editor_state;
+    WorldState world_state = (WorldState) w_state;
+    EditorState editor_state = get_level_editor_state();
 
-    world_state = (WorldState) w_state;
-
-    menu = (Menu*) gfc_list_nth(ui_manager.ui_list, w_state);
+    menu = (Menu*)gfc_list_nth(ui_manager.ui_list, w_state);
     if (!menu) return;
 
     if (world_state == WORLD_EDITOR) {
         mouse_update_state();
 
-        editor_state = get_level_editor_state();
         if (editor_state == EDITOR_EDITING) {
             menu = (Menu*)gfc_list_nth(ui_manager.ui_list, w_state + 1);
             if (!menu) return;
             draw_editor_hud(menu);
         }
-        else if (editor_state == EDITOR_ROOMS_MENU) {
+        else if (editor_state == EDITOR_ROOMS_MENU || editor_state == EDITOR_TRANSITIONS_MENU) {
             menu = (Menu*)gfc_list_nth(ui_manager.ui_list, w_state + 1);
             if (!menu) return;
-            draw_editor_rooms_menu(menu);
+            draw_editor_hud_special_menu(menu);
         }
-        else
-            draw_editor_menu(menu, editor_state);
+        else draw_editor_menu(menu, editor_state);
     }
     else if (world_state != WORLD_INGAME) 
         draw_world_menu(menu, world_state);

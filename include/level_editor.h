@@ -8,7 +8,8 @@ typedef enum EditorState_E {
 	EDITOR_SELECT_MODE,
 	EDITOR_EXISTING_LEVELS,
 	EDITOR_EDITING,
-	EDITOR_ROOMS_MENU
+	EDITOR_ROOMS_MENU,
+	EDITOR_TRANSITIONS_MENU
 }EditorState;
 
 typedef enum EditorDrawMode_E {
@@ -48,10 +49,6 @@ void level_editor_create_new_room();
 void level_editor_remove_room();
 void free_editor_level();
 
-//void initialize_level_editor_previews();
-//void level_editor_draw_level_previews();
-//void free_level_editor_previews();
-
 /**
 * @brief pre-load all entities in their default states
 */
@@ -61,6 +58,9 @@ void change_level_editor_list_type(EntityType new);
 void level_editor_draw_entity_preview_region();
 
 void level_editor_set_player_spawn();
+Uint8 level_editor_room_transition_enough_rooms();
+void level_editor_display_room_transition_name();
+void level_editor_create_room_transition();
 
 void level_editor_next_list_type();
 void level_editor_prev_list_type();
@@ -68,6 +68,8 @@ void level_editor_next_ent();
 void level_editor_prev_ent();
 void level_editor_inc_room_index();
 void level_editor_dec_room_index();
+void level_editor_inc_room_tr_index();
+void level_editor_dec_room_tr_index();
 
 EditorState get_level_editor_state();
 GFC_Vector2D get_level_editor_room_layout();

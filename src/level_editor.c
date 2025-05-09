@@ -42,11 +42,12 @@ typedef struct EditorManager_S {
     GFC_Rect        trn_preview;
 
     // level data
+    Entity*         player;
     Level*          level;
     GFC_List*       room_buffer;
-    Uint8			room_index;
     GFC_Vector2D    room_layout;
-    Entity*         player;
+    Uint8			room_index;
+    Uint8           room_tr_index;
 }EditorManager;
 
 static EditorManager editor = { 0 };
@@ -68,19 +69,6 @@ void level_editor_init(){
     }
 
     level_manager_init("config/levels.cfg");
-
-    // level preview set up
-    /*
-    editor.preview_pos_page = 0;
-    editor.level_preview_buttons = gfc_list_new();
-
-    entry = sj_object_get_value(config, "level_preview_positions");
-    editor.preview_pos_count = entry->v.array->count;
-    editor.level_preview_positions = gfc_allocate_array(sizeof(GFC_Vector2D), editor.preview_pos_count);
-    for (i = 0; i < editor.preview_pos_count; i++) {
-        sj_value_as_vector2d(sj_array_nth(entry, i), &editor.level_preview_positions[i]);
-    }
-    */
 
     // entity type strings
     entry = sj_object_get_value(config, "entity_types");
@@ -109,6 +97,8 @@ void level_editor_init(){
     editor.trn_preview = gfc_rect(0, 0, 0, 0);
     editor.player_spawn_set = 0;
     editor.player = NULL;
+    editor.room_index = 0;
+    editor.room_tr_index = 0;
 
     sj_free(config);
 }
@@ -139,7 +129,7 @@ void level_editor_save_new_level() {
         if (!room) continue;
 
         // check if there is at least one ground
-        if (room->grounds->count == 0) {
+        if (!room->grounds->count) {
             slog("%s must have at least 1 ground", room->name);
             return;
         }
@@ -148,6 +138,7 @@ void level_editor_save_new_level() {
     // save level
 
     // LAST SESSION: ADD LEVEL TRANSITIONS AND SAVING LEVEL TO JSON
+
 
     change_world_state(WORLD_EDITOR_CLOSE);
 }
@@ -180,6 +171,69 @@ void level_editor_create_new_room() {
     gfc_list_append(editor.room_buffer, r);
 }
 
+void level_editor_free_room(EditorRoom* room) {
+    Ground* g;
+    Platform* p;
+    LevelSpawn* ls;
+    RoomTransition* rt;
+    Entity* e;
+    int i;
+
+    if (!room) return;
+
+    // free all assets saved
+    for (i = 0; i < room->grounds->count; i++) {
+        g = (Ground*) gfc_list_nth(room->grounds, i);
+        if (!g) continue;
+        free(g);
+    }
+    gfc_list_delete(room->grounds);
+
+    for (i = 0; i < room->platforms->count; i++) {
+        p = (Ground*) gfc_list_nth(room->platforms, i);
+        if (!p) continue;
+        free(p);
+    }
+    gfc_list_delete(room->platforms);
+
+    for (i = 0; i < room->level_spawns->count; i++) {
+        ls = (LevelSpawn*) gfc_list_nth(room->level_spawns, i);
+        if (!ls) continue;
+        free(ls);
+    }
+    gfc_list_delete(room->level_spawns);
+
+    for (i = 0; i < room->transitions->count; i++) {
+        rt = (RoomTransition*) gfc_list_nth(room->transitions, i);
+        if (!rt) continue;
+        free(rt);
+    }
+    gfc_list_delete(room->transitions);
+
+    for (i = 0; i < room->enemy_list->count; i++) {
+        e = (Entity*) gfc_list_nth(room->enemy_list, i);
+        if (!e) continue;
+        entity_free(e);
+    }
+    gfc_list_delete(room->enemy_list);
+
+    for (i = 0; i < room->item_list->count; i++) {
+        e = (Entity*) gfc_list_nth(room->item_list, i);
+        if (!e) continue;
+        entity_free(e);
+    }
+    gfc_list_delete(room->item_list);
+
+    for (i = 0; i < room->hazard_list->count; i++) {
+        e = (Entity*) gfc_list_nth(room->hazard_list, i);
+        if (!e) continue;
+        entity_free(e);
+    }
+    gfc_list_delete(room->hazard_list);
+
+    free(room);
+}
+
 void level_editor_remove_room() {
     EditorRoom* r;
 
@@ -188,13 +242,12 @@ void level_editor_remove_room() {
         return;
     }
 
-    r = (EditorRoom*) gfc_list_nth(editor.room_buffer, editor.room_index - 1);
-    if (!r) return;
-
-    gfc_list_delete_data(editor.room_buffer, r);
-    free(r);
-
-    editor.room_index = 1;
+    r = (EditorRoom*) gfc_list_nth(editor.room_buffer, editor.room_index);
+    if (r) {
+        gfc_list_delete_data(editor.room_buffer, r);
+        level_editor_free_room(r);
+    }
+    editor.room_index = 0;
 }
 
 void initialize_dummy_level() {
@@ -207,7 +260,6 @@ void initialize_dummy_level() {
     editor.room_buffer = gfc_list_new();
 
     // initialize a default room
-    editor.room_index = 1;
     editor.room_layout = gfc_vector2d(1, 1);
     level_editor_create_new_room();
 }
@@ -221,22 +273,7 @@ void free_editor_level() {
     for (int i = 0; i < editor.room_buffer->count; i++) {
         room = (EditorRoom*) gfc_list_nth(editor.room_buffer, i);
         if (!room) continue;
-
-        for (j = 0; j < room->grounds->count; j++) {
-            g = (Ground*) gfc_list_nth(room->grounds, j);
-            free(g);
-        }
-        gfc_list_delete(room->grounds);
-
-        gfc_list_delete(room->platforms);
-        gfc_list_delete(room->level_spawns);
-        gfc_list_delete(room->transitions);
-
-        gfc_list_delete(room->enemy_list);
-        gfc_list_delete(room->item_list);
-        gfc_list_delete(room->hazard_list);
-
-        free(room);
+        level_editor_free_room(room);
     }
 
     gfc_list_delete(editor.room_buffer);
@@ -406,6 +443,44 @@ void level_editor_set_player_spawn() {
     editor.player_spawn_set = 1;
 }
 
+Uint8 level_editor_room_transition_enough_rooms() {
+    if (editor.room_buffer->count == 1) {
+        slog("need more than one room to add transitions");
+        return 0;
+    }
+    else return 1;
+}
+
+void level_editor_display_room_transition_name() {
+    EditorRoom* room;
+    GFC_Vector2D vec;
+
+    vec = gfc_vector2d(720, 300);
+
+    if (editor.room_tr_index == editor.room_index)
+        level_editor_inc_room_tr_index();
+
+    room = (EditorRoom*) gfc_list_nth(editor.room_buffer, editor.room_tr_index);
+    if (!room) return;
+
+    font_display_text(
+        room->name,
+        FONT_STANDARD,
+        FONT_SIZE_MEDIUM,
+        GFC_COLOR_WHITE,
+        0,
+        &vec,
+        NULL
+    );
+}
+
+void level_editor_create_room_transition() {
+    // get both level indexes on room_buffer
+    // get levels
+    // create a transition between them (one for start room, one for the other)
+
+}
+
 void level_editor_update() {
     Ground* g;
     EditorRoom* room;
@@ -420,6 +495,9 @@ void level_editor_update() {
             editor.state = EDITOR_EDITING;
             return;
         }
+    }
+    else if (editor.state == EDITOR_TRANSITIONS_MENU) {
+
     }
     else if (editor.state == EDITOR_EDITING) {
         room = get_current_editor_room();
@@ -663,15 +741,38 @@ void level_editor_prev_ent() {
 }
 
 void level_editor_inc_room_index() {
-    if (editor.room_index < editor.room_buffer->count) {
+    if (editor.room_index < editor.room_buffer->count - 1)
         editor.room_index++;
-    }
 }
 
 void level_editor_dec_room_index() {
-    if (editor.room_index > 1)
+    if (editor.room_index > 0)
         editor.room_index--;
 }
+
+
+void level_editor_inc_room_tr_index() {
+    if (editor.room_tr_index < editor.room_buffer->count - 1) {
+        editor.room_tr_index++;
+        if (editor.room_tr_index == editor.room_index) {
+            editor.room_tr_index++;
+            if (editor.room_tr_index > editor.room_buffer->count - 1)
+                editor.room_tr_index = 0;
+        }
+    }
+}
+
+void level_editor_dec_room_tr_index() {
+    if (editor.room_tr_index > 0) {
+        editor.room_tr_index--;
+        if (editor.room_tr_index == editor.room_index) {
+            editor.room_tr_index--;
+            if (editor.room_tr_index < 0)
+                editor.room_tr_index = editor.room_buffer->count - 1;
+        }
+    }
+}
+
 
 EditorState get_level_editor_state() {
     return editor.state;
@@ -706,7 +807,7 @@ Uint8 get_level_editor_show_controls() {
 }
 
 EditorRoom* get_current_editor_room() {
-    return (EditorRoom*) gfc_list_nth(editor.room_buffer, editor.room_index - 1);
+    return (EditorRoom*) gfc_list_nth(editor.room_buffer, editor.room_index);
 }
 
 void toggle_level_editor_hud(Uint8 toggle) {

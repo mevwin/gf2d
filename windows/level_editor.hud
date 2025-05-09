@@ -81,14 +81,14 @@
             "buttonType": "SCROLL"
         },
         {
-            "text": "TRS",
+            "text": "TRANSITIONS",
             "fontType": "STANDARD",
-            "fontSize": "SMALL",
+            "fontSize": "MEDIUM",
             "textOffset": [-1, -1],
             "textColor": [255, 255, 255, 255],
             "buttonOffset": [-1, -1],
             "buttonColor": [20, 20, 100, 255],
-            "buttonType": "SCROLL"
+            "buttonType": "MENU"
         },
         {
             "text": "ADD ROOM",
@@ -134,7 +134,7 @@
                 ["+", [1196, 365], "NEXT_ENT_LIST"],
                 ["-", [984, 245], "PREV_ENT"],
                 ["+", [1196, 245], "NEXT_ENT"],
-                ["P-SPWN", [1040, 25], "NONE"]
+                ["P-SPWN", [1090, 25], "NONE"]
             ]
         },
         {
@@ -170,7 +170,8 @@
                 ["SAVE", [980, 470], "NONE"],
                 ["QUIT", [980, 600], "NONE"],
                 ["GND", [1090, 270], "NONE"],
-                ["PLT", [1090, 370], "NONE"]
+                ["PLT", [1090, 370], "NONE"],
+                ["TRANSITIONS", [980, 25], "NONE"]
             ]
         },
         {
@@ -207,6 +208,27 @@
                 ["+", [750, 250], "ROOM_IINC"],
                 ["ADD ROOM", [318, 380], "NONE"],
                 ["RMV ROOM", [660, 380], "NONE"]
+            ]
+        },
+        {
+            "name": "RM_TRANS",
+            "toggled": 1,
+            "type": "BLOCK",
+            "offset": [222, 126],
+            "scale": [834, 402],
+            "color": [10, 150, 150, 120],
+            "hasText": 1,
+            "text": "SELECT ROOM TO TRANSITION TO",
+            "textOffset": [250, 40],
+            "fontType": "STANDARD",
+            "fontSize": "MEDIUM",
+            "textColor": [255, 255, 255, 255],
+            "buttons": 
+            [
+                ["-", [600, 250], "ROOM_TR_DEC"],
+                ["+", [950, 250], "ROOM_TR_INC"],
+                ["SAVE", [660, 390], "NONE"],
+                ["QUIT", [318, 390], "NONE"]
             ]
         }
     ],
