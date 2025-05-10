@@ -48,6 +48,10 @@ typedef struct EditorManager_S {
     GFC_Vector2D    room_layout;
     Uint8			room_index;
     Uint8           room_tr_index;
+  
+    // room transitions
+    Uint8           room_tr_id;
+    GFC_List*       room_tr_list;       // for easier searching
 }EditorManager;
 
 static EditorManager editor = { 0 };
@@ -55,6 +59,7 @@ static EditorManager editor = { 0 };
 EditorRoom* create_empty_room();
 EditorRoom* get_current_editor_room();
 void reset_level_editor_entity_previews();
+void update_room_transition_player_repo(RoomTransition* room_a);
 
 void level_editor_init(){
     SJson* config, *entry;
@@ -99,6 +104,9 @@ void level_editor_init(){
     editor.player = NULL;
     editor.room_index = 0;
     editor.room_tr_index = 0;
+    
+    editor.room_tr_id = 0;
+    editor.room_tr_list = gfc_list_new();
 
     sj_free(config);
 }
@@ -108,6 +116,7 @@ void level_editor_close() {
 
     free(editor.ent_strings);
 
+    gfc_list_delete(editor.room_tr_list);
     gfc_list_delete(editor.entity_preview_list);
     gfc_list_delete(editor.all_entities);
     
@@ -475,20 +484,62 @@ void level_editor_display_room_transition_name() {
 }
 
 void level_editor_create_room_transition() {
-    // get both level indexes on room_buffer
-    // get levels
-    // create a transition between them (one for start room, one for the other)
+    EditorRoom* curr_room = get_current_editor_room(), * new_room;
+    RoomTransition* curr_to_new, * new_to_curr;
 
+    // get rooms
+    new_room = (EditorRoom*)gfc_list_nth(editor.room_buffer, editor.room_tr_index);
+    if (!new_room) return;
+
+    // create a transition between them (one for start room, one for the other)
+    // NOTE: default position values
+    curr_to_new = create_room_transition(
+        gfc_rect(100, 100, 150, 150),
+        gfc_vector2d(100, 100),
+        editor.room_tr_index + 1,
+        0,
+        editor.room_tr_id
+    );
+    gfc_list_append(curr_room->transitions, curr_to_new);
+
+    new_to_curr = create_room_transition(
+        gfc_rect(100, 100, 150, 150),
+        gfc_vector2d(100, 100),
+        editor.room_index + 1,
+        0,
+        editor.room_tr_id
+    );
+    gfc_list_append(new_room->transitions, new_to_curr);
+
+    gfc_list_append(editor.room_tr_list, curr_to_new);
+    gfc_list_append(editor.room_tr_list, new_to_curr);
+
+    editor.room_tr_id++;
+}
+
+void update_room_transition_player_repo(RoomTransition* room_a) {
+    RoomTransition* rt;
+
+    for (int i = 0; i < editor.room_tr_list->count; i++) {
+        rt = (RoomTransition*) gfc_list_nth(editor.room_tr_list, i);
+        if (!rt || room_a == rt || room_a->id != rt->id) continue;
+
+        rt->player_repo.x = room_a->region.x;
+        rt->player_repo.y = room_a->region.y;
+        return;
+    }
 }
 
 void level_editor_update() {
     Ground* g;
     EditorRoom* room;
+    RoomTransition* rt;
     GFC_Vector2D m_pos;
     Entity* ent, *new_ent;
     EnemyData* e_data;
     ItemData* i_data;
     GFC_TextWord name;
+    int i;
 
     if (editor.state == EDITOR_ROOMS_MENU){
         if (gfc_input_command_pressed("rooms_menu")) {
@@ -662,22 +713,15 @@ void level_editor_update() {
                 break;
         }
 
-        // draw entities
-        draw_level_editor_entities(room->enemy_list, m_pos);
-        draw_level_editor_entities(room->item_list, m_pos);
-        if (editor.player) {
-            entity_draw(editor.player);
-            gf2d_draw_rect(editor.player->hurtbox.s.r, GFC_COLOR_GREEN);
-        }
-
         // draw level and check each level element
-        for (int i = 0; i < room->grounds->count; i++) {
+        for (i = 0; i < room->grounds->count; i++) {
             g = (Ground*)gfc_list_nth(room->grounds, i);
             if (!g) continue;
 
             gf2d_draw_rect_filled(g->dimensions, g->color);
 
-            if (!editor.toggle_hud && mouse_in_rect(g->dimensions) && editor.drawMode == EDITOR_DRAW_TERRAIN) {
+            // handle input
+            if (!editor.toggle_hud && editor.drawMode == EDITOR_DRAW_TERRAIN && mouse_in_rect(g->dimensions)) {
                 if (mouse_button_pressed(MOUSE_MIDDLE_CLICK)) {
                     gfc_list_delete_data(room->grounds, g);
                     free(g);
@@ -689,6 +733,34 @@ void level_editor_update() {
                 }
             }
         }
+
+        // draw room transitions
+        for (i = 0; i < room->transitions->count; i++) {
+            rt = (RoomTransition*) gfc_list_nth(room->transitions, i);
+            if (!rt) continue;
+
+            gf2d_draw_rect_filled(rt->region, GFC_COLOR_BROWN);
+
+            // handle input
+            if (!editor.toggle_hud && editor.drawMode == EDITOR_DRAW_ENTITY && mouse_in_rect(rt->region)) {
+                if (mouse_button_held(MOUSE_LEFT_CLICK) ) {
+                    rt->region.x = m_pos.x - (rt->region.w * 0.5f);
+                    rt->region.y = m_pos.y - (rt->region.h * 0.5f);
+
+                    // change reposition data for corresponding transition
+                    update_room_transition_player_repo(rt);
+                }
+            }
+        }
+
+        // draw entities
+        draw_level_editor_entities(room->enemy_list, m_pos);
+        draw_level_editor_entities(room->item_list, m_pos);
+        if (editor.player) {
+            entity_draw(editor.player);
+            gf2d_draw_rect(editor.player->hurtbox.s.r, GFC_COLOR_GREEN);
+        }
+
     }
 }
 

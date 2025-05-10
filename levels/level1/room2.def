@@ -46,7 +46,8 @@
                 "region": [0, 450, 150, 150],
                 "player_repo": [1050, 550],
                 "room_num": 1,
-                "locked": 0
+                "locked": 0,
+                "id": 0
             }
         ]
     }

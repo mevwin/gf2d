@@ -438,6 +438,25 @@ Ground* create_ground(
 	return g;
 }
 
+RoomTransition* create_room_transition(
+	GFC_Rect region,
+	GFC_Vector2D player_repo,
+	Uint8 room_num,
+	Uint8 locked,
+	int id
+) 
+{
+	RoomTransition* rt = gfc_allocate_array(sizeof(RoomTransition), 1);
+
+	gfc_rect_copy(rt->region, region);
+	gfc_vector2d_copy(rt->player_repo, player_repo);
+	rt->room_num = room_num;
+	rt->locked = locked;
+	rt->id = id;
+
+	return rt;
+}
+
 void create_ground_from_json(Ground* ground, SJson* ground_data) {
 	GFC_Vector4D rec_buf;
 
@@ -512,6 +531,7 @@ void create_room_transition_from_json(RoomTransition* t, SJson* t_data) {
 
 	sj_object_get_uint8(t_data, "room_num", &t->room_num);
 	sj_object_get_uint8(t_data, "locked", &t->locked);
+	sj_object_get_int(t_data, "id", &t->id);
 }
 
 void update_platforms() {
@@ -843,14 +863,8 @@ void level_update() {
 		if (!tr) continue;
 
 		gf2d_draw_rect_filled(tr->region, GFC_COLOR_BROWN);
-	}
 
-	// check if player wants to transition to next room
-	for (i = 0; i < room->transition_count; i++) {
-		tr = &room->transitions[i];
-		
-		if (!tr || tr->locked) continue;
-
+		// check if player wants to transition to next room
 		if (gfc_input_command_pressed("interact") && gfc_rect_overlap(player->hurtbox.s.r, tr->region))
 			change_rooms(tr->room_num, tr->player_repo);
 	}
