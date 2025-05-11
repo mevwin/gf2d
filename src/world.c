@@ -35,11 +35,10 @@ void world_gamestart() {
 
 	// load selected level
 	level_load(get_curr_level_index());
-	slog("here");
 
 	room = get_current_room();
 	if (!room) {
-		slog("failed to load first level");
+		slog("failed to load level");
 		world_manager.close_game = 1;
 		return;
 	}

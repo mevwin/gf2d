@@ -156,7 +156,6 @@ Uint8 level_editor_save_new_level() {
     for (i = 0; i < editor.room_buffer->count; i++) {
         room = (EditorRoom*)gfc_list_nth(editor.room_buffer, i);
         if (!room) continue;
-        slog("%d", i);
 
         /* save the rooms in appropriate folder */
         room_base = sj_object_new();
@@ -278,7 +277,7 @@ Uint8 level_editor_save_new_level() {
     sj_object_insert(entry, "start_room", sj_new_int(start_room));
 
     editor.room_layout = gfc_vector2d(5, 3);
-    sj_object_insert(entry, "room_layout", sj_vector2d_new(editor.room_layout));
+    sj_object_insert(entry, "layout_dimen", sj_vector2d_new(editor.room_layout));
 
     buf = 1;
     list = sj_array_new();
@@ -692,6 +691,9 @@ void level_editor_update() {
     GFC_TextWord name;
     int i;
 
+    // bug fix
+    if (editor.room_tr_index < 0) editor.room_tr_index = 0;
+
     if (editor.state == EDITOR_ROOMS_MENU){
         if (gfc_input_command_pressed("rooms_menu")) {
             editor.state = EDITOR_EDITING;
@@ -977,7 +979,6 @@ void level_editor_dec_room_index() {
     if (editor.room_index > 0)
         editor.room_index--;
 }
-
 
 void level_editor_inc_room_tr_index() {
     if (editor.room_tr_index < editor.room_buffer->count - 1) {

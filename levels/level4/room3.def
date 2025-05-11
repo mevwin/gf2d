@@ -1,0 +1,1 @@
+{"room":{"name":"ROOM #512","player_spawn":[-1.000000,-1.000000],"ground_list":[{"rect":[-1.000000,521.000000,598.000000,198.000000],"color":[243,12,194,255],"walls":1,"ceiling":1}],"platform_list":[],"enemies":{"list":[]},"items":[],"room_transitions":[{"region":[21.000000,364.000000,150.000000,150.000000],"player_repo":[651.000000,293.000000],"room_num":2,"locked":0,"id":1}]}}

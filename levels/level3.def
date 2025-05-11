@@ -1,1 +1,1 @@
-{"level":{"name":"level3","type":0,"obj":0,"room_count":2,"start_room":1,"room_layout":[5.000000,3.000000],"layout":[[1,2,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]}}
+{"level":{"name":"level3","type":0,"obj":0,"room_count":2,"start_room":1,"layout_dimen":[5.000000,3.000000],"layout":[[1,2,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]}}

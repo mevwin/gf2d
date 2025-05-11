@@ -102,7 +102,6 @@ void initialize_level_previews() {
 	GFC_TextLine buffer;
 	TextLine* txt;
 	Button* button;
-	SJson* file, * level;
 	int i, j;
 
 	// init level select buttons
@@ -110,14 +109,10 @@ void initialize_level_previews() {
 		if (j == level_manager.preview_pos_count) j = 0;
 
 		strcpy(buffer, (const char*) gfc_list_nth(level_manager.level_list, i));
-		
-		file = sj_load(buffer);
-		if (!file) continue;
-		level = sj_object_get_value(file, "level");
 
 		//level_editor_level_preview(file);
 		txt = create_textline(
-			sj_object_get_string(level, "name"),
+			buffer,
 			FONT_STANDARD,
 			FONT_SIZE_MEDIUM,
 			GFC_COLOR_WHITE,
@@ -132,8 +127,6 @@ void initialize_level_previews() {
 		);
 
 		gfc_list_append(level_manager.level_preview_buttons, button);
-
-		sj_free(file);
 	}
 	
 }
@@ -179,6 +172,7 @@ void free_level_previews() {
 }
 
 void level_load(Uint8 index) {
+	GFC_TextLine buffer;
 	Level* level;
 	SJson* level_obj, * level_data;
 
@@ -188,8 +182,9 @@ void level_load(Uint8 index) {
 		return;
 	}
 
-	//slog("%s", gfc_list_nth(level_manager.level_list, index));
-	level_obj = sj_load((const char*) gfc_list_nth(level_manager.level_list, index));
+	strcpy(buffer, (const char*)gfc_list_nth(level_manager.level_list, index));
+	level_obj = sj_load(buffer);
+
 	if (!level_obj) {
 		slog("level not found");
 		change_world_state(WORLD_CLOSE);
@@ -972,7 +967,6 @@ Uint32 get_level_list_count() {
 
 void set_curr_level_index(Uint8 index) {
 	level_manager.curr_level_index = index;
-	slog("%d", index);
 }
 
 Room* get_current_room() {
