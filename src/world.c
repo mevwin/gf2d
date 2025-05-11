@@ -24,7 +24,6 @@ void world_init() {
 	world_manager.close_game = 0;
 	world_manager.state = WORLD_MAINMENU;
 
-	// initialize level_manager
 	world_manager.enemy_list = gfc_list_new();
 	//world_manager.item_list = gfc_list_new();
 	
@@ -36,6 +35,7 @@ void world_gamestart() {
 
 	// load selected level
 	level_load(get_curr_level_index());
+	slog("here");
 
 	room = get_current_room();
 	if (!room) {

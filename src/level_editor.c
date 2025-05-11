@@ -1,3 +1,4 @@
+#include <direct.h>
 #include "simple_logger.h"
 #include "gfc_config.h"
 #include "gf2d_draw.h"
@@ -123,33 +124,189 @@ void level_editor_close() {
     memset(&editor, 0, sizeof(EditorManager));
 }
 
-void level_editor_save_new_level() {
+Uint8 level_editor_save_new_level() {
+    GFC_TextLine buffer;
     EditorRoom* room;
-    int i;
-    
+    SJson* file, *room_base, *list, *entry, *arr_entry, *array;
+    Ground* g;
+    Entity* ent;
+    EnemyData* e_data;
+    RoomTransition* rt;
+    Uint8 start_room = 0;
+    int i, j, buf;
+
     // check if level have enough data in them
-    if (!editor.player_spawn_set){
+    if (!editor.player_spawn_set) {
         slog("player_spawn never set for level");
-        return;
+        return 0;
     }
 
     for (i = 0; i < editor.room_buffer->count; i++) {
-        room = (EditorRoom*) gfc_list_nth(editor.room_buffer, i);
+        room = (EditorRoom*)gfc_list_nth(editor.room_buffer, i);
         if (!room) continue;
 
         // check if there is at least one ground
         if (!room->grounds->count) {
             slog("%s must have at least 1 ground", room->name);
-            return;
+            return 0;
         }
     }
 
-    // save level
+    // save the rooms
+    for (i = 0; i < editor.room_buffer->count; i++) {
+        room = (EditorRoom*)gfc_list_nth(editor.room_buffer, i);
+        if (!room) continue;
+        slog("%d", i);
 
-    // LAST SESSION: ADD LEVEL TRANSITIONS AND SAVING LEVEL TO JSON
+        /* save the rooms in appropriate folder */
+        room_base = sj_object_new();
 
+        sj_object_insert(room_base, "name", sj_new_str(room->name));
+        sj_object_insert(room_base, "player_spawn", sj_vector2d_new(room->player_spawn));
+        if (room->player_spawn.x != -1.0f && room->player_spawn.y != -1.0f)
+            start_room = i + 1;
 
-    change_world_state(WORLD_EDITOR_CLOSE);
+        list = sj_array_new();
+        for (j = 0; j < room->grounds->count; j++) {
+            g = (Ground*)gfc_list_nth(room->grounds, j);
+            if (!g) continue;
+
+            arr_entry = sj_object_new();
+
+            array = sj_array_new();
+            sj_array_append(array, sj_new_float(g->dimensions.x));
+            sj_array_append(array, sj_new_float(g->dimensions.y));
+            sj_array_append(array, sj_new_float(g->dimensions.w));
+            sj_array_append(array, sj_new_float(g->dimensions.h));
+
+            sj_object_insert(arr_entry, "rect", array);
+            sj_object_insert(arr_entry, "color", sj_color_new(g->color));
+            sj_object_insert(arr_entry, "walls", sj_new_uint8(1));
+            sj_object_insert(arr_entry, "ceiling", sj_new_uint8(g->ceil_flag));
+
+            sj_array_append(list, arr_entry);
+        }
+        sj_object_insert(room_base, "ground_list", list);
+
+        list = sj_array_new();
+        for (j = 0; j < room->platforms->count; j++) {
+            // save later
+        }
+        sj_object_insert(room_base, "platform_list", list);
+
+        list = sj_array_new();
+        for (j = 0; j < room->enemy_list->count; j++) {
+            ent = (Entity*)gfc_list_nth(room->enemy_list, j);
+            if (!ent) continue;
+
+            arr_entry = sj_object_new();
+
+            e_data = ent->data;
+
+            buf = e_data->type;
+            sj_object_insert(arr_entry, "type", sj_new_int(buf));
+            sj_object_insert(arr_entry, "name", sj_new_str(ent->name));
+            sj_object_insert(arr_entry, "position", sj_vector2d_new(ent->position));
+
+            sj_array_append(list, arr_entry);
+        }
+        entry = sj_object_new();
+        sj_object_insert(entry, "list", list);
+        sj_object_insert(room_base, "enemies", entry);
+
+        list = sj_array_new();
+        for (j = 0; j < room->item_list->count; j++) {
+            ent = (Entity*)gfc_list_nth(room->item_list, j);
+            if (!ent) continue;
+
+            arr_entry = sj_object_new();
+
+            sj_object_insert(arr_entry, "name", sj_new_str(ent->name));
+            sj_object_insert(arr_entry, "position", sj_vector2d_new(ent->position));
+
+            sj_array_append(list, arr_entry);
+        }
+        sj_object_insert(room_base, "items", list);
+
+        list = sj_array_new();
+        for (j = 0; j < room->transitions->count; j++) {
+            rt = (RoomTransition*) gfc_list_nth(room->transitions, j);
+            if (!rt) continue;
+
+            arr_entry = sj_object_new();
+
+            array = sj_array_new();
+            sj_array_append(array, sj_new_float(rt->region.x));
+            sj_array_append(array, sj_new_float(rt->region.y));
+            sj_array_append(array, sj_new_float(rt->region.w));
+            sj_array_append(array, sj_new_float(rt->region.h));
+
+            sj_object_insert(arr_entry, "region", array);
+            sj_object_insert(arr_entry, "player_repo", sj_vector2d_new(rt->player_repo));
+            sj_object_insert(arr_entry, "room_num", sj_new_uint8(rt->room_num));
+            sj_object_insert(arr_entry, "locked", sj_new_uint8(rt->locked));
+            sj_object_insert(arr_entry, "id", sj_new_int(rt->id));
+
+            sj_array_append(list, arr_entry);
+        }
+        sj_object_insert(room_base, "room_transitions", list);
+
+        file = sj_object_new();
+        sj_object_insert(file, "room", room_base);
+
+        // make folder
+        sprintf(buffer, "levels/%s", editor.level->name);
+        _mkdir(buffer);
+
+        sprintf(buffer, "%s/room%d.def", buffer, i + 1);
+        sj_save(file, buffer);
+        //sj_free(room_file);
+    }
+
+    // save the level
+    entry = sj_object_new();
+
+    sj_object_insert(entry, "name", sj_new_str(editor.level->name));
+
+    buf = (int)editor.level->level_type;
+    sj_object_insert(entry, "type", sj_new_int(buf));
+
+    buf = (int)editor.level->objective;
+    sj_object_insert(entry, "obj", sj_new_int(buf));
+
+    sj_object_insert(entry, "room_count", sj_new_uint32(editor.room_buffer->count));
+    sj_object_insert(entry, "start_room", sj_new_int(start_room));
+
+    editor.room_layout = gfc_vector2d(5, 3);
+    sj_object_insert(entry, "room_layout", sj_vector2d_new(editor.room_layout));
+
+    buf = 1;
+    list = sj_array_new();
+    for (i = 0; i < editor.room_layout.y; i++) {
+        array = sj_array_new();
+        for (j = 0; j < editor.room_layout.x; j++) {
+            if (buf <= editor.room_buffer->count) {
+                sj_array_append(array, sj_new_int(buf));
+                buf++;
+            }
+            else sj_array_append(array, sj_new_int(0));
+        }
+        sj_array_append(list, array);
+    }
+    sj_object_insert(entry, "layout", list);
+
+    file = sj_object_new();
+    sj_object_insert(file, "level", entry);
+
+    sprintf(buffer, "levels/%s.def", editor.level->name);
+    sj_save(file, buffer);
+
+    // update list on levels.cfg
+    file = sj_load("config/levels.cfg");
+    array = sj_object_get_value(file, "list");
+    sj_array_append(array, sj_new_str(buffer));
+    sj_save(file, "config/levels.cfg");
+    return 1;
 }
 
 EditorRoom* create_empty_room() {
@@ -158,12 +315,11 @@ EditorRoom* create_empty_room() {
 
     r = gfc_allocate_array(sizeof(EditorRoom), 1);
     i = 100 + gfc_random_int(899);
-    gfc_word_sprintf(r->name, "ROOM #%d", i);
+    gfc_word_sprintf(r->name, "ROOM #%d", i); // temporary name for editing purposes
     r->player_spawn = gfc_vector2d(-1, -1);
 
     r->grounds = gfc_list_new();
     r->platforms = gfc_list_new();
-    r->level_spawns = gfc_list_new();
     r->transitions = gfc_list_new();
 
     r->enemy_list = gfc_list_new();
@@ -204,13 +360,6 @@ void level_editor_free_room(EditorRoom* room) {
         free(p);
     }
     gfc_list_delete(room->platforms);
-
-    for (i = 0; i < room->level_spawns->count; i++) {
-        ls = (LevelSpawn*) gfc_list_nth(room->level_spawns, i);
-        if (!ls) continue;
-        free(ls);
-    }
-    gfc_list_delete(room->level_spawns);
 
     for (i = 0; i < room->transitions->count; i++) {
         rt = (RoomTransition*) gfc_list_nth(room->transitions, i);
@@ -262,7 +411,7 @@ void level_editor_remove_room() {
 void initialize_dummy_level() {
     // generate a blank level (TODO: change later)
     editor.level = gfc_allocate_array(sizeof(Level), 1);
-    gfc_word_cpy(editor.level->name, "new_level");
+    sprintf(editor.level->name, "level%i", get_level_list_count() + 1);
     editor.level->level_type = LEVEL_TYPE_REGULAR;
     editor.level->objective = LEVEL_OBJ_KILL_ALL_ENEMIES;
     editor.level->start_room = 1;
@@ -277,6 +426,8 @@ void free_editor_level() {
     EditorRoom* room;
     Ground* g;
     int j;
+
+    if (!editor.level) return;
 
     free_all_entities();
     for (int i = 0; i < editor.room_buffer->count; i++) {
@@ -633,7 +784,9 @@ void level_editor_update() {
                 handle_level_editor_mouse_input(room->item_list, m_pos);
                 // handle_level_editor_mouse_input(room->hazard_last, m_pos);
 
-                if (editor.player && !editor.toggle_hud && mouse_in_rect(editor.player->hurtbox.s.r)) {
+                if (editor.player && !editor.toggle_hud && mouse_in_rect(editor.player->hurtbox.s.r) 
+                    && room->player_spawn.x != -1.0f && room->player_spawn.y != -1.0f) 
+                {
                     if (mouse_button_held(MOUSE_LEFT_CLICK)) {
                         gfc_vector2d_copy(editor.player->position, m_pos);
                         gfc_vector2d_copy(room->player_spawn, editor.player->position);
@@ -730,6 +883,9 @@ void level_editor_update() {
                     // reposition ground offset (TODO: FIX MULTIPLE GROUNDS BEING SELECTED)
                     g->dimensions.x = m_pos.x - (g->dimensions.w * 0.5f);
                     g->dimensions.y = m_pos.y - (g->dimensions.h * 0.5f);
+
+                    g->region.x = g->dimensions.x;
+                    g->region.y = g->dimensions.x + g->dimensions.w;
                 }
             }
         }
@@ -756,7 +912,7 @@ void level_editor_update() {
         // draw entities
         draw_level_editor_entities(room->enemy_list, m_pos);
         draw_level_editor_entities(room->item_list, m_pos);
-        if (editor.player) {
+        if (editor.player && room->player_spawn.x != -1.0f && room->player_spawn.y != -1.0f) {
             entity_draw(editor.player);
             gf2d_draw_rect(editor.player->hurtbox.s.r, GFC_COLOR_GREEN);
         }

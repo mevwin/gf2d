@@ -149,6 +149,7 @@ void level_curr_close();
 void level_free_level_spawn(const char* name);
 
 Uint8 get_curr_level_index();
+Uint32 get_level_list_count();
 void set_curr_level_index(Uint8 index);
 Level* get_curr_level();
 Room* get_current_room();

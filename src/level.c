@@ -63,10 +63,9 @@ void level_manager_init(const char* filename){
 
 	// TODO: retrieve level objective descriptions and store as list
 	
+	// initialize level_previews
 	level_manager.preview_pos_page = 0;
 	level_manager.level_preview_buttons = gfc_list_new();
-
-	// initialize level_previews
 	entry = sj_object_get_value(config, "level_preview_positions");
 	level_manager.preview_pos_count = entry->v.array->count;
 	level_manager.level_preview_positions = gfc_allocate_array(sizeof(GFC_Vector2D), level_manager.preview_pos_count);
@@ -111,6 +110,7 @@ void initialize_level_previews() {
 		if (j == level_manager.preview_pos_count) j = 0;
 
 		strcpy(buffer, (const char*) gfc_list_nth(level_manager.level_list, i));
+		
 		file = sj_load(buffer);
 		if (!file) continue;
 		level = sj_object_get_value(file, "level");
@@ -135,6 +135,7 @@ void initialize_level_previews() {
 
 		sj_free(file);
 	}
+	
 }
 
 void draw_level_previews() {
@@ -187,7 +188,8 @@ void level_load(Uint8 index) {
 		return;
 	}
 
-	level_obj = sj_load(gfc_list_nth(level_manager.level_list, index));
+	//slog("%s", gfc_list_nth(level_manager.level_list, index));
+	level_obj = sj_load((const char*) gfc_list_nth(level_manager.level_list, index));
 	if (!level_obj) {
 		slog("level not found");
 		change_world_state(WORLD_CLOSE);
@@ -964,8 +966,13 @@ Uint8 get_curr_level_index() {
 	return level_manager.curr_level_index;
 }
 
+Uint32 get_level_list_count() {
+	return level_manager.level_list->count;
+}
+
 void set_curr_level_index(Uint8 index) {
 	level_manager.curr_level_index = index;
+	slog("%d", index);
 }
 
 Room* get_current_room() {

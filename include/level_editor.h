@@ -29,7 +29,6 @@ typedef struct EditorRoom_S {
 
 	GFC_List*			grounds;
 	GFC_List*			platforms;
-	GFC_List*			level_spawns;
 	GFC_List*			transitions;
 
 	GFC_List*			enemy_list;
@@ -41,7 +40,7 @@ void level_editor_init();
 void level_editor_update();
 void level_editor_close();
 
-void level_editor_save_new_level();
+Uint8 level_editor_save_new_level();
 
 //void level_editor_load_existing_level();
 void initialize_dummy_level();
