@@ -4,6 +4,7 @@
 #include "world.h"
 #include "collisions.h"
 #include "entity.h"
+#include "hazard.h"
 
 // cite this page for later
 
@@ -190,7 +191,13 @@ void update_hurtbox(Entity* self) {
 }
 
 void update_boundbox(Entity* self) {
+    HazardData* h_data;
     // TODO: change later
+    if (self->type == HAZARD) {
+        h_data = self->data;
+        if (h_data->h_type == HAZARD_VORTEX) return;
+    }
+
     gfc_rect_copy(self->boundbox.s.r, self->hurtbox.s.r);   
 }
 

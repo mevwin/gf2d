@@ -13,7 +13,7 @@ typedef struct HazardData_S {
 
 	float			dragSpeed;				// geyser/vortex: how fast to move other entities
 	float			geyser_initial_height;	// geyser
-	float			geyser_max_height;
+	float			geyser_max_height;		// geyser
 	GFC_Color		color;					// geyser
 
 	// geyser attack
@@ -26,5 +26,6 @@ typedef struct HazardData_S {
 Entity* hazard_spawn(HazardType h_type, GFC_Vector2D position, const char* name);
 Entity* hazard_dummy_spawn(SJson* data, HazardType h_type, GFC_Vector2D position);
 void update_geyser_hurtbox(Entity* self);
+void update_vortex_boundbox(Entity* self);
 
 #endif

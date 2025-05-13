@@ -42,7 +42,11 @@
         ],
         "hazards":
         [
-            
+            {
+                "h_type": 1,
+                "name": "hazard2",
+                "position": [220, 200]
+            }
         ],
         "room_transitions":
         [

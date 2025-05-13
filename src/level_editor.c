@@ -240,7 +240,7 @@ Uint8 level_editor_save_new_level() {
             h_data = ent->data;
 
             buf = h_data->h_type;
-            sj_object_insert(arr_entry, "type", sj_new_int(buf));
+            sj_object_insert(arr_entry, "h_type", sj_new_int(buf));
             sj_object_insert(arr_entry, "name", sj_new_str(ent->name));
             sj_object_insert(arr_entry, "position", sj_vector2d_new(ent->position));
             sj_array_append(list, arr_entry);
@@ -554,7 +554,10 @@ void draw_level_editor_entities(GFC_List* list, GFC_Vector2D m_pos) {
 
             if (h_data->h_type == HAZARD_GEYSER)
                 gf2d_draw_rect_filled(ent->hurtbox.s.r, h_data->color);
-            
+            else {
+                entity_draw(ent);
+                gf2d_draw_rect(ent->hurtbox.s.r, GFC_COLOR_RED);
+            }
         }
         else {
             entity_draw(ent);
@@ -584,6 +587,10 @@ void handle_level_editor_mouse_input(GFC_List* list, GFC_Vector2D m_pos) {
                         ent->position.x -= ent->hurtbox.s.r.w * 0.5f;
                         ent->position.y -= ent->hurtbox.s.r.h * 0.5f;
                         update_geyser_hurtbox(ent);
+                    }
+                    else if (h_data->h_type == HAZARD_VORTEX) {
+                        update_hurtbox(ent);
+                        update_vortex_boundbox(ent);
                     }
                 }
             }

@@ -12,13 +12,12 @@
             "startupFrames": 25,
             "activeFrames": 90,
             "recovFrames": 60
+        },
+        {
+            "#name": "VORTEX",
+            "sprite": "sprites/hazard/vortex.png",
+            "boundbox": [200, 200],
+            "dragSpeed": 2
         }
-    ],
-    "something":
-    {
-        "#name": "VORTEX",
-        "sprite": "sprites/hazard/vortex.png",
-        "boundbox": [200, 200],
-        "dragSpeed": 2
-    }
+    ]
 }

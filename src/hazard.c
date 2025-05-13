@@ -40,10 +40,9 @@ Entity* hazard_spawn(HazardType h_type, GFC_Vector2D position, const char* name)
 	hazard->canBeBashed = 0;
 
 	list = sj_object_get_value(def, "hazard_list");
+	entry = sj_array_nth(list, h_type);
 	switch (h_type) {
 		case HAZARD_GEYSER:
-			entry = sj_array_nth(list, 0);
-
 			hazard->sprite = NULL;
 
 			sj_object_get_vector2d(entry, "hurtbox", &vec);
@@ -64,12 +63,13 @@ Entity* hazard_spawn(HazardType h_type, GFC_Vector2D position, const char* name)
 			break;
 
 		case HAZARD_VORTEX:
-			entry = sj_array_nth(list, 1);
-
 			hazard->sprite = gf2d_sprite_load_image(sj_object_get_string(entry, "sprite"));
 
 			sj_object_get_vector2d(entry, "boundbox", &vec);
 			hazard->boundbox.s.r = gfc_rect(position.x, position.y, vec.x, vec.y);
+			hazard->boundbox.s.r.x -= vec.x * 0.5f;
+			hazard->boundbox.s.r.y -= vec.y * 0.5f;
+			update_hurtbox(hazard);
 
 			sj_object_get_float(entry, "dragSpeed", &h_data->dragSpeed);
 
@@ -175,6 +175,7 @@ void hazard_think(Entity* self) {
 
 		case HAZARD_VORTEX:
 			// drag in entities
+			gf2d_draw_rect_filled(self->boundbox.s.r, gfc_color8(0, 20, 20, 40));
 
 			break;	
 	}
@@ -219,7 +220,6 @@ void hazard_update(Entity* self) {
 			break;
 
 		case HAZARD_VORTEX:
-			// drag in entities
 
 			break;
 	}
@@ -234,8 +234,10 @@ void hazard_free(Entity* self) {
 			free(h_data->geyser_sprout);
 		else {
 			// reset geyser frames and timing
+			h_data->geyser_sprout->active = 0;
 			h_data->frame = 0;
 			h_data->then = CURRENT_TIME;
+			self->hurtbox.s.r.h = h_data->geyser_initial_height;
 		}
 	}
 
@@ -250,4 +252,9 @@ void update_geyser_hurtbox(Entity* self) {
 	self->hurtbox.s.r.y = self->position.y;
 	g_sprout->hitbox.x = self->position.x;
 	g_sprout->hitbox.y = self->position.y;
+}
+
+void update_vortex_boundbox(Entity* self) {
+	self->boundbox.s.r.x = self->position.x;
+	self->boundbox.s.r.y = self->position.y;
 }
