@@ -59,7 +59,7 @@
         "hazards":
         [
             {
-                "h_type": 3,
+                "h_type": 0,
                 "name": "hazard1",
                 "position": [220, 600]
             }

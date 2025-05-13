@@ -4,21 +4,16 @@
 #include "entity.h"
 
 typedef enum HazardType_E {
-	HAZARD_BREAK_WALL_VERT,
-	HAZARD_BREAK_WALL_HORIZ,
-	HAZARD_VORTEX,
-	HAZARD_GEYSER
+	HAZARD_GEYSER,
+	HAZARD_VORTEX
 }HazardType;
 
 typedef struct HazardData_S {
 	HazardType		h_type;
 
-	// breakable wall data
-	float			currHealth;
-	float			maxHealth;
-
 	float			dragSpeed;				// geyser/vortex: how fast to move other entities
 	float			geyser_initial_height;	// geyser
+	float			geyser_max_height;
 	GFC_Color		color;					// geyser
 
 	// geyser attack
@@ -29,6 +24,7 @@ typedef struct HazardData_S {
 }HazardData;
 
 Entity* hazard_spawn(HazardType h_type, GFC_Vector2D position, const char* name);
-Entity* hazard_dummy_spawn();
+Entity* hazard_dummy_spawn(SJson* data, HazardType h_type, GFC_Vector2D position);
+void update_geyser_hurtbox(Entity* self);
 
 #endif

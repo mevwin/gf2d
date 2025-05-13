@@ -11,6 +11,7 @@
 #include "player.h"
 #include "enemy.h"
 #include "item.h"
+#include "hazard.h"
 
 typedef struct EditorManager_S {
     EditorState     state;
@@ -131,6 +132,7 @@ Uint8 level_editor_save_new_level() {
     Ground* g;
     Entity* ent;
     EnemyData* e_data;
+    HazardData* h_data;
     RoomTransition* rt;
     Uint8 start_room = 0;
     int i, j, buf;
@@ -228,6 +230,22 @@ Uint8 level_editor_save_new_level() {
         sj_object_insert(room_base, "items", list);
 
         // TODO: HAZARDS
+        list = sj_array_new();
+        for (j = 0; j < room->hazard_list->count; j++) {
+            ent = (Entity*) gfc_list_nth(room->hazard_list, j);
+            if (!ent) continue;
+
+            arr_entry = sj_object_new();
+
+            h_data = ent->data;
+
+            buf = h_data->h_type;
+            sj_object_insert(arr_entry, "type", sj_new_int(buf));
+            sj_object_insert(arr_entry, "name", sj_new_str(ent->name));
+            sj_object_insert(arr_entry, "position", sj_vector2d_new(ent->position));
+            sj_array_append(list, arr_entry);
+        }
+        sj_object_insert(room_base, "hazards", list);
 
         list = sj_array_new();
         for (j = 0; j < room->transitions->count; j++) {
@@ -476,8 +494,18 @@ void initialize_level_editor_all_entities() {
     }
     else slog("item.def not found by level editor");
 
-    // load hazards (TODO)
-
+    // load hazards
+    def = sj_load("def/hazard.def");
+    if (def) {
+        list = sj_object_get_value(def, "hazard_list");
+        if (list) {
+            for (i = 0; i < list->v.array->count; i++) {
+                entry = sj_array_nth(list, i);
+                gfc_list_append(editor.all_entities, hazard_dummy_spawn(entry, i, editor.entity_preview_offset));
+            }
+        }
+    }
+    else slog("hazard.def not found by level editor");
 }
 
 void initialize_level_editor_entity_previews() {
@@ -492,7 +520,7 @@ void initialize_level_editor_entity_previews() {
     }
 
     ent = (Entity*) gfc_list_nth(editor.entity_preview_list, editor.entity_preview_index);
-    if (ent) ent->draw_flag = 1;
+    //if (ent) ent->draw_flag = 1;
 }
 
 void change_level_editor_list_type(EntityType new) {
@@ -515,29 +543,50 @@ void reset_level_editor_entity_previews() {
 
 void draw_level_editor_entities(GFC_List* list, GFC_Vector2D m_pos) {
     Entity* ent;
+    HazardData* h_data;
 
     for (int i = 0; i < list->count; i++) {
         ent = (Entity*)gfc_list_nth(list, i);
         if (!ent) continue;
 
-        entity_draw(ent);
-        gf2d_draw_rect(ent->hurtbox.s.r, GFC_COLOR_RED);
-        update_hurtbox(ent);
-        update_boundbox(ent);
+        if (ent->type == HAZARD) {
+            h_data = ent->data;
+
+            if (h_data->h_type == HAZARD_GEYSER)
+                gf2d_draw_rect_filled(ent->hurtbox.s.r, h_data->color);
+            
+        }
+        else {
+            entity_draw(ent);
+            gf2d_draw_rect(ent->hurtbox.s.r, GFC_COLOR_RED);
+            update_hurtbox(ent);
+            update_boundbox(ent);
+        }
     }
 }
 
 void handle_level_editor_mouse_input(GFC_List* list, GFC_Vector2D m_pos) {
     Entity* ent;
+    HazardData* h_data;
 
     for (int i = 0; i < list->count; i++) {
         ent = (Entity*)gfc_list_nth(list, i);
         if (!ent) continue;
 
         // move around an entity
+        // TODO: worry about how position data is different for hazards
         if (!editor.toggle_hud && mouse_in_rect(ent->hurtbox.s.r)) {
-            if (mouse_button_held(MOUSE_LEFT_CLICK))
+            if (mouse_button_held(MOUSE_LEFT_CLICK)) {
                 gfc_vector2d_copy(ent->position, m_pos);
+                if (ent->type == HAZARD) {
+                    h_data = ent->data;
+                    if (h_data->h_type == HAZARD_GEYSER) {
+                        ent->position.x -= ent->hurtbox.s.r.w * 0.5f;
+                        ent->position.y -= ent->hurtbox.s.r.h * 0.5f;
+                        update_geyser_hurtbox(ent);
+                    }
+                }
+            }
             else if (mouse_button_held(MOUSE_MIDDLE_CLICK)) {
                 gfc_list_delete_data(list, ent);
                 entity_free(ent);
@@ -550,7 +599,7 @@ void handle_level_editor_mouse_input(GFC_List* list, GFC_Vector2D m_pos) {
 void level_editor_draw_entity_preview_region() {
     Entity* ent;
     ItemData* i_data;
-    GFC_TextWord text;
+    HazardData* h_data;
 
     gf2d_draw_rect_filled(editor.entity_preview_region, gfc_color8(120, 120, 120, 120));
 
@@ -568,10 +617,19 @@ void level_editor_draw_entity_preview_region() {
                 &editor.entity_name_offset,
                 NULL
             );
+            entity_draw(ent);
 
             break;
 
         case HAZARD:
+            font_display_text(ent->name,
+                FONT_STANDARD,
+                FONT_SIZE_SMALL,
+                GFC_COLOR_WHITE,
+                0,
+                &editor.entity_name_offset,
+                NULL
+            );
 
             break;
 
@@ -587,11 +645,12 @@ void level_editor_draw_entity_preview_region() {
                 &editor.entity_name_offset,
                 NULL
             );
+            entity_draw(ent);
 
             break;
     }
 
-    entity_draw(ent);
+
 }
 
 void level_editor_set_player_spawn() {
@@ -690,6 +749,7 @@ void level_editor_update() {
     Entity* ent, *new_ent;
     EnemyData* e_data;
     ItemData* i_data;
+    HazardData* h_data;
     GFC_TextWord name;
     int i;
 
@@ -777,6 +837,12 @@ void level_editor_update() {
                                 break;
 
                             case HAZARD:
+                                h_data = ent->data;
+
+                                gfc_word_sprintf(name, "hazard%i", room->hazard_list->count + 1);
+                                new_ent = hazard_spawn(h_data->h_type, gfc_vector2d(640, 360), name);
+
+                                gfc_list_append(room->hazard_list, new_ent);
 
                                 break;
                         }
@@ -786,7 +852,7 @@ void level_editor_update() {
                 // handle mouse inputs for entities
                 handle_level_editor_mouse_input(room->enemy_list, m_pos);
                 handle_level_editor_mouse_input(room->item_list, m_pos);
-                // handle_level_editor_mouse_input(room->hazard_last, m_pos);
+                handle_level_editor_mouse_input(room->hazard_list, m_pos);
 
                 if (editor.player && !editor.toggle_hud && mouse_in_rect(editor.player->hurtbox.s.r) 
                     && room->player_spawn.x != -1.0f && room->player_spawn.y != -1.0f) 
@@ -916,6 +982,7 @@ void level_editor_update() {
         // draw entities
         draw_level_editor_entities(room->enemy_list, m_pos);
         draw_level_editor_entities(room->item_list, m_pos);
+        draw_level_editor_entities(room->hazard_list, m_pos);
         if (editor.player && room->player_spawn.x != -1.0f && room->player_spawn.y != -1.0f) {
             entity_draw(editor.player);
             gf2d_draw_rect(editor.player->hurtbox.s.r, GFC_COLOR_GREEN);

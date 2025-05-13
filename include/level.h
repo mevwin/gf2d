@@ -154,6 +154,7 @@ void set_curr_level_index(Uint8 index);
 Level* get_curr_level();
 Room* get_current_room();
 GFC_List* get_level_paths();
+Uint8 is_room_changing();
 Uint8 entity_keep_in_bounds(void* e, Uint8 edge_type);
 
 void inc_level_preview_pg();

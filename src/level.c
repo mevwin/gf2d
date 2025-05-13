@@ -802,7 +802,6 @@ void clear_current_room(Uint8 save_data) {
 				gfc_vector2d_copy(l_spawn->position, ent->position);
 
 				if (size) {
-					//slog("%d", size);
 					l_spawn->data_copy = gfc_allocate_array(size, 1);
 					memcpy(l_spawn->data_copy, ent->data, size);
 				}
@@ -1006,6 +1005,10 @@ Uint32 get_level_list_count() {
 
 void set_curr_level_index(Uint8 index) {
 	level_manager.curr_level_index = index;
+}
+
+Uint8 is_room_changing() {
+	return level_manager.transitioning;
 }
 
 Room* get_current_room() {

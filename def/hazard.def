@@ -2,33 +2,23 @@
     "hazard_list":
     [
         {
-            "#name": "BREAK_WALL_VERT",
-            "hurtbox": [30, 150],
-            "color": [180, 0, 0, 255],
-            "maxHealth": 24
-        },
-        {
-            "#name": "BREAK_WALL_HORIZ",
-            "hurtbox": [150, 30],
-            "color": [180, 0, 0, 255],
-            "maxHealth": 24
-        },
-        {
-            "#name": "VORTEX",
-            "sprite": "sprites/hazard/vortex.png",
-            "boundbox": [200, 200],
-            "dragSpeed": 2
-        },
-        {
             "#name": "GEYSER",
-            "hurtbox": [70, 10],
+            "hurtbox": [120, 30],
             "color": [0, 20, 180, 255],
-            "velocity": [0, 0.5],
+            "velocity": [0, 7],
+            "max_height": -400,
             "dragSpeed": 2,
             "damage": 1,
-            "startupFrames": 5,
-            "activeFrames": 30,
+            "startupFrames": 25,
+            "activeFrames": 90,
             "recovFrames": 60
         }
-    ]
+    ],
+    "something":
+    {
+        "#name": "VORTEX",
+        "sprite": "sprites/hazard/vortex.png",
+        "boundbox": [200, 200],
+        "dragSpeed": 2
+    }
 }
