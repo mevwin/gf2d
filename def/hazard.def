@@ -7,7 +7,7 @@
             "color": [0, 20, 180, 255],
             "velocity": [0, 7],
             "max_height": -400,
-            "dragSpeed": 2,
+            "dragSpeed": 10,
             "damage": 1,
             "startupFrames": 25,
             "activeFrames": 90,
@@ -16,8 +16,8 @@
         {
             "#name": "VORTEX",
             "sprite": "sprites/hazard/vortex.png",
-            "boundbox": [200, 200],
-            "dragSpeed": 2
+            "boundbox": [250, 250],
+            "dragSpeed": 5
         }
     ]
 }

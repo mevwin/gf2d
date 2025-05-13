@@ -2,6 +2,7 @@
 #include "gf2d_draw.h"
 #include "world.h"
 #include "collisions.h"
+#include "player.h"
 #include "hazard.h"
 
 void hazard_think(Entity* self);
@@ -166,18 +167,52 @@ EntityAtk* create_geyser_sprout(Entity* h, SJson* data) {
 void hazard_think(Entity* self) {
 	HazardData* h_data = self->data;
 	EntityAtk* g_sprout;
+	Uint32 ent_max = getEntityMax();
+	Entity* ent_list = getEntityList(), *ent;
+	GFC_Vector2D direction;
+	GFC_Rect rect;
+	PlayerData* p_data;
 
-	switch (h_data->h_type) {
-		case HAZARD_GEYSER:
-			// push entities up
+	for (int i = 0; i < ent_max; i++) {
+		ent = &ent_list[i];
+		if (!ent->_inuse || ent->type == HAZARD || ent->type == ITEM) continue;
 
-			break;
+		switch (h_data->h_type) {
+			case HAZARD_GEYSER:
+				// push entities up
+				g_sprout = h_data->geyser_sprout;
+				gf2d_draw_rect_filled(g_sprout->hitbox, h_data->color);
 
-		case HAZARD_VORTEX:
-			// drag in entities
-			gf2d_draw_rect_filled(self->boundbox.s.r, gfc_color8(0, 20, 20, 40));
+				// make dummy rect for checks
+				gfc_rect_copy(rect, g_sprout->hitbox);
+				rect.y = g_sprout->hitbox.y + g_sprout->hitbox.h;
+				rect.h = -rect.h;
 
-			break;	
+				if (gfc_point_in_rect(ent->position, rect)) {
+					ent->grav_flag = 0;
+					ent->position.y -= h_data->dragSpeed;
+				}
+				else ent->grav_flag = 1;
+
+				break;
+
+			case HAZARD_VORTEX:
+				// drag in entities
+				if (gfc_rect_overlap(self->boundbox.s.r, ent->hurtbox.s.r) && !gfc_rect_overlap(self->hurtbox.s.r, ent->hurtbox.s.r)) {
+					gfc_vector2d_sub(direction, self->position, ent->position);
+					gfc_vector2d_set_magnitude(&direction, h_data->dragSpeed);
+					gfc_vector2d_add(ent->position, ent->position, direction);
+					ent->grav_flag = 0;
+
+					if (ent->type == PLAYER) {
+						p_data = ent->data;
+						p_data->dodge_charges = p_data->max_dodge_charges;
+					}
+				}
+				else ent->grav_flag = 1;
+
+				break;
+		}
 	}
 }
 
@@ -200,6 +235,7 @@ void hazard_update(Entity* self) {
 
 			if (g_sprout->active) {
 				self->hurtbox.s.r.h -= self->velocity.y;
+				g_sprout->hitbox.h = self->hurtbox.s.r.h;
 				if (self->hurtbox.s.r.h <= h_data->geyser_max_height)
 					self->hurtbox.s.r.h = h_data->geyser_max_height;
 			}
@@ -213,13 +249,15 @@ void hazard_update(Entity* self) {
 			else if (h_data->frame == g_sprout->recovFrames) {
 				h_data->frame = 0;
 				self->hurtbox.s.r.h = h_data->geyser_initial_height;
+				g_sprout->hitbox.h = self->hurtbox.s.r.h;
 			}
 
-			gf2d_draw_rect_filled(self->hurtbox.s.r, h_data->color);
+
 
 			break;
 
 		case HAZARD_VORTEX:
+			gf2d_draw_rect_filled(self->boundbox.s.r, gfc_color8(0, 20, 20, 40));
 
 			break;
 	}
