@@ -50,6 +50,7 @@ void entity_draw(Entity* self) {
     GFC_Vector2D offset, position;
 
     //if (self->draw) self->draw(self);
+    if (!self->sprite) return;
 
     offset = gfc_vector2d(self->sprite->frame_w, self->sprite->frame_h);
     offset.x /= 2.0f;
@@ -173,6 +174,8 @@ void free_all_level_entities() {
 
 void update_hurtbox(Entity* self) {
     GFC_Vector2D offset, position;
+
+    if (!self->sprite) return;
 
     offset = gfc_vector2d(self->sprite->frame_w, self->sprite->frame_h);
     offset.x *= 0.5f;

@@ -68,6 +68,10 @@
                 "position": [800, 520]
             }
         ],
+        "hazards":
+        [
+            
+        ],
         "room_transitions":
         [
             {

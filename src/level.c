@@ -8,6 +8,7 @@
 #include "collisions.h"
 #include "item.h"
 #include "enemy.h"
+#include "hazard.h"
 
 typedef struct LevelManager_S {
 	Uint8			wasInit;
@@ -385,6 +386,29 @@ void create_room_from_json(Room* room, SJson* data) {
 	}
 	else slog("failed to initalize item spawns");
 
+	// hazard spawns
+	list = sj_object_get_value(room_data, "hazards");
+	if (list) {
+		for (i = 0; i < list->v.array->count; i++) {
+			entry = sj_array_nth(list, i);
+			if (!entry) {
+				slog("no hazard found");
+				continue;
+			}
+
+			l_spawn = gfc_allocate_array(sizeof(LevelSpawn), 1);
+
+			l_spawn->ent_type = HAZARD;
+			sj_object_get_vector2d(entry, "position", &l_spawn->position);
+			gfc_word_cpy(l_spawn->ent_name, sj_object_get_string(entry, "name"));
+			sj_object_get_uint8(entry, "h_type", &l_spawn->type.hazard_type);
+			
+			l_spawn->data_copy = NULL;
+			gfc_list_append(room->level_spawns, l_spawn);
+		}
+	}
+	else slog("failed to initalize hazard spawns");
+	
 	// room transitions
 	list = sj_object_get_value(room_data, "room_transitions");
 	if (list) {
@@ -703,7 +727,7 @@ void load_current_room() {
 			case ENEMY:
 				ent = enemy_spawn(l_spawn->type.enemy_type, l_spawn->ent_name, l_spawn->position, NULL);
 				//slog("enemy");
-				if (l_spawn->data_copy) {
+				if (l_spawn->data_copy && ent) {
 					free(ent->data);
 					ent->data = l_spawn->data_copy;
 					l_spawn->data_copy = NULL;	
@@ -713,12 +737,22 @@ void load_current_room() {
 
 			case ITEM:
 				ent = item_spawn(l_spawn->ent_name, l_spawn->position);
-				if (l_spawn->data_copy) {
+				if (l_spawn->data_copy && ent) {
 					free(ent->data);
 					ent->data = l_spawn->data_copy;
 					l_spawn->data_copy = NULL;
 				}
 				//slog("item");
+
+				break;
+
+			case HAZARD:
+				ent = hazard_spawn(l_spawn->type.hazard_type, l_spawn->position, l_spawn->ent_name);
+				if (l_spawn->data_copy && ent) {
+					free(ent->data);
+					ent->data = l_spawn->data_copy;
+					l_spawn->data_copy = NULL;
+				}
 
 				break;
 		}
@@ -757,6 +791,11 @@ void clear_current_room(Uint8 save_data) {
 						size = sizeof(EnemyData);
 						//slog("saved enemy");
 						break;
+
+					case HAZARD:
+						size = sizeof(HazardData);
+						break;
+
 					default:
 						size = 0;
 				}

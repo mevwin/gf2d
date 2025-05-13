@@ -227,6 +227,8 @@ Uint8 level_editor_save_new_level() {
         }
         sj_object_insert(room_base, "items", list);
 
+        // TODO: HAZARDS
+
         list = sj_array_new();
         for (j = 0; j < room->transitions->count; j++) {
             rt = (RoomTransition*) gfc_list_nth(room->transitions, j);
@@ -408,7 +410,6 @@ void level_editor_remove_room() {
 }
 
 void initialize_dummy_level() {
-    // generate a blank level (TODO: change later)
     editor.level = gfc_allocate_array(sizeof(Level), 1);
     sprintf(editor.level->name, "level%i", get_level_list_count() + 1);
     editor.level->level_type = LEVEL_TYPE_REGULAR;
@@ -476,6 +477,7 @@ void initialize_level_editor_all_entities() {
     else slog("item.def not found by level editor");
 
     // load hazards (TODO)
+
 }
 
 void initialize_level_editor_entity_previews() {
@@ -674,8 +676,8 @@ void update_room_transition_player_repo(RoomTransition* room_a) {
         rt = (RoomTransition*) gfc_list_nth(editor.room_tr_list, i);
         if (!rt || room_a == rt || room_a->id != rt->id) continue;
 
-        rt->player_repo.x = room_a->region.x;
-        rt->player_repo.y = room_a->region.y;
+        rt->player_repo.x = room_a->region.x + (room_a->region.w * 0.5f);
+        rt->player_repo.y = room_a->region.y + (room_a->region.h * 0.5f);
         return;
     }
 }
@@ -918,7 +920,6 @@ void level_editor_update() {
             entity_draw(editor.player);
             gf2d_draw_rect(editor.player->hurtbox.s.r, GFC_COLOR_GREEN);
         }
-
     }
 }
 
