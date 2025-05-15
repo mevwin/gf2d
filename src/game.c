@@ -3,6 +3,7 @@
 #include "gf2d_graphics.h"
 #include "gf2d_sprite.h"
 #include "gfc_input.h"
+#include "gfc_audio.h"
 #include "entity.h"
 #include "mouse.h"
 #include "world.h"
@@ -42,6 +43,7 @@ int main(int argc, char * argv[])
     //slog("press [escape] to quit");
 
     mouse_init();
+    gfc_audio_init(256, 16, 4, 1, 1, 1);
     ui_system_init("config/ui_system.cfg");
     entity_system_init(MAX_ENTITY);
     world_init();

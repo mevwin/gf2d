@@ -17,6 +17,8 @@ typedef struct UIManager_S {
     Sprite*         menu_button;
     Sprite*         scroll_button;
     Sprite*         window;
+
+    GFC_Sound*      button_sound;
 }UIManager;
 
 static UIManager ui_manager = { 0 };
@@ -63,6 +65,7 @@ void ui_system_init(char* configFile) {
     ui_manager.menu_button = gf2d_sprite_load_image(sj_object_get_string(config, "menu_button"));
     ui_manager.scroll_button = gf2d_sprite_load_image(sj_object_get_string(config, "scroll_button"));
     ui_manager.window = gf2d_sprite_load_image(sj_object_get_string(config, "window"));
+    ui_manager.button_sound = gfc_sound_load(sj_object_get_string(config, "button_sound"), 1.0f, -1);
 
     menu_list = sj_object_get_value(config, "menu_list");
     for (i = 0; i < menu_list->v.array->count; i++) {
@@ -83,6 +86,7 @@ void ui_system_close() {
     gf2d_sprite_delete(ui_manager.menu_button);
     gf2d_sprite_delete(ui_manager.scroll_button);
     gf2d_sprite_delete(ui_manager.window);
+    gfc_sound_free(ui_manager.button_sound);
 
     memset(&ui_manager, 0, sizeof(UIManager));
 }
@@ -154,6 +158,8 @@ Menu* create_menu(const char* filename) {
             create_window_from_json(&menu->windowList[i], sj_array_get_nth(list, i));
         }
     }
+
+    //menu->bg_music = gfc_sound_load(sj_object_get_string(win_data, "bg_music"), 1.0f, -1);
 
     sj_free(data);
     return menu;
@@ -361,6 +367,8 @@ void delete_menu(Menu* menu) {
         }
         free(menu->windowList);
     }
+
+    if (menu->bg_music) gfc_sound_free(menu->bg_music);
     
     free(menu);
     //slog("deleted menu");

@@ -3,6 +3,7 @@
 
 #include "gf2d_sprite.h"
 #include "gfc_shape.h"
+#include "gfc_audio.h"
 #include "font.h"
 
 typedef enum ButtonLayout_E {
@@ -84,6 +85,8 @@ typedef struct Menu_S {
 
     Uint8           windowMax;
     Window*         windowList;
+
+    GFC_Sound*      bg_music;
 }Menu;
 
 /**

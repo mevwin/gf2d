@@ -191,6 +191,7 @@ void hazard_think(Entity* self) {
 				if (gfc_point_in_rect(ent->position, rect)) {
 					ent->grav_flag = 0;
 					ent->position.y -= h_data->dragSpeed;
+					ent->velocity.y = 0;
 				}
 				else ent->grav_flag = 1;
 
@@ -202,14 +203,14 @@ void hazard_think(Entity* self) {
 					gfc_vector2d_sub(direction, self->position, ent->position);
 					gfc_vector2d_set_magnitude(&direction, h_data->dragSpeed);
 					gfc_vector2d_add(ent->position, ent->position, direction);
-					ent->grav_flag = 0;
-
+					
+					ent->velocity.y = 0;
 					if (ent->type == PLAYER) {
 						p_data = ent->data;
 						p_data->dodge_charges = p_data->max_dodge_charges;
 					}
 				}
-				else ent->grav_flag = 1;
+				
 
 				break;
 		}

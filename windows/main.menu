@@ -6,7 +6,8 @@
         "buttonMax": 1,
         "buttonLayout": 1,
         "barMax": 0,
-        "windowMax": 1
+        "windowMax": 1,
+        "bg_music": "sounds/confirm.wav"
     },
     "buttons":
     [
