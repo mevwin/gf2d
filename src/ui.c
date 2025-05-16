@@ -18,7 +18,8 @@ typedef struct UIManager_S {
     Sprite*         scroll_button;
     Sprite*         window;
 
-    GFC_Sound*      button_sound;
+    GFC_Sound*      button_traverse;
+    GFC_Sound*      button_selected_sound;
 }UIManager;
 
 static UIManager ui_manager = { 0 };
@@ -65,7 +66,8 @@ void ui_system_init(char* configFile) {
     ui_manager.menu_button = gf2d_sprite_load_image(sj_object_get_string(config, "menu_button"));
     ui_manager.scroll_button = gf2d_sprite_load_image(sj_object_get_string(config, "scroll_button"));
     ui_manager.window = gf2d_sprite_load_image(sj_object_get_string(config, "window"));
-    ui_manager.button_sound = gfc_sound_load(sj_object_get_string(config, "button_sound"), 1.0f, -1);
+    ui_manager.button_selected_sound = gfc_sound_load(sj_object_get_string(config, "button_sound"), 1.0f, -1);
+    ui_manager.button_traverse = gfc_sound_load(sj_object_get_string(config, "button_traverse"), 1.0f, -1);
 
     menu_list = sj_object_get_value(config, "menu_list");
     for (i = 0; i < menu_list->v.array->count; i++) {
@@ -86,7 +88,8 @@ void ui_system_close() {
     gf2d_sprite_delete(ui_manager.menu_button);
     gf2d_sprite_delete(ui_manager.scroll_button);
     gf2d_sprite_delete(ui_manager.window);
-    gfc_sound_free(ui_manager.button_sound);
+    gfc_sound_free(ui_manager.button_selected_sound);
+    gfc_sound_free(ui_manager.button_traverse);
 
     memset(&ui_manager, 0, sizeof(UIManager));
 }
@@ -159,7 +162,8 @@ Menu* create_menu(const char* filename) {
         }
     }
 
-    //menu->bg_music = gfc_sound_load(sj_object_get_string(win_data, "bg_music"), 1.0f, -1);
+    if (strcmp(sj_object_get_string(win_data, "bg_music"), "none"))
+        menu->bg_music = gfc_sound_load(sj_object_get_string(win_data, "bg_music"), 1.0f, -1);
 
     sj_free(data);
     return menu;
@@ -667,6 +671,7 @@ void draw_world_menu(Menu* menu, WorldState world_state) {
 
                 // handle button inputs
                 if (button->selected) {
+                    gfc_sound_play(ui_manager.button_selected_sound, 0, 0.3, -1, -1);
                     button->selected = 0;
                     reset_window_toggles();
 
@@ -704,6 +709,7 @@ void draw_world_menu(Menu* menu, WorldState world_state) {
 
             // check if button has been selected
             if (button && button->selected) {
+                gfc_sound_play(ui_manager.button_selected_sound, 0, 0.3, -1, -1);
                 button->selected = 0;
                 ui_manager.active_button = 0;
                 reset_window_toggles();
@@ -802,6 +808,7 @@ void draw_editor_menu(Menu* menu, EditorState editor_state) {
             // handle button inputs
             if (button->selected) {
                 button->selected = 0;
+                gfc_sound_play(ui_manager.button_selected_sound, 0, 0.3, -1, -1);
                 ui_manager.active_button = 0;
                 reset_window_toggles();
 
@@ -896,6 +903,7 @@ void draw_editor_hud_buttons(Menu* menu, Window* win) {
             // handle button inputs
             if (button->selected) {
                 button->selected = 0;
+                gfc_sound_play(ui_manager.button_selected_sound, 0, 0.3, -1, -1);
                 ui_manager.active_button = 0;
                 reset_window_toggles();
 
@@ -1059,6 +1067,7 @@ void draw_editor_hud_special_menu(Menu* menu) {
             // handle button inputs
             if (button->selected) {
                 button->selected = 0;
+                gfc_sound_play(ui_manager.button_selected_sound, 0, 0.3, -1, -1);
                 ui_manager.active_button = 0;
                 reset_window_toggles();
 
@@ -1103,6 +1112,11 @@ void drawUI(Uint8 w_state) {
 
     menu = (Menu*)gfc_list_nth(ui_manager.ui_list, w_state);
     if (!menu) return;
+
+    if (menu->bg_music && !menu->music_started) {
+        gfc_sound_play(menu->bg_music, 0, 0.3, -1, -1);
+        menu->music_started = 1;
+    }
 
     if (world_state == WORLD_EDITOR) {
         mouse_update_state();
@@ -1174,18 +1188,26 @@ void menu_check_input(Menu* menu, int min, int max, Window* win) {
     // menu traversal
     switch (menu->button_layout) {
         case MENU_BUTTON_HORIZONTAL:
-            if (gfc_input_command_pressed("moveright"))
+            if (gfc_input_command_pressed("moveright")) {
                 menu_buttonList_advance(min, max, win);
-            else if (gfc_input_command_pressed("moveleft"))
+                gfc_sound_play(ui_manager.button_traverse, 0, 1, -1, -1);
+            }
+            else if (gfc_input_command_pressed("moveleft")) {
                 menu_buttonList_go_back(min, max, win);
+                gfc_sound_play(ui_manager.button_traverse, 0, 1, -1, -1);
+            }
 
             break;
 
         case MENU_BUTTON_VERTICAL:
-            if (gfc_input_command_pressed("moveup"))
+            if (gfc_input_command_pressed("moveup")) {
                 menu_buttonList_go_back(min, max, win);
-            else if (gfc_input_command_pressed("movedown"))
+                gfc_sound_play(ui_manager.button_traverse, 0, 1, -1, -1);
+            }
+            else if (gfc_input_command_pressed("movedown")) {
                 menu_buttonList_advance(min, max, win);
+                gfc_sound_play(ui_manager.button_traverse, 0, 1, -1, -1);
+            }
 
             break;
 

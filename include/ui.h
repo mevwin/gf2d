@@ -87,6 +87,7 @@ typedef struct Menu_S {
     Window*         windowList;
 
     GFC_Sound*      bg_music;
+    Uint8           music_started;
 }Menu;
 
 /**

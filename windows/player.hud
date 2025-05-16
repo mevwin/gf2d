@@ -5,7 +5,8 @@
         "bg_sprite": "no sprite",
         "buttonMax": 0,
         "barMax": 1,
-        "windowMax": 0
+        "windowMax": 0,
+        "bg_music": "none"
     },
     "bars":
     [

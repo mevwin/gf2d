@@ -6,7 +6,8 @@
         "buttonMax": 1,
         "buttonLayout": 1,
         "barMax": 0,
-        "windowMax": 0
+        "windowMax": 0,
+        "bg_music": "none"
     },
     "buttons":
     [
